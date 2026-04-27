@@ -2,14 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/db';
 import { AppError } from './errorHandler';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: { id: string; email: string };
-    }
-  }
-}
-
 export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers['authorization'];
