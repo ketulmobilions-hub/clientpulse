@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import router from './routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -15,6 +16,9 @@ app.use(cors({
   origin: env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
   credentials: true,
 }));
+
+// Cookie parser before all custom middleware so req.signedCookies is available everywhere
+app.use(cookieParser(env.cookieSecret));
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -31,6 +35,15 @@ app.use('/api/v1/auth', rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts, please try again later.' } },
+}));
+
+// Tighter portal limiter to reduce share_token brute-force window
+app.use('/api/v1/portal', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later.' } },
 }));
 
 app.use(requestId);

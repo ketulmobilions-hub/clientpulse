@@ -42,5 +42,6 @@ export const env = {
   resendApiKey: required('RESEND_API_KEY'),
   resendFromEmail: required('RESEND_FROM_EMAIL'),
   jwtSecret: requireMinLength('JWT_SECRET', 32),
+  cookieSecret: requireMinLength('COOKIE_SECRET', 32),
   appBaseUrl: required('APP_BASE_URL'),
 };
