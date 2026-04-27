@@ -10,6 +10,14 @@ function required(key: string): string {
   return value;
 }
 
+function requireMinLength(key: string, min: number): string {
+  const value = required(key);
+  if (value.length < min) {
+    throw new Error(`Env var ${key} must be at least ${min} characters`);
+  }
+  return value;
+}
+
 function parsePort(): number {
   const raw = process.env['PORT'] ?? '3000';
   const port = parseInt(raw, 10);
@@ -32,4 +40,7 @@ export const env = {
   supabaseAnonKey: required('SUPABASE_ANON_KEY'),
   supabaseServiceRoleKey: required('SUPABASE_SERVICE_ROLE_KEY'),
   resendApiKey: required('RESEND_API_KEY'),
+  resendFromEmail: required('RESEND_FROM_EMAIL'),
+  jwtSecret: requireMinLength('JWT_SECRET', 32),
+  appBaseUrl: required('APP_BASE_URL'),
 };

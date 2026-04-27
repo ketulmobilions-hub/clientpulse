@@ -1,6 +1,9 @@
+import jwt from 'jsonwebtoken';
 import { supabase } from '../config/db';
 import { supabaseAdmin } from '../config/adminDb';
+import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
+import { sendMagicLinkEmail } from './email.service';
 
 export interface RegisterResult {
   user: { id: string; email: string; name: string; role: string };
@@ -104,4 +107,102 @@ export async function loginUser(email: string, password: string): Promise<LoginR
       workspaceId: userRow.workspace_id,
     },
   };
+}
+
+export interface MagicLinkResult {
+  sent: true;
+}
+
+export interface PortalTokenResult {
+  token: string;
+}
+
+export async function generateMagicLink(
+  projectId: string,
+  email: string,
+  clientName: string | undefined,
+  userId: string,
+): Promise<MagicLinkResult> {
+  const { data: project, error: projectError } = await supabaseAdmin
+    .from('projects')
+    .select('id, workspace_id')
+    .eq('id', projectId)
+    .is('deleted_at', null)
+    .single();
+
+  if (projectError || !project) {
+    throw new AppError('Project not found', 404, 'NOT_FOUND');
+  }
+
+  const { data: workspace, error: wsError } = await supabaseAdmin
+    .from('workspaces')
+    .select('id')
+    .eq('id', project.workspace_id)
+    .eq('owner_id', userId)
+    .is('deleted_at', null)
+    .single();
+
+  if (wsError || !workspace) {
+    throw new AppError('Access denied', 403, 'FORBIDDEN');
+  }
+
+  const { data: link, error: insertError } = await supabaseAdmin
+    .from('magic_links')
+    .insert({ project_id: projectId, email, client_name: clientName ?? null })
+    .select('id, token')
+    .single();
+
+  if (insertError || !link) {
+    throw new AppError('Failed to generate magic link', 500, 'DB_ERROR');
+  }
+
+  const magicLinkUrl = `${env.appBaseUrl}/p/verify?token=${encodeURIComponent(link.token)}`;
+
+  await sendMagicLinkEmail(email, clientName ?? 'there', magicLinkUrl);
+
+  const { error: sentAtError } = await supabaseAdmin
+    .from('magic_links')
+    .update({ email_sent_at: new Date().toISOString() })
+    .eq('id', link.id);
+
+  if (sentAtError) {
+    console.error('[MAGIC_LINK] email_sent_at update failed for link', link.id, sentAtError.message);
+  }
+
+  return { sent: true };
+}
+
+export async function verifyMagicLink(token: string): Promise<PortalTokenResult> {
+  const { data: link, error } = await supabaseAdmin
+    .from('magic_links')
+    .update({ used_at: new Date().toISOString() })
+    .eq('token', token)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .select('id, project_id, email, client_name')
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new AppError('Invalid or expired magic link', 401, 'INVALID_TOKEN');
+    }
+    throw new AppError('Database error', 500, 'DB_ERROR');
+  }
+
+  if (!link) {
+    throw new AppError('Invalid or expired magic link', 401, 'INVALID_TOKEN');
+  }
+
+  const portalToken = jwt.sign(
+    {
+      type: 'portal',
+      projectId: link.project_id,
+      email: link.email,
+      clientName: link.client_name ?? undefined,
+    },
+    env.jwtSecret,
+    { expiresIn: '7d' },
+  );
+
+  return { token: portalToken };
 }
