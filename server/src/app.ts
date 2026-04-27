@@ -17,11 +17,20 @@ app.use(cors({
 }));
 
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later.' } },
+}));
+
+// Tighter auth limiter applied before body parsing — prevents large-body floods from consuming parse resources
+app.use('/api/v1/auth', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts, please try again later.' } },
 }));
 
 app.use(requestId);
