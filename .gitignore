@@ -1,0 +1,37 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node
+server/node_modules/
+server/dist/
+server/build/
+server/logs/
+*.log
+
+# Flutter
+client/.dart_tool/
+client/.flutter-plugins
+client/.flutter-plugins-dependencies
+client/.packages
+client/build/
+client/android/
+client/ios/
+client/linux/
+client/macos/
+client/windows/
+client/web/flutter_service_worker.js
+client/pubspec.lock
+
+# FVM
+client/.fvm/flutter_sdk
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
