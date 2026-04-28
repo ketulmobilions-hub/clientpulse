@@ -1,14 +1,18 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../models/auth_user.dart';
+import 'auth_notifier.dart';
 
 part 'auth_state_provider.g.dart';
 
-// Stub: checks SharedPreferences for a JWT token.
-// Replaced by real auth logic in issue #8.
-// Note: tests must override this provider — real SharedPreferences calls
-// require platform channel setup that is absent in the test environment.
+// Tests can override isAuthenticatedProvider directly (router tests),
+// or override authServiceProvider to drive state through the full stack.
 @Riverpod(keepAlive: true)
 Future<bool> isAuthenticated(IsAuthenticatedRef ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getString('auth_token') != null;
+  final user = await ref.watch(authNotifierProvider.future);
+  return user != null;
+}
+
+@Riverpod(keepAlive: true)
+Future<AuthUser?> currentUser(CurrentUserRef ref) async {
+  return ref.watch(authNotifierProvider.future);
 }
