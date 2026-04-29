@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/auth_user.dart';
 import '../services/auth_service.dart';
@@ -17,9 +18,11 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<AuthUser> login(String email, String password) async {
     if (state.isLoading) throw StateError('Login already in progress');
+    if (state.hasError) throw StateError('Auth service unavailable');
+    // guard + AsyncLoading are synchronous — no concurrent caller can slip through.
     state = const AsyncLoading();
-    final authSvc = await ref.read(authServiceProvider.future);
     try {
+      final authSvc = await ref.read(authServiceProvider.future);
       final user = await authSvc.login(email, password);
       state = AsyncData(user);
       return user;
@@ -28,6 +31,41 @@ class AuthNotifier extends _$AuthNotifier {
       // from flashing /loading on every wrong-password attempt.
       state = const AsyncData(null);
       Error.throwWithStackTrace(e, st);
+    }
+    throw StateError('unreachable');
+  }
+
+  Future<void> register(
+    String email,
+    String password,
+    String name,
+    String workspaceName,
+  ) async {
+    if (state.isLoading) throw StateError('Auth already in progress');
+    if (state.hasError) throw StateError('Auth service unavailable');
+    state = const AsyncLoading();
+    // authSvc is late-final: Error.throwWithStackTrace (Never) in catch guarantees
+    // it is assigned before the second try block is reached.
+    late final AuthService authSvc;
+    try {
+      authSvc = await ref.read(authServiceProvider.future);
+      await authSvc.register(email, password, name, workspaceName);
+    } catch (e, st) {
+      state = const AsyncData(null);
+      Error.throwWithStackTrace(e, st);
+    }
+    // Register succeeded — auto-login. Failure here is a distinct error: the
+    // account was created but the session could not be established.
+    try {
+      final user = await authSvc.login(email, password);
+      state = AsyncData(user);
+    } catch (e, st) {
+      if (kDebugMode) debugPrint('Auto-login after register failed: $e');
+      state = const AsyncData(null);
+      Error.throwWithStackTrace(
+        const AuthServiceException('Account created. Please sign in.'),
+        st,
+      );
     }
   }
 

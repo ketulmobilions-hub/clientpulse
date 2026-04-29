@@ -36,20 +36,22 @@ class AuthService {
         '/auth/login',
         data: {'email': email, 'password': password},
       );
-      return await _handleAuthResponse(response.data!);
+      final body = response.data;
+      if (body == null) throw AuthServiceException('Empty response from server');
+      return await _handleAuthResponse(body);
     } on DioException catch (e) {
       throw AuthServiceException(_extractError(e));
     }
   }
 
-  Future<AuthUser> register(
+  Future<void> register(
     String email,
     String password,
     String name,
     String workspaceName,
   ) async {
     try {
-      final response = await _dio.post<Map<String, dynamic>>(
+      await _dio.post<Map<String, dynamic>>(
         '/auth/register',
         data: {
           'email': email,
@@ -58,7 +60,6 @@ class AuthService {
           'workspaceName': workspaceName,
         },
       );
-      return await _handleAuthResponse(response.data!);
     } on DioException catch (e) {
       throw AuthServiceException(_extractError(e));
     }
@@ -98,7 +99,7 @@ class AuthService {
 
   /// Returns true if [token] has an `exp` claim in the past.
   /// Tokens without an `exp` claim are treated as non-expiring.
-  // Buffer compensates for device clock running slightly ahead of server clock.
+  // Buffer compensates for device clock running slightly behind the server clock.
   static const _clockSkewSeconds = 30;
 
   static bool isTokenExpired(String token) {
@@ -132,6 +133,10 @@ class AuthService {
     }
   }
 
+  // Known limitation: on Flutter Web, SharedPreferences maps to localStorage,
+  // which is JS-readable. Tokens are therefore vulnerable to XSS. Mitigation:
+  // enforce a strict Content-Security-Policy. Long-term fix: use HttpOnly cookies
+  // issued by the backend instead.
   Future<void> _saveSession(String token, AuthUser user) async {
     await Future.wait([
       _prefs.setString(_tokenKey, token),
@@ -150,6 +155,7 @@ class AuthService {
       if (error is Map<String, dynamic>) {
         return error['message']?.toString() ?? 'Unknown error';
       }
+      if (error is String) return error;
     }
     return e.message ?? 'Network error';
   }
