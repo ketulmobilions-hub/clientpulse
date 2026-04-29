@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import { getWorkspace, createWorkspace, updateWorkspace } from '../services/workspace.service';
 import { inviteMember, listMembers, removeMember } from '../services/member.service';
+import { deleteLogoByUrl } from '../services/storage.service';
 
 const router = Router();
 
@@ -56,8 +57,22 @@ router.patch('/', async (req: Request, res: Response, next: NextFunction): Promi
       );
     }
 
+    // Capture old logo URL before update so we can clean it up from storage.
+    let oldLogoUrl: string | null = null;
+    if (updates.logo_url !== undefined) {
+      const current = await getWorkspace(req.user!.id);
+      oldLogoUrl = current.logo_url ?? null;
+    }
+
     const workspace = await updateWorkspace(req.user!.id, updates);
     res.json({ success: true, data: { workspace } });
+
+    // Non-fatal async cleanup: delete replaced logo from Supabase Storage.
+    if (oldLogoUrl && oldLogoUrl !== (updates.logo_url ?? null)) {
+      deleteLogoByUrl(oldLogoUrl).catch((err: Error) => {
+        console.error('[storage] Failed to delete old logo:', err.message);
+      });
+    }
   } catch (err) {
     next(err);
   }

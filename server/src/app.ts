@@ -55,6 +55,15 @@ app.use('/api/v1/workspace/invite', rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many invite attempts, please try again later.' } },
 }));
 
+// Storage signed-URL limiter — each call allocates a Supabase Storage upload slot
+app.use('/api/v1/storage', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many upload requests, please try again later.' } },
+}));
+
 app.use(requestId);
 app.use(express.json({ limit: '10kb' }));
 
