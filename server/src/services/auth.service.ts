@@ -38,13 +38,20 @@ export async function registerUser(
 
   const authUserId = authData.user.id;
 
+  const slug = workspaceName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 63);
+
   const { data: workspace, error: wsError } = await supabaseAdmin
     .from('workspaces')
-    .insert({ name: workspaceName })
+    .insert({ name: workspaceName, slug, owner_id: authUserId })
     .select('id')
     .single();
 
   if (wsError || !workspace) {
+    console.error('[AUTH] Workspace insert failed:', wsError?.message);
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUserId);
     if (deleteError) {
       console.error('[AUTH] Rollback failed — orphaned auth user:', authUserId, deleteError.message);
@@ -59,6 +66,7 @@ export async function registerUser(
     .single();
 
   if (userError || !user) {
+    console.error('[AUTH] User insert failed:', userError?.message);
     const { error: wsDeleteError } = await supabaseAdmin
       .from('workspaces')
       .delete()
