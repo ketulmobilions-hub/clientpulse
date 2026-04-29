@@ -3,9 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:clientpulse/shared/models/auth_user.dart';
+import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/providers/auth_state_provider.dart';
 import 'package:clientpulse/core/router/app_router.dart';
 import '../../helpers/router_test_helpers.dart';
+
+// Stable notifier for loading-state tests that build their own containers.
+class _StableAuthNotifier extends AuthNotifier {
+  @override
+  Future<AuthUser?> build() async => null;
+}
 
 void main() {
   group('unauthenticated', () {
@@ -163,6 +171,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           isAuthenticatedProvider.overrideWith((_) => completer.future),
+          authNotifierProvider.overrideWith(() => _StableAuthNotifier()),
         ],
       );
       addTearDown(container.dispose);
@@ -191,6 +200,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           isAuthenticatedProvider.overrideWith((_) => completer.future),
+          authNotifierProvider.overrideWith(() => _StableAuthNotifier()),
         ],
       );
       addTearDown(container.dispose);
