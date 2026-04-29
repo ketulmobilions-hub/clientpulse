@@ -1,26 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { AppError } from '../middleware/errorHandler';
 import { requireAuth } from '../middleware/auth.middleware';
+import { AppError } from '../middleware/errorHandler';
+import { validateString } from '../utils/validation';
 import { registerUser, loginUser, generateMagicLink, verifyMagicLink } from '../services/auth.service';
 
 const router = Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function validateString(value: unknown, field: string, min = 1, max = 100): string {
-  if (typeof value !== 'string') {
-    throw new AppError(`${field} must be a string`, 400, 'VALIDATION_ERROR');
-  }
-  const trimmed = value.trim();
-  if (trimmed.length < min) {
-    throw new AppError(`${field} is required`, 400, 'VALIDATION_ERROR');
-  }
-  if (trimmed.length > max) {
-    throw new AppError(`${field} must be at most ${max} characters`, 400, 'VALIDATION_ERROR');
-  }
-  return trimmed;
-}
 
 router.post('/register', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
