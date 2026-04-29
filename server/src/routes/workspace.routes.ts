@@ -3,6 +3,7 @@ import { AppError } from '../middleware/errorHandler';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import { getWorkspace, createWorkspace, updateWorkspace } from '../services/workspace.service';
+import { inviteMember, listMembers, removeMember } from '../services/member.service';
 
 const router = Router();
 
@@ -61,5 +62,51 @@ router.patch('/', async (req: Request, res: Response, next: NextFunction): Promi
     next(err);
   }
 });
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+router.post('/invite', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const email = validateString(req.body?.email, 'email', 1, 254);
+    // Fix #9: validate email format
+    if (!EMAIL_RE.test(email)) {
+      throw new AppError('Invalid email address', 400, 'VALIDATION_ERROR');
+    }
+    const role = req.body?.role;
+    if (role !== 'admin' && role !== 'member') {
+      throw new AppError('role must be admin or member', 400, 'VALIDATION_ERROR');
+    }
+    const member = await inviteMember(req.user!.id, email, role);
+    res.status(201).json({ success: true, data: { member } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/members', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const members = await listMembers(req.user!.id);
+    res.json({ success: true, data: { members } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete(
+  '/members/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // Fix #12: lowercase before test so uppercase UUIDs (valid per RFC 4122) are accepted
+      const memberId = String(req.params.id).toLowerCase();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(memberId)) {
+        throw new AppError('Invalid member id', 400, 'VALIDATION_ERROR');
+      }
+      await removeMember(req.user!.id, memberId);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 export default router;
