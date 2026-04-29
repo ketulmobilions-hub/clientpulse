@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../shared/providers/project_provider.dart';
-import '../widgets/create_project_dialog.dart';
 import '../widgets/project_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -12,25 +13,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  void _showCreateDialog() {
-    showDialog(
-      context: context,
-      // Prevent barrier dismiss while create is in-flight to avoid orphaned requests.
-      barrierDismissible: false,
-      builder: (_) => CreateProjectDialog(
-        onCreated: (_) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Project created'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(projectNotifierProvider);
@@ -38,7 +20,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Projects')),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateDialog,
+        onPressed: () => context.pushNamed(RouteNames.createProject),
         child: const Icon(Icons.add),
       ),
       body: projectsAsync.when(

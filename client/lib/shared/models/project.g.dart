@@ -16,6 +16,8 @@ _$ProjectImpl _$$ProjectImplFromJson(Map<String, dynamic> json) =>
       clientEmail: json['client_email'] as String,
       status: $enumDecode(_$ProjectStatusEnumMap, json['status']),
       shareToken: json['share_token'] as String?,
+      startDate: _localDateFromJson(json['start_date']),
+      expectedEndDate: _localDateFromJson(json['expected_end_date']),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -30,6 +32,8 @@ Map<String, dynamic> _$$ProjectImplToJson(_$ProjectImpl instance) =>
       'client_email': instance.clientEmail,
       'status': _$ProjectStatusEnumMap[instance.status]!,
       'share_token': instance.shareToken,
+      'start_date': _localDateToJson(instance.startDate),
+      'expected_end_date': _localDateToJson(instance.expectedEndDate),
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };

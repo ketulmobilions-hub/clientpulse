@@ -5,6 +5,8 @@ final class RouteNames {
   static const register = 'register';
   static const dashboard = 'dashboard';
   static const projectDetail = 'project-detail';
+  static const createProject = 'create-project';
+  static const editProject = 'edit-project';
   static const settings = 'settings';
   static const portal = 'portal';
 }

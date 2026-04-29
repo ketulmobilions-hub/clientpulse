@@ -32,6 +32,16 @@ mixin _$Project {
   ProjectStatus get status => throw _privateConstructorUsedError;
   @JsonKey(name: 'share_token')
   String? get shareToken => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'start_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  DateTime? get startDate => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'expected_end_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  DateTime? get expectedEndDate => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'updated_at')
@@ -56,6 +66,16 @@ abstract class $ProjectCopyWith<$Res> {
       @JsonKey(name: 'client_email') String clientEmail,
       ProjectStatus status,
       @JsonKey(name: 'share_token') String? shareToken,
+      @JsonKey(
+          name: 'start_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      DateTime? startDate,
+      @JsonKey(
+          name: 'expected_end_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      DateTime? expectedEndDate,
       @JsonKey(name: 'created_at') DateTime createdAt,
       @JsonKey(name: 'updated_at') DateTime updatedAt});
 }
@@ -81,6 +101,8 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
     Object? clientEmail = null,
     Object? status = null,
     Object? shareToken = freezed,
+    Object? startDate = freezed,
+    Object? expectedEndDate = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -117,6 +139,14 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
           ? _value.shareToken
           : shareToken // ignore: cast_nullable_to_non_nullable
               as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      expectedEndDate: freezed == expectedEndDate
+          ? _value.expectedEndDate
+          : expectedEndDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -145,6 +175,16 @@ abstract class _$$ProjectImplCopyWith<$Res> implements $ProjectCopyWith<$Res> {
       @JsonKey(name: 'client_email') String clientEmail,
       ProjectStatus status,
       @JsonKey(name: 'share_token') String? shareToken,
+      @JsonKey(
+          name: 'start_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      DateTime? startDate,
+      @JsonKey(
+          name: 'expected_end_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      DateTime? expectedEndDate,
       @JsonKey(name: 'created_at') DateTime createdAt,
       @JsonKey(name: 'updated_at') DateTime updatedAt});
 }
@@ -168,6 +208,8 @@ class __$$ProjectImplCopyWithImpl<$Res>
     Object? clientEmail = null,
     Object? status = null,
     Object? shareToken = freezed,
+    Object? startDate = freezed,
+    Object? expectedEndDate = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -204,6 +246,14 @@ class __$$ProjectImplCopyWithImpl<$Res>
           ? _value.shareToken
           : shareToken // ignore: cast_nullable_to_non_nullable
               as String?,
+      startDate: freezed == startDate
+          ? _value.startDate
+          : startDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      expectedEndDate: freezed == expectedEndDate
+          ? _value.expectedEndDate
+          : expectedEndDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -228,6 +278,16 @@ class _$ProjectImpl implements _Project {
       @JsonKey(name: 'client_email') required this.clientEmail,
       required this.status,
       @JsonKey(name: 'share_token') this.shareToken,
+      @JsonKey(
+          name: 'start_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      this.startDate,
+      @JsonKey(
+          name: 'expected_end_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      this.expectedEndDate,
       @JsonKey(name: 'created_at') required this.createdAt,
       @JsonKey(name: 'updated_at') required this.updatedAt});
 
@@ -255,6 +315,18 @@ class _$ProjectImpl implements _Project {
   @JsonKey(name: 'share_token')
   final String? shareToken;
   @override
+  @JsonKey(
+      name: 'start_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  final DateTime? startDate;
+  @override
+  @JsonKey(
+      name: 'expected_end_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  final DateTime? expectedEndDate;
+  @override
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
   @override
@@ -263,7 +335,7 @@ class _$ProjectImpl implements _Project {
 
   @override
   String toString() {
-    return 'Project(id: $id, workspaceId: $workspaceId, name: $name, description: $description, clientName: $clientName, clientEmail: $clientEmail, status: $status, shareToken: $shareToken, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Project(id: $id, workspaceId: $workspaceId, name: $name, description: $description, clientName: $clientName, clientEmail: $clientEmail, status: $status, shareToken: $shareToken, startDate: $startDate, expectedEndDate: $expectedEndDate, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -284,6 +356,10 @@ class _$ProjectImpl implements _Project {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.shareToken, shareToken) ||
                 other.shareToken == shareToken) &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.expectedEndDate, expectedEndDate) ||
+                other.expectedEndDate == expectedEndDate) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -302,6 +378,8 @@ class _$ProjectImpl implements _Project {
       clientEmail,
       status,
       shareToken,
+      startDate,
+      expectedEndDate,
       createdAt,
       updatedAt);
 
@@ -329,6 +407,16 @@ abstract class _Project implements Project {
           @JsonKey(name: 'client_email') required final String clientEmail,
           required final ProjectStatus status,
           @JsonKey(name: 'share_token') final String? shareToken,
+          @JsonKey(
+              name: 'start_date',
+              fromJson: _localDateFromJson,
+              toJson: _localDateToJson)
+          final DateTime? startDate,
+          @JsonKey(
+              name: 'expected_end_date',
+              fromJson: _localDateFromJson,
+              toJson: _localDateToJson)
+          final DateTime? expectedEndDate,
           @JsonKey(name: 'created_at') required final DateTime createdAt,
           @JsonKey(name: 'updated_at') required final DateTime updatedAt}) =
       _$ProjectImpl;
@@ -355,6 +443,18 @@ abstract class _Project implements Project {
   @override
   @JsonKey(name: 'share_token')
   String? get shareToken;
+  @override
+  @JsonKey(
+      name: 'start_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  DateTime? get startDate;
+  @override
+  @JsonKey(
+      name: 'expected_end_date',
+      fromJson: _localDateFromJson,
+      toJson: _localDateToJson)
+  DateTime? get expectedEndDate;
   @override
   @JsonKey(name: 'created_at')
   DateTime get createdAt;

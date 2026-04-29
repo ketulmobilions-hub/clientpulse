@@ -8,6 +8,7 @@ import 'package:clientpulse/features/auth/presentation/screens/login_screen.dart
 import 'package:clientpulse/features/auth/presentation/screens/register_screen.dart';
 import 'package:clientpulse/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:clientpulse/features/project/presentation/screens/project_detail_screen.dart';
+import 'package:clientpulse/features/project/presentation/screens/create_edit_project_screen.dart';
 import 'package:clientpulse/features/settings/presentation/screens/settings_screen.dart';
 import 'package:clientpulse/features/portal/presentation/screens/portal_screen.dart';
 
@@ -77,12 +78,28 @@ GoRouter router(RouterRef ref) {
         name: RouteNames.dashboard,
         builder: (_, __) => const DashboardScreen(),
       ),
+      // /projects/new must be listed BEFORE /projects/:id to prevent
+      // GoRouter from matching "new" as an :id path parameter.
+      GoRoute(
+        path: '/projects/new',
+        name: RouteNames.createProject,
+        builder: (_, __) => const CreateEditProjectScreen(),
+      ),
       GoRoute(
         path: '/projects/:id',
         name: RouteNames.projectDetail,
         builder: (_, state) => ProjectDetailScreen(
           projectId: state.pathParameters['id']!,
         ),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: RouteNames.editProject,
+            builder: (_, state) => CreateEditProjectScreen(
+              projectId: state.pathParameters['id'],
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/settings',
