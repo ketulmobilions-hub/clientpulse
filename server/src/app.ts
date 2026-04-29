@@ -46,6 +46,15 @@ app.use('/api/v1/portal', rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later.' } },
 }));
 
+// Fix #10: invite limiter — each call creates a Supabase Auth user + sends a Resend email
+app.use('/api/v1/workspace/invite', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many invite attempts, please try again later.' } },
+}));
+
 app.use(requestId);
 app.use(express.json({ limit: '10kb' }));
 
