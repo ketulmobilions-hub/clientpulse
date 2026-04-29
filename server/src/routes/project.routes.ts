@@ -13,6 +13,26 @@ import {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validateDate(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !DATE_RE.test(value)) {
+    throw new AppError(`${field} must be a date in YYYY-MM-DD format`, 400, 'VALIDATION_ERROR');
+  }
+  // Guard against calendar-invalid dates like Feb 30 or month 13.
+  // Append T00:00:00Z to force UTC parse, then verify the ISO string round-trips.
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+    throw new AppError(`${field} is not a valid calendar date`, 400, 'VALIDATION_ERROR');
+  }
+  return value;
+}
+
+function validateDateOrdering(start: string | undefined | null, end: string | undefined | null): void {
+  if (start && end && end < start) {
+    throw new AppError('expected_end_date must be on or after start_date', 400, 'VALIDATION_ERROR');
+  }
+}
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
@@ -47,15 +67,26 @@ router.post('/', async (req: Request, res: Response, next: NextFunction): Promis
     validateEmail(client_email, 'client_email');
 
     const description =
-      req.body?.description !== undefined
+      req.body?.description !== undefined && req.body.description !== null
         ? validateString(req.body.description, 'description', 1, 1000)
         : undefined;
+
+    const start_date =
+      req.body?.start_date !== undefined ? validateDate(req.body.start_date, 'start_date') : undefined;
+    const expected_end_date =
+      req.body?.expected_end_date !== undefined
+        ? validateDate(req.body.expected_end_date, 'expected_end_date')
+        : undefined;
+
+    validateDateOrdering(start_date, expected_end_date);
 
     const project = await createProject(req.user!.id, {
       name,
       description,
       client_name,
       client_email,
+      start_date,
+      expected_end_date,
     });
     res.status(201).json({ success: true, data: { project } });
   } catch (err) {
@@ -107,6 +138,21 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction): Pr
       }
       updates.status = req.body.status;
     }
+    if ('start_date' in (req.body ?? {})) {
+      updates.start_date =
+        req.body.start_date === null ? null : validateDate(req.body.start_date, 'start_date');
+    }
+    if ('expected_end_date' in (req.body ?? {})) {
+      updates.expected_end_date =
+        req.body.expected_end_date === null
+          ? null
+          : validateDate(req.body.expected_end_date, 'expected_end_date');
+    }
+
+    validateDateOrdering(
+      'start_date' in updates ? updates.start_date ?? undefined : undefined,
+      'expected_end_date' in updates ? updates.expected_end_date ?? undefined : undefined,
+    );
 
     const project = await updateProject(req.params['id'] as string, req.user!.id, updates);
     res.json({ success: true, data: { project } });

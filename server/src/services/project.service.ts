@@ -2,7 +2,7 @@ import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
 
 const PROJECT_COLUMNS =
-  'id, workspace_id, name, description, client_name, client_email, status, share_token, created_at, updated_at';
+  'id, workspace_id, name, description, client_name, client_email, status, share_token, start_date, expected_end_date, created_at, updated_at';
 
 // Must be kept in sync with PROJECT_COLUMNS and the projects table schema.
 // Run `supabase gen types typescript` to regenerate DB types when schema changes.
@@ -15,6 +15,8 @@ export interface Project {
   client_email: string;
   status: 'active' | 'completed' | 'archived';
   share_token: string;
+  start_date: string | null;
+  expected_end_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -87,6 +89,8 @@ export async function createProject(
     description?: string;
     client_name: string;
     client_email: string;
+    start_date?: string | null;
+    expected_end_date?: string | null;
   },
 ): Promise<Project> {
   const workspaceId = await getWorkspaceIdForUser(userId);
@@ -100,6 +104,8 @@ export async function createProject(
       description: input.description?.trim() || null,
       client_name: input.client_name,
       client_email: input.client_email,
+      start_date: input.start_date ?? null,
+      expected_end_date: input.expected_end_date ?? null,
     })
     .select(PROJECT_COLUMNS)
     .single();
@@ -124,6 +130,8 @@ export async function updateProject(
     client_name?: string;
     client_email?: string;
     status?: ProjectStatus;
+    start_date?: string | null;
+    expected_end_date?: string | null;
   },
 ): Promise<Project> {
   // Runtime status guard — TypeScript types are erased; callers beyond the route layer exist
@@ -141,6 +149,8 @@ export async function updateProject(
   if (updates.client_name !== undefined) payload.client_name = updates.client_name;
   if (updates.client_email !== undefined) payload.client_email = updates.client_email;
   if (updates.status !== undefined) payload.status = updates.status;
+  if ('start_date' in updates) payload.start_date = updates.start_date ?? null;
+  if ('expected_end_date' in updates) payload.expected_end_date = updates.expected_end_date ?? null;
 
   if (Object.keys(payload).length === 0) {
     throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
