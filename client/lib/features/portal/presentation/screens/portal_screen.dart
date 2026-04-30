@@ -49,139 +49,152 @@ class _PortalContent extends ConsumerWidget {
 
     return Scaffold(
       appBar: PortalBrandingHeader(workspace: overview.workspace),
-      body: CustomScrollView(
-        slivers: [
-          // Project header
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(overview.project.name,
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final hPad = constraints.maxWidth < 600 ? 16.0 : 24.0;
+          final sidePad = constraints.maxWidth > 720
+              ? (constraints.maxWidth - 720) / 2
+              : hPad;
+          final bottomInset = MediaQuery.of(context).padding.bottom;
+          return CustomScrollView(
+            slivers: [
+              // Project header
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('For ${overview.project.clientName}',
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: theme.colorScheme.outline)),
-                      const SizedBox(width: 8),
-                      _StatusBadge(status: overview.project.status),
+                      Text(overview.project.name,
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text('For ${overview.project.clientName}',
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(color: theme.colorScheme.outline)),
+                          _StatusBadge(status: overview.project.status),
+                        ],
+                      ),
+                      if (overview.project.description != null) ...[
+                        const SizedBox(height: 8),
+                        Text(overview.project.description!,
+                            style: theme.textTheme.bodyMedium),
+                      ],
                     ],
                   ),
-                  if (overview.project.description != null) ...[
-                    const SizedBox(height: 8),
-                    Text(overview.project.description!,
-                        style: theme.textTheme.bodyMedium),
-                  ],
+                ),
+              ),
+
+              // Milestone overview
+              if (hasMilestones)
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(sidePad, 24, sidePad, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: PortalMilestoneSection(
+                      milestones: overview.milestones,
+                      progress: overview.progress,
+                    ),
+                  ),
+                ),
+
+              // Updates section header
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(sidePad, 28, sidePad, 8),
+                sliver: SliverToBoxAdapter(
+                  child: Text('Updates',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                ),
+              ),
+
+              // Updates content — lazy via SliverList
+              ...updatesAsync.when(
+                loading: () => [
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
                 ],
-              ),
-            ),
-          ),
-
-          // Milestone overview
-          if (hasMilestones)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-              sliver: SliverToBoxAdapter(
-                child: PortalMilestoneSection(
-                  milestones: overview.milestones,
-                  progress: overview.progress,
-                ),
-              ),
-            ),
-
-          // Updates section header
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 28, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: Text('Updates',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600)),
-            ),
-          ),
-
-          // Updates content — lazy via SliverList
-          ...updatesAsync.when(
-            loading: () => [
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            ],
-            error: (_, __) => [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Text('Failed to load updates. Please try again.',
-                      style: TextStyle(color: theme.colorScheme.error)),
-                ),
-              ),
-            ],
-            data: (updatesState) {
-              if (updatesState.updates.isEmpty) {
-                return [
+                error: (_, __) => [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Center(
-                        child: Text('No updates yet.',
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(color: theme.colorScheme.outline)),
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: sidePad, vertical: 16),
+                      child: Text('Failed to load updates. Please try again.',
+                          style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   ),
-                ];
-              }
-              return [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverList.builder(
-                    itemCount: updatesState.updates.length,
-                    itemBuilder: (_, i) =>
-                        PortalUpdateCard(update: updatesState.updates[i]),
-                  ),
-                ),
-                if (updatesState.loadMoreError != null)
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: Text(
-                        'Failed to load more updates. Please try again.',
-                        style: TextStyle(color: theme.colorScheme.error),
+                ],
+                data: (updatesState) {
+                  if (updatesState.updates.isEmpty) {
+                    return [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
+                          child: Center(
+                            child: Text('No updates yet.',
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(color: theme.colorScheme.outline)),
+                          ),
+                        ),
+                      ),
+                    ];
+                  }
+                  return [
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: sidePad),
+                      sliver: SliverList.builder(
+                        itemCount: updatesState.updates.length,
+                        itemBuilder: (_, i) => PortalUpdateCard(
+                          key: ValueKey(updatesState.updates[i].id),
+                          update: updatesState.updates[i],
+                        ),
                       ),
                     ),
-                  ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  sliver: SliverToBoxAdapter(
-                    child: updatesState.isLoadingMore
-                        ? const Center(child: CircularProgressIndicator())
-                        : updatesState.hasMore
-                            ? Center(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    ref
-                                        .read(portalUpdatesNotifierProvider(token).notifier)
-                                        .loadMore()
-                                        .ignore();
-                                  },
-                                  child: const Text('Load more'),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
-                  ),
-                ),
-              ];
-            },
-          ),
+                    if (updatesState.loadMoreError != null)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(sidePad, 8, sidePad, 0),
+                        sliver: SliverToBoxAdapter(
+                          child: Text(
+                            'Failed to load more updates. Please try again.',
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
+                      ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      sliver: SliverToBoxAdapter(
+                        child: updatesState.isLoadingMore
+                            ? const Center(child: CircularProgressIndicator())
+                            : updatesState.hasMore
+                                ? Center(
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        ref
+                                            .read(portalUpdatesNotifierProvider(token).notifier)
+                                            .loadMore()
+                                            .ignore();
+                                      },
+                                      child: const Text('Load more'),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                      ),
+                    ),
+                  ];
+                },
+              ),
 
-          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-        ],
+              SliverPadding(padding: EdgeInsets.only(bottom: 32 + bottomInset)),
+            ],
+          );
+        },
       ),
     );
   }
@@ -194,12 +207,17 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use shade pairs for dark-mode-safe contrast (same pattern as StatusPill).
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final (bg, fg) = switch (status) {
-      PortalProjectStatus.active => (Colors.green.shade100, Colors.green.shade800),
-      PortalProjectStatus.completed => (Colors.blue.shade100, Colors.blue.shade800),
-      PortalProjectStatus.archived => (Colors.grey.shade200, Colors.grey.shade700),
-      PortalProjectStatus.unknown => (Colors.grey.shade200, Colors.grey.shade700),
+      PortalProjectStatus.active => dark
+          ? (Colors.green.shade900, Colors.green.shade200)
+          : (Colors.green.shade100, Colors.green.shade800),
+      PortalProjectStatus.completed => dark
+          ? (Colors.blue.shade900, Colors.blue.shade200)
+          : (Colors.blue.shade100, Colors.blue.shade800),
+      PortalProjectStatus.archived || PortalProjectStatus.unknown => dark
+          ? (Colors.grey.shade800, Colors.grey.shade300)
+          : (Colors.grey.shade200, Colors.grey.shade700),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

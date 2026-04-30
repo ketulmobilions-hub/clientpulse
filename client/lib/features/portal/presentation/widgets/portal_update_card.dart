@@ -44,9 +44,12 @@ class _PortalUpdateCardState extends State<PortalUpdateCard> {
                           children: [
                             _CategoryChip(category: widget.update.category),
                             const SizedBox(width: 8),
-                            Text(timestamp,
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: theme.colorScheme.outline)),
+                            Flexible(
+                              child: Text(timestamp,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: theme.colorScheme.outline)),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -69,6 +72,11 @@ class _PortalUpdateCardState extends State<PortalUpdateCard> {
               child: MarkdownBody(
                 data: widget.update.body,
                 styleSheet: MarkdownStyleSheet.fromTheme(theme),
+                imageBuilder: (uri, title, alt) => Image.network(
+                  uri.toString(),
+                  fit: BoxFit.fitWidth,
+                  width: double.infinity,
+                ),
               ),
             ),
             if (widget.update.attachments.isNotEmpty) ...[
@@ -82,8 +90,7 @@ class _PortalUpdateCardState extends State<PortalUpdateCard> {
               ),
               ...widget.update.attachments.map(
                 (a) => ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.attach_file, size: 18),
+                  leading: const Icon(Icons.attach_file, size: 20),
                   title: Text(a.fileName,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(color: theme.colorScheme.primary)),
@@ -138,8 +145,6 @@ class _CategoryChip extends StatelessWidget {
         UpdateCategory.deliverable => const Color(0xFF0D9488),
         UpdateCategory.blocker => const Color(0xFFDC2626),
         UpdateCategory.inputNeeded => const Color(0xFFD97706),
-        // ignore: dead_code
-        _ => const Color(0xFF6B7280),
       };
 }
 
