@@ -20,7 +20,7 @@ export interface Update {
   title: string;
   body: string;
   status: 'draft' | 'published';
-  category: 'general' | 'milestone' | 'blocker';
+  category: 'progress' | 'milestone' | 'deliverable' | 'blocker' | 'input_needed';
   position: number;
   notification_sent_at: string | null;
   created_at: string;
@@ -51,7 +51,7 @@ export interface Comment {
 }
 
 export const VALID_UPDATE_STATUSES = ['draft', 'published'] as const;
-export const VALID_UPDATE_CATEGORIES = ['general', 'milestone', 'blocker'] as const;
+export const VALID_UPDATE_CATEGORIES = ['progress', 'milestone', 'deliverable', 'blocker', 'input_needed'] as const;
 
 const CONTEXT = 'update.service';
 
@@ -61,7 +61,9 @@ function stripDangerousHtml(content: string): string {
   return content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<\s*\/?\s*(iframe|object|embed)[^>]*>/gi, '')
-    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+    // Neutralise dangerous URI schemes in Markdown links — [text](scheme:...)
+    .replace(/(\[([^\]]*)\]\s*\(\s*)(javascript|vbscript|data):[^)]*(\))/gi, '$1#$4');
 }
 
 export async function createUpdate(
@@ -70,7 +72,7 @@ export async function createUpdate(
   input: {
     title: string;
     body: string;
-    category?: 'general' | 'milestone' | 'blocker';
+    category?: 'progress' | 'milestone' | 'deliverable' | 'blocker' | 'input_needed';
     status?: 'draft' | 'published';
   },
 ): Promise<Update> {
@@ -83,7 +85,7 @@ export async function createUpdate(
       author_id: userId,
       title: input.title,
       body: stripDangerousHtml(input.body),
-      category: input.category ?? 'general',
+      category: input.category ?? 'progress',
       status: input.status ?? 'draft',
     })
     .select(UPDATE_COLUMNS)
@@ -174,7 +176,7 @@ export async function editUpdate(
   changes: {
     title?: string;
     body?: string;
-    category?: 'general' | 'milestone' | 'blocker';
+    category?: 'progress' | 'milestone' | 'deliverable' | 'blocker' | 'input_needed';
     status?: 'draft' | 'published';
     position?: number;
   },

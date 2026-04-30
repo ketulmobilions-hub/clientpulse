@@ -31,7 +31,7 @@ projectUpdateRouter.post('/', async (req: Request, res: Response, next: NextFunc
     const title = validateString(req.body?.title, 'title', 1, 200);
     const body = validateString(req.body?.body, 'body', 1, 10000);
 
-    let category: 'general' | 'milestone' | 'blocker' | undefined;
+    let category: 'progress' | 'milestone' | 'deliverable' | 'blocker' | 'input_needed' | undefined;
     if (req.body?.category !== undefined) {
       if (!(VALID_UPDATE_CATEGORIES as readonly string[]).includes(req.body.category)) {
         throw new AppError(

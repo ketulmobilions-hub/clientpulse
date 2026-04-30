@@ -40,7 +40,7 @@ const UPDATE = {
   title: 'Week 1 Progress',
   body: 'Backend is done',
   status: 'draft',
-  category: 'general',
+  category: 'progress',
   position: 0,
   notification_sent_at: null,
   created_at: '2026-01-01T00:00:00Z',
@@ -123,6 +123,27 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .send({ ...validBody, category: 'milestone', status: 'published' });
     expect(res.status).toBe(201);
     expect(mockCreate).toHaveBeenCalledWith('user-1', VALID_UUID, expect.objectContaining({ category: 'milestone', status: 'published' }));
+  });
+
+  it('accepts all 5 new categories', async () => {
+    for (const category of REAL_CATEGORIES) {
+      jest.clearAllMocks();
+      restoreConstants();
+      mockCreate.mockResolvedValue({ ...UPDATE, category });
+      const res = await request(app)
+        .post(`/api/v1/projects/${VALID_UUID}/updates`)
+        .send({ ...validBody, category });
+      expect(res.status).toBe(201);
+    }
+  });
+
+  it('returns 400 VALIDATION_ERROR for legacy general category', async () => {
+    const res = await request(app)
+      .post(`/api/v1/projects/${VALID_UUID}/updates`)
+      .send({ ...validBody, category: 'general' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('propagates service NOT_FOUND', async () => {

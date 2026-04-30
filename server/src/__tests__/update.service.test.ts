@@ -28,7 +28,7 @@ const UPDATE_ROW = {
   title: 'Week 1',
   body: 'Progress on backend',
   status: 'draft',
-  category: 'general',
+  category: 'progress',
   position: 0,
   notification_sent_at: null,
   created_at: '2026-01-01T00:00:00Z',
@@ -136,7 +136,7 @@ describe('createUpdate', () => {
     expect(result).toEqual(UPDATE_ROW);
   });
 
-  it('defaults category to general and status to draft', async () => {
+  it('defaults category to progress and status to draft', async () => {
     const insertChain = makeInsertChain({ data: UPDATE_ROW, error: null });
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
@@ -145,7 +145,7 @@ describe('createUpdate', () => {
 
     await createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' });
     expect(insertChain.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ category: 'general', status: 'draft' }),
+      expect.objectContaining({ category: 'progress', status: 'draft' }),
     );
   });
 
@@ -164,6 +164,32 @@ describe('createUpdate', () => {
     expect(insertedBody).not.toContain('<script>');
     expect(insertedBody).toContain('Safe content');
     expect(insertedBody).toContain('more content');
+  });
+
+  it('strips dangerous URI schemes from Markdown links before insert', async () => {
+    const insertChain = makeInsertChain({ data: UPDATE_ROW, error: null });
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
+      .mockReturnValueOnce(insertChain);
+
+    await createUpdate(USER_ID, PROJECT_ID, {
+      title: 'T',
+      body: [
+        '[js](javascript:alert(1))',
+        '[vbs](vbscript:msgbox(1))',
+        '[data](data:text/html,<h1>x</h1>)',
+        '[safe](https://example.com)',
+      ].join(' '),
+    });
+    const insertedBody = (insertChain.insert as jest.Mock).mock.calls[0][0].body as string;
+    expect(insertedBody).not.toContain('javascript:');
+    expect(insertedBody).not.toContain('vbscript:');
+    expect(insertedBody).not.toContain('data:');
+    expect(insertedBody).toContain('[js](#)');
+    expect(insertedBody).toContain('[vbs](#)');
+    expect(insertedBody).toContain('[data](#)');
+    expect(insertedBody).toContain('[safe](https://example.com)');
   });
 
   it('throws NOT_FOUND when project not in workspace (PGRST116)', async () => {
