@@ -42,8 +42,8 @@ class ApiService {
     );
   }
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? params}) =>
-      _dio.get(path, queryParameters: params);
+  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? params, CancelToken? cancelToken}) =>
+      _dio.get(path, queryParameters: params, cancelToken: cancelToken);
 
   Future<Response<T>> post<T>(String path, {Object? data}) =>
       _dio.post(path, data: data);
