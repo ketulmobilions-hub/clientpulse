@@ -25,6 +25,7 @@ export interface Update {
   notification_sent_at: string | null;
   created_at: string;
   updated_at: string;
+  attachment_count?: number;
 }
 
 export interface Attachment {
@@ -106,7 +107,7 @@ export async function listUpdates(userId: string, projectId: string): Promise<Up
   // migration, add .is('deleted_at', null) here to match project.service.ts pattern.
   const { data, error } = await supabaseAdmin
     .from('updates')
-    .select(UPDATE_COLUMNS)
+    .select(`${UPDATE_COLUMNS}, attachments(count)`)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
@@ -115,7 +116,12 @@ export async function listUpdates(userId: string, projectId: string): Promise<Up
     throw new AppError('Failed to fetch updates', 500, 'DB_ERROR');
   }
 
-  return (data ?? []) as Update[];
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const { attachments, ...rest } = row;
+    const countEntry = (attachments as Array<{ count: number | string }> | null)?.[0];
+    const n = countEntry !== undefined ? Number(countEntry.count) : NaN;
+    return { ...rest, attachment_count: Number.isFinite(n) ? n : 0 } as Update;
+  });
 }
 
 export async function getUpdate(

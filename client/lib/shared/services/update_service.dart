@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import '../models/update.dart';
@@ -38,6 +39,29 @@ class UpdateService {
         throw const UpdateServiceException('Unexpected response format');
       }
       return Update.fromJson(update);
+    } on DioException catch (e) {
+      throw UpdateServiceException(_extractMessage(e));
+    } on UpdateServiceException {
+      rethrow;
+    } catch (e) {
+      throw UpdateServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<List<Update>> listUpdates(String projectId) async {
+    try {
+      final res = await _api.get<Map<String, dynamic>>(
+        '/projects/$projectId/updates',
+      );
+      final data = _unwrapData(res.data);
+      final updates = data['updates'];
+      if (updates is! List) throw const UpdateServiceException('Unexpected response format');
+      return updates.map((u) {
+        if (u is! Map<String, dynamic>) {
+          throw const UpdateServiceException('Unexpected element in updates list');
+        }
+        return Update.fromJson(u);
+      }).toList();
     } on DioException catch (e) {
       throw UpdateServiceException(_extractMessage(e));
     } on UpdateServiceException {
@@ -118,11 +142,18 @@ class UpdateService {
     List<int> bytes,
     String mimeType,
   ) async {
-    final response = await http.put(
-      Uri.parse(signedUrl),
-      headers: {'Content-Type': mimeType},
-      body: bytes,
-    );
+    final http.Response response;
+    try {
+      response = await http
+          .put(
+            Uri.parse(signedUrl),
+            headers: {'Content-Type': mimeType},
+            body: bytes,
+          )
+          .timeout(const Duration(minutes: 5));
+    } on TimeoutException {
+      throw const UpdateServiceException('Upload timed out after 5 minutes');
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final detail = response.body.isNotEmpty ? ': ${response.body}' : '';
       throw UpdateServiceException('Upload failed (${response.statusCode})$detail');
