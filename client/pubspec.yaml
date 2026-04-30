@@ -1,0 +1,39 @@
+name: clientpulse
+description: "Client update portal — Flutter Web app."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.3
+  go_router: ^13.2.0
+  dio: ^5.7.0
+  flutter_markdown: ^0.7.3
+  shared_preferences: ^2.2.3
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  injectable: ^2.4.2
+  get_it: ^7.6.7
+  file_picker: ^8.0.0
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.9
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  injectable_generator: ^2.6.1
+  riverpod_generator: ^2.4.0
+
+flutter:
+  uses-material-design: true
