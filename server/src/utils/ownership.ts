@@ -1,25 +1,57 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
 
-// Single workspace per user is an enforced invariant (one workspace per agency owner).
-// limit(1) mirrors project.service.ts — consistent pattern across services.
+// Resolves the workspace for a user — either as the workspace owner or as an invited member.
+// Owner path: workspaces.owner_id = userId.
+// Member path: users.id = userId → workspace_id (for users with role 'admin' | 'member').
 export async function getWorkspaceIdForUser(userId: string, context: string): Promise<string> {
-  const { data, error } = await supabaseAdmin
+  const { data: ownerData, error: ownerError } = await supabaseAdmin
     .from('workspaces')
     .select('id')
     .eq('owner_id', userId)
     .is('deleted_at', null)
     .limit(1);
 
-  if (error) {
-    console.error(`[${context}] getWorkspaceIdForUser DB error:`, error);
+  if (ownerError) {
+    console.error(`[${context}] getWorkspaceIdForUser owner lookup DB error:`, ownerError);
     throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
   }
-  if (!data || data.length === 0) {
+  if (ownerData && ownerData.length > 0) {
+    return (ownerData[0] as { id: string }).id;
+  }
+
+  // Not an owner — check if the user is an invited member.
+  const { data: memberData, error: memberError } = await supabaseAdmin
+    .from('users')
+    .select('workspace_id')
+    .eq('id', userId)
+    .maybeSingle<{ workspace_id: string }>();
+
+  if (memberError) {
+    console.error(`[${context}] getWorkspaceIdForUser member lookup DB error:`, memberError);
+    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+  }
+  if (!memberData) {
     throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
   }
 
-  return (data[0] as { id: string }).id;
+  // Verify the workspace is still active (not soft-deleted).
+  const { data: wsData, error: wsError } = await supabaseAdmin
+    .from('workspaces')
+    .select('id')
+    .eq('id', memberData.workspace_id)
+    .is('deleted_at', null)
+    .maybeSingle<{ id: string }>();
+
+  if (wsError) {
+    console.error(`[${context}] getWorkspaceIdForUser workspace verify DB error:`, wsError);
+    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+  }
+  if (!wsData) {
+    throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
+  }
+
+  return wsData.id;
 }
 
 export async function assertProjectOwnership(

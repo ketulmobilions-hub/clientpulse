@@ -229,6 +229,132 @@ export async function editUpdate(
   return data as Update;
 }
 
+export async function listComments(userId: string, updateId: string): Promise<Comment[]> {
+  const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
+  const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
+
+  // #2: projectIds.length === 0 guard is intentional and consistent with editUpdate/deleteUpdate.
+  // It avoids an empty .in() call (which PostgREST may reject) at the cost of a slight timing
+  // difference vs. the normal not-found path. Auth is required, so the attack surface is limited.
+  if (projectIds.length === 0) {
+    throw new AppError('Update not found', 404, 'NOT_FOUND');
+  }
+
+  // #1: Agency can comment on updates of any status (draft or published) — they own the content
+  // and use comments for internal review. Client portal restricts to published only.
+  const { data: updateRow, error: updateError } = await supabaseAdmin
+    .from('updates')
+    .select('id')
+    .eq('id', updateId)
+    .in('project_id', projectIds)
+    .single<{ id: string }>();
+
+  if (updateError || !updateRow) {
+    if (!updateError || updateError.code === 'PGRST116') {
+      throw new AppError('Update not found', 404, 'NOT_FOUND');
+    }
+    console.error('[update.service] listComments update lookup DB error:', updateError);
+    throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('comments')
+    .select(COMMENT_COLUMNS)
+    .eq('update_id', updateId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('[update.service] listComments DB error:', error);
+    throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+  }
+
+  return (data ?? []) as Comment[];
+}
+
+export async function createAgencyComment(
+  userId: string,
+  updateId: string,
+  input: { body: string; parent_id?: string },
+): Promise<Comment> {
+  const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
+  const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
+
+  if (projectIds.length === 0) {
+    throw new AppError('Update not found', 404, 'NOT_FOUND');
+  }
+
+  // Agency can comment on any owned update regardless of status (see listComments note above).
+  const { data: updateRow, error: updateError } = await supabaseAdmin
+    .from('updates')
+    .select('id')
+    .eq('id', updateId)
+    .in('project_id', projectIds)
+    .single<{ id: string }>();
+
+  if (updateError || !updateRow) {
+    if (!updateError || updateError.code === 'PGRST116') {
+      throw new AppError('Update not found', 404, 'NOT_FOUND');
+    }
+    console.error('[update.service] createAgencyComment update lookup DB error:', updateError);
+    throw new AppError('Database error', 500, 'DB_ERROR');
+  }
+
+  if (input.parent_id !== undefined) {
+    const { data: parentRow, error: parentError } = await supabaseAdmin
+      .from('comments')
+      .select('id, parent_id')
+      .eq('id', input.parent_id)
+      .eq('update_id', updateId)
+      .single<{ id: string; parent_id: string | null }>();
+
+    if (parentError || !parentRow) {
+      if (!parentError || parentError.code === 'PGRST116') {
+        throw new AppError('Parent comment not found', 404, 'NOT_FOUND');
+      }
+      console.error('[update.service] createAgencyComment parent lookup DB error:', parentError);
+      throw new AppError('Database error', 500, 'DB_ERROR');
+    }
+
+    if (parentRow.parent_id !== null) {
+      throw new AppError('Replies can only be made to top-level comments', 400, 'VALIDATION_ERROR');
+    }
+  }
+
+  // #5: Resolve author_name from users table. Log and use a safe fallback on any DB failure
+  // rather than exposing the raw userId UUID as author_name in stored comments.
+  const { data: userRow, error: userError } = await supabaseAdmin
+    .from('users')
+    .select('name, email')
+    .eq('id', userId)
+    .single<{ name: string | null; email: string }>();
+
+  if (userError && userError.code !== 'PGRST116') {
+    console.error('[update.service] createAgencyComment user lookup DB error:', userError);
+  }
+
+  const authorName = userRow?.name ?? userRow?.email ?? 'Team Member';
+
+  const { data: comment, error: insertError } = await supabaseAdmin
+    .from('comments')
+    .insert({
+      update_id: updateId,
+      author_type: 'agency',
+      author_id: userId,
+      author_name: stripDangerousHtml(authorName),
+      body: stripDangerousHtml(input.body),
+      parent_id: input.parent_id ?? null,
+    })
+    .select(COMMENT_COLUMNS)
+    .single();
+
+  if (insertError || !comment) {
+    console.error('[update.service] createAgencyComment insert DB error:', insertError);
+    throw new AppError('Failed to create comment', 500, 'DB_ERROR');
+  }
+
+  return comment as Comment;
+}
+
 export async function deleteUpdate(userId: string, updateId: string): Promise<void> {
   const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);

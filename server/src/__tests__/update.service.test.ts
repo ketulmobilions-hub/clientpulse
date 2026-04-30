@@ -120,6 +120,14 @@ function makeDeleteChain(result: { error: unknown; count: number | null }) {
   return { delete: deleteMock };
 }
 
+// getWorkspaceIdForUser member path: .select('workspace_id').eq('id',v).maybeSingle()
+function makeWsMemberChain(result: { data: unknown; error: unknown }) {
+  const maybeSingleMock = jest.fn().mockResolvedValue(result);
+  const eqMock = jest.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
+  const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
+  return { select: selectMock };
+}
+
 const PROJECT_IDS_RESULT = { data: [{ id: PROJECT_ID }], error: null };
 const EMPTY_PROJECT_IDS_RESULT = { data: [], error: null };
 
@@ -354,7 +362,9 @@ describe('getUpdate', () => {
   });
 
   it('throws WORKSPACE_NOT_FOUND when user has no workspace', async () => {
-    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [], error: null }));
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [], error: null }))
+      .mockReturnValueOnce(makeWsMemberChain({ data: null, error: null }));
 
     await expect(getUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({
       code: 'WORKSPACE_NOT_FOUND',
