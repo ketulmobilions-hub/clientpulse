@@ -99,8 +99,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       // Inside the try so a provider failure resets _submitting (1a).
       final svc = await ref.read(updateServiceProvider.future);
       // Step 1: Create the update record.
-      final update = await ref.read(updateNotifierProvider.notifier).createUpdate(
-            widget.projectId,
+      final update = await ref.read(updateNotifierProvider(widget.projectId).notifier).createUpdate(
             title: _titleController.text.trim(),
             body: _bodyController.text.trim(),
             category: _selectedCategory,
@@ -142,7 +141,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
           // Rollback: remove the orphaned update so the client portal stays clean.
           try {
             await svc.deleteUpdate(update.id);
-            ref.read(updateNotifierProvider.notifier).remove(update.id);
+            ref.read(updateNotifierProvider(widget.projectId).notifier).remove(update.id);
           } catch (rollbackErr) {
             // Best-effort rollback — log so ghost records are observable in production.
             debugPrint('[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');

@@ -4,15 +4,20 @@ import 'update_service_provider.dart';
 
 part 'update_provider.g.dart';
 
-@Riverpod(keepAlive: true)
+@riverpod
 class UpdateNotifier extends _$UpdateNotifier {
   @override
-  // Starts empty; populated by createUpdate() calls in-session.
-  // A dedicated listUpdates() build will be wired up in the updates list issue.
-  Future<List<Update>> build() async => [];
+  Future<List<Update>> build(String projectId) async {
+    final svc = await ref.read(updateServiceProvider.future);
+    return svc.listUpdates(projectId);
+  }
 
-  Future<Update> createUpdate(
-    String projectId, {
+  Future<void> load() async {
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<Update> createUpdate({
     required String title,
     required String body,
     required UpdateCategory category,
@@ -27,7 +32,7 @@ class UpdateNotifier extends _$UpdateNotifier {
       status: status,
     );
     final current = state.valueOrNull ?? [];
-    state = AsyncData([update, ...current]);
+    state = AsyncData([update.copyWith(attachmentCount: 0), ...current]);
     return update;
   }
 
@@ -37,6 +42,4 @@ class UpdateNotifier extends _$UpdateNotifier {
     if (current == null) return;
     state = AsyncData(current.where((u) => u.id != updateId).toList());
   }
-
-  void invalidate() => ref.invalidateSelf();
 }

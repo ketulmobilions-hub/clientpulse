@@ -3,6 +3,21 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'update.freezed.dart';
 part 'update.g.dart';
 
+enum UpdateStatus {
+  draft,
+  published;
+
+  String get apiValue => name;
+
+  static UpdateStatus fromApi(String v) => switch (v) {
+        'published' => published,
+        _ => draft,
+      };
+}
+
+UpdateStatus _statusFromJson(String v) => UpdateStatus.fromApi(v);
+String _statusToJson(UpdateStatus s) => s.apiValue;
+
 enum UpdateCategory {
   progress,
   milestone,
@@ -43,13 +58,14 @@ class Update with _$Update {
     @JsonKey(name: 'author_id') required String authorId,
     required String title,
     required String body,
-    required String status,
+    @JsonKey(fromJson: _statusFromJson, toJson: _statusToJson) required UpdateStatus status,
     @JsonKey(fromJson: _categoryFromJson, toJson: _categoryToJson)
     required UpdateCategory category,
     required int position,
     @JsonKey(name: 'notification_sent_at') String? notificationSentAt,
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'updated_at') required String updatedAt,
+    @JsonKey(name: 'attachment_count') int? attachmentCount,
   }) = _Update;
 
   factory Update.fromJson(Map<String, dynamic> json) => _$UpdateFromJson(json);

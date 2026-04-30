@@ -227,14 +227,37 @@ describe('createUpdate', () => {
 });
 
 describe('listUpdates', () => {
-  it('returns updates newest first', async () => {
+  it('returns updates newest first with attachment_count mapped', async () => {
+    const rowWithAttachments = { ...UPDATE_ROW, attachments: [{ count: 2 }] };
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
-      .mockReturnValueOnce(makeListChain({ data: [UPDATE_ROW], error: null }));
+      .mockReturnValueOnce(makeListChain({ data: [rowWithAttachments], error: null }));
 
     const result = await listUpdates(USER_ID, PROJECT_ID);
-    expect(result).toEqual([UPDATE_ROW]);
+    expect(result).toEqual([{ ...UPDATE_ROW, attachment_count: 2 }]);
+  });
+
+  it('maps attachment_count to 0 when attachments array is empty', async () => {
+    const rowWithEmpty = { ...UPDATE_ROW, attachments: [] };
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
+      .mockReturnValueOnce(makeListChain({ data: [rowWithEmpty], error: null }));
+
+    const result = await listUpdates(USER_ID, PROJECT_ID);
+    expect(result).toEqual([{ ...UPDATE_ROW, attachment_count: 0 }]);
+  });
+
+  it('maps attachment_count to 0 when attachments is null', async () => {
+    const rowWithNull = { ...UPDATE_ROW, attachments: null };
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
+      .mockReturnValueOnce(makeListChain({ data: [rowWithNull], error: null }));
+
+    const result = await listUpdates(USER_ID, PROJECT_ID);
+    expect(result).toEqual([{ ...UPDATE_ROW, attachment_count: 0 }]);
   });
 
   it('returns empty array when no updates', async () => {

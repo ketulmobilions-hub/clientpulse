@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/constants.dart';
 import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
+import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
 import 'package:clientpulse/shared/models/project.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
+import 'package:clientpulse/shared/providers/update_provider.dart';
 
 class ProjectDetailScreen extends ConsumerStatefulWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -112,10 +114,10 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
               Expanded(
                 child: TabBarView(
                   controller: _tabs,
-                  children: const [
-                    _UpdatesTab(),
-                    _MilestonesTab(),
-                    _SettingsTab(),
+                  children: [
+                    _UpdatesTab(projectId: widget.projectId),
+                    const _MilestonesTab(),
+                    const _SettingsTab(),
                   ],
                 ),
               ),
@@ -200,12 +202,46 @@ class _ProjectHeader extends StatelessWidget {
   }
 }
 
-class _UpdatesTab extends StatelessWidget {
-  const _UpdatesTab();
+class _UpdatesTab extends ConsumerWidget {
+  const _UpdatesTab({required this.projectId});
+
+  final String projectId;
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Updates coming soon'));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final updatesAsync = ref.watch(updateNotifierProvider(projectId));
+    return updatesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Failed to load updates', style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => ref.read(updateNotifierProvider(projectId).notifier).load(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+      data: (updates) {
+        if (updates.isEmpty) {
+          return const Center(child: Text('No updates yet'));
+        }
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(updateNotifierProvider(projectId));
+            await ref.read(updateNotifierProvider(projectId).future);
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: updates.length,
+            itemBuilder: (_, i) => UpdateCard(update: updates[i]),
+          ),
+        );
+      },
+    );
   }
 }
 
