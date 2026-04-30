@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/constants.dart';
 import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
+import 'package:clientpulse/features/milestones/presentation/widgets/milestone_list_widget.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
 import 'package:clientpulse/shared/models/project.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
@@ -116,7 +117,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
                   controller: _tabs,
                   children: [
                     _UpdatesTab(projectId: widget.projectId),
-                    const _MilestonesTab(),
+                    _MilestonesTab(projectId: widget.projectId),
                     const _SettingsTab(),
                   ],
                 ),
@@ -246,11 +247,13 @@ class _UpdatesTab extends ConsumerWidget {
 }
 
 class _MilestonesTab extends StatelessWidget {
-  const _MilestonesTab();
+  const _MilestonesTab({required this.projectId});
+
+  final String projectId;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Milestones coming soon'));
+    return MilestoneListWidget(projectId: projectId);
   }
 }
 
