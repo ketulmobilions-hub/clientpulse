@@ -8,6 +8,7 @@ import { projectUpdateRouter, updateRouter } from './update.routes';
 import { updateAttachmentRouter, attachmentRouter } from './attachment.routes';
 import { projectMilestoneRouter, milestoneRouter } from './milestone.routes';
 import { portalRouter } from './portal.routes';
+import commentRouter from './comment.routes';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use('/updates', updateRouter);
 // /updates (updateRouter). Requests to /updates/:id/attachments/* are matched here
 // directly; they never reach updateRouter because /:id in updateRouter only captures
 // a single path segment. validateUuid in the handler rejects non-UUID :updateId values.
+router.use('/updates/:updateId/comments', commentRouter);
 router.use('/updates/:updateId', updateAttachmentRouter);
 router.use('/attachments', attachmentRouter);
 router.use('/storage', storageRouter);
