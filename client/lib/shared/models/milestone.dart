@@ -39,10 +39,14 @@ extension MilestoneStatusX on Milestone {
     if (dueDate != null) {
       final due = DateTime.tryParse(dueDate!);
       if (due != null) {
-        // Compare date-to-date: strip time so today is not considered overdue.
+        // Convert to local time so UTC-suffixed timestamps don't shift the date
+        // boundary for users in UTC+ timezones.
+        final dueLocal = due.toLocal();
+        final dueMidnight =
+            DateTime(dueLocal.year, dueLocal.month, dueLocal.day);
         final today = DateTime.now();
         final todayMidnight = DateTime(today.year, today.month, today.day);
-        if (due.isBefore(todayMidnight)) return MilestoneStatus.delayed;
+        if (dueMidnight.isBefore(todayMidnight)) return MilestoneStatus.delayed;
       }
     }
     return MilestoneStatus.upcoming;

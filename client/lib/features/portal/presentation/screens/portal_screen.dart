@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../../shared/providers/portal_provider.dart';
 import '../../../../shared/services/portal_service.dart';
+import '../widgets/portal_milestone_section.dart';
 import '../widgets/portal_update_card.dart';
 
 class PortalScreen extends ConsumerWidget {
@@ -44,7 +45,6 @@ class _PortalContent extends ConsumerWidget {
     final theme = Theme.of(context);
     final updatesAsync = ref.watch(portalUpdatesNotifierProvider(token));
     final hasMilestones = overview.milestones.isNotEmpty;
-    final progressPct = overview.progress.percent.round();
 
     return Scaffold(
       appBar: AppBar(
@@ -117,47 +117,14 @@ class _PortalContent extends ConsumerWidget {
             ),
           ),
 
-          // Milestone progress
+          // Milestone overview
           if (hasMilestones)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
               sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Milestones', style: theme.textTheme.titleSmall),
-                        Text(
-                          '${overview.progress.completed} of ${overview.progress.total} • $progressPct%',
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: theme.colorScheme.outline),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        // Clamp guards against backend rounding producing > 100%.
-                        value: (progressPct / 100).clamp(0.0, 1.0),
-                        minHeight: 8,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: overview.milestones
-                            .map((m) => Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: _MilestoneChip(milestone: m),
-                                ))
-                            .toList(),
-                      ),
-                    ),
-                  ],
+                child: PortalMilestoneSection(
+                  milestones: overview.milestones,
+                  progress: overview.progress,
                 ),
               ),
             ),
@@ -182,11 +149,11 @@ class _PortalContent extends ConsumerWidget {
                 ),
               ),
             ],
-            error: (e, _) => [
+            error: (_, __) => [
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Text('Failed to load updates: $e',
+                  child: Text('Failed to load updates. Please try again.',
                       style: TextStyle(color: theme.colorScheme.error)),
                 ),
               ),
@@ -220,7 +187,7 @@ class _PortalContent extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     sliver: SliverToBoxAdapter(
                       child: Text(
-                        'Failed to load more: ${updatesState.loadMoreError}',
+                        'Failed to load more updates. Please try again.',
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
@@ -263,49 +230,23 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (status) {
-      PortalProjectStatus.active => Colors.green,
-      PortalProjectStatus.completed => Colors.blue,
-      PortalProjectStatus.archived => Colors.grey,
-      PortalProjectStatus.unknown => Colors.grey,
+    // Use shade pairs for dark-mode-safe contrast (same pattern as StatusPill).
+    final (bg, fg) = switch (status) {
+      PortalProjectStatus.active => (Colors.green.shade100, Colors.green.shade800),
+      PortalProjectStatus.completed => (Colors.blue.shade100, Colors.blue.shade800),
+      PortalProjectStatus.archived => (Colors.grey.shade200, Colors.grey.shade700),
+      PortalProjectStatus.unknown => (Colors.grey.shade200, Colors.grey.shade700),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4)),
       ),
       child: Text(
         status.displayLabel,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
       ),
-    );
-  }
-}
-
-class _MilestoneChip extends StatelessWidget {
-  const _MilestoneChip({required this.milestone});
-
-  final PortalMilestone milestone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Chip(
-      avatar: Icon(
-        milestone.completed ? Icons.check_circle : Icons.radio_button_unchecked,
-        size: 16,
-        color: milestone.completed
-            ? theme.colorScheme.primary
-            : theme.colorScheme.outline,
-      ),
-      label: Text(milestone.title, style: theme.textTheme.bodySmall),
-      backgroundColor: milestone.completed
-          ? theme.colorScheme.primaryContainer
-          // ignore: deprecated_member_use — surfaceVariant is correct for Flutter <3.22; migrate to surfaceContainerHighest on upgrade
-          : theme.colorScheme.surfaceVariant,
-      side: BorderSide.none,
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'milestone.dart';
+
 part 'portal_overview.freezed.dart';
 part 'portal_overview.g.dart';
 
@@ -105,4 +107,24 @@ class PortalOverview with _$PortalOverview {
 
   factory PortalOverview.fromJson(Map<String, dynamic> json) =>
       _$PortalOverviewFromJson(json);
+}
+
+extension PortalMilestoneStatusX on PortalMilestone {
+  MilestoneStatus get status {
+    if (completed) return MilestoneStatus.completed;
+    if (dueDate != null) {
+      final due = DateTime.tryParse(dueDate!);
+      if (due != null) {
+        // Convert to local time so UTC-suffixed timestamps don't shift the date
+        // boundary for users in UTC+ timezones.
+        final dueLocal = due.toLocal();
+        final dueMidnight =
+            DateTime(dueLocal.year, dueLocal.month, dueLocal.day);
+        final today = DateTime.now();
+        final todayMidnight = DateTime(today.year, today.month, today.day);
+        if (dueMidnight.isBefore(todayMidnight)) return MilestoneStatus.delayed;
+      }
+    }
+    return MilestoneStatus.upcoming;
+  }
 }
