@@ -7,6 +7,7 @@ import storageRouter from './storage.routes';
 import { projectUpdateRouter, updateRouter } from './update.routes';
 import { updateAttachmentRouter, attachmentRouter } from './attachment.routes';
 import { projectMilestoneRouter, milestoneRouter } from './milestone.routes';
+import { portalRouter } from './portal.routes';
 
 const router = Router();
 
@@ -27,7 +28,6 @@ router.use('/storage', storageRouter);
 router.use('/projects/:projectId/milestones', projectMilestoneRouter);
 router.use('/milestones', milestoneRouter);
 
-// Future routes mounted here:
-// router.use('/portal', portalRouter);
+router.use('/portal', portalRouter);
 
 export default router;

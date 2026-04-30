@@ -10,6 +10,10 @@ import { requestId } from './middleware/requestId';
 
 const app = express();
 
+// Trust exactly one proxy hop (Render's load balancer) so req.ip is the real client IP,
+// not the proxy's internal address. Without this, all users share a single rate-limit bucket.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 app.use(cors({

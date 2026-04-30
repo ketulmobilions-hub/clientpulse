@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { supabaseAdmin } from '../config/adminDb';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
+import { SHARE_TOKEN_RE } from '../utils/token';
 
 export interface PortalJwtPayload extends JwtPayload {
   type: 'portal';
@@ -26,8 +27,6 @@ function isPortalPayload(payload: unknown): payload is PortalJwtPayload {
     (payload as Record<string, unknown>)['projectId'] !== ''
   );
 }
-
-const SHARE_TOKEN_RE = /^[a-f0-9]{32,128}$/;
 
 export async function requirePortal(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

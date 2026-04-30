@@ -58,7 +58,7 @@ const CONTEXT = 'update.service';
 
 // Strips <script>, <iframe>, <object>, <embed> tags and inline event handlers
 // from Markdown body content before persistence.
-function stripDangerousHtml(content: string): string {
+export function stripDangerousHtml(content: string): string {
   return content
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<\s*\/?\s*(iframe|object|embed)[^>]*>/gi, '')
