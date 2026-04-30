@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../../shared/providers/portal_provider.dart';
 import '../../../../shared/services/portal_service.dart';
+import '../widgets/portal_branding_header.dart';
 import '../widgets/portal_milestone_section.dart';
 import '../widgets/portal_update_card.dart';
 
@@ -47,44 +48,7 @@ class _PortalContent extends ConsumerWidget {
     final hasMilestones = overview.milestones.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            if (overview.workspace.logoUrl != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  overview.workspace.logoUrl!,
-                  height: 28,
-                  width: 28,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 28,
-                    width: 28,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      overview.workspace.name.isNotEmpty
-                          ? overview.workspace.name[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onPrimaryContainer),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(overview.workspace.name),
-          ],
-        ),
-      ),
+      appBar: PortalBrandingHeader(workspace: overview.workspace),
       body: CustomScrollView(
         slivers: [
           // Project header
