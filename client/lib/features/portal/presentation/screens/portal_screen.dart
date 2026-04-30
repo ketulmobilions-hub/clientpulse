@@ -44,6 +44,7 @@ class _PortalContent extends ConsumerWidget {
     final theme = Theme.of(context);
     final updatesAsync = ref.watch(portalUpdatesNotifierProvider(token));
     final hasMilestones = overview.milestones.isNotEmpty;
+    final progressPct = overview.progress.percent.round();
 
     return Scaffold(
       appBar: AppBar(
@@ -129,7 +130,7 @@ class _PortalContent extends ConsumerWidget {
                       children: [
                         Text('Milestones', style: theme.textTheme.titleSmall),
                         Text(
-                          '${overview.progress.completed} of ${overview.progress.total} complete',
+                          '${overview.progress.completed} of ${overview.progress.total} • $progressPct%',
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: theme.colorScheme.outline),
                         ),
@@ -140,7 +141,7 @@ class _PortalContent extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
                         // Clamp guards against backend rounding producing > 100%.
-                        value: (overview.progress.percent / 100).clamp(0.0, 1.0),
+                        value: (progressPct / 100).clamp(0.0, 1.0),
                         minHeight: 8,
                       ),
                     ),
@@ -302,7 +303,8 @@ class _MilestoneChip extends StatelessWidget {
       label: Text(milestone.title, style: theme.textTheme.bodySmall),
       backgroundColor: milestone.completed
           ? theme.colorScheme.primaryContainer
-          : theme.colorScheme.surfaceContainerHighest,
+          // ignore: deprecated_member_use — surfaceVariant is correct for Flutter <3.22; migrate to surfaceContainerHighest on upgrade
+          : theme.colorScheme.surfaceVariant,
       side: BorderSide.none,
     );
   }
