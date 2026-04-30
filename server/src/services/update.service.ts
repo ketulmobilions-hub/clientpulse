@@ -5,6 +5,8 @@ import {
   assertProjectOwnership,
   getProjectIdsForWorkspace,
 } from '../utils/ownership';
+import { env } from '../config/env';
+import { sendUpdateNotificationEmail } from './email.service';
 
 const UPDATE_COLUMNS =
   'id, project_id, author_id, title, body, status, category, position, notification_sent_at, created_at, updated_at';
@@ -56,6 +58,25 @@ export const VALID_UPDATE_CATEGORIES = ['progress', 'milestone', 'deliverable', 
 
 const CONTEXT = 'update.service';
 
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')         // images
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')       // links → label text
+    .replace(/`{3}[\s\S]*?`{3}/g, '')              // fenced code blocks
+    .replace(/`[^`]*`/g, '')                        // inline code
+    .replace(/#{1,6}\s+/g, '')                      // headings
+    .replace(/\*\*(.+?)\*\*/g, '$1')               // bold **
+    .replace(/__(.+?)__/g, '$1')                    // bold __
+    .replace(/\*(.+?)\*/g, '$1')                    // italic *
+    .replace(/_(.+?)_/g, '$1')                      // italic _
+    .replace(/^\s*[-*+]\s+/gm, '')                  // unordered list markers
+    .replace(/^\s*\d+\.\s+/gm, '')                  // ordered list markers
+    .replace(/^\s*>\s*/gm, '')                       // blockquotes
+    .replace(/\n{2,}/g, ' ')                         // blank lines → space
+    .replace(/\n/g, ' ')                             // remaining newlines → space
+    .trim();
+}
+
 // Strips <script>, <iframe>, <object>, <embed> tags and inline event handlers
 // from Markdown body content before persistence.
 export function stripDangerousHtml(content: string): string {
@@ -95,6 +116,53 @@ export async function createUpdate(
   if (error || !data) {
     console.error('[update.service] createUpdate DB error:', error);
     throw new AppError('Failed to create update', 500, 'DB_ERROR');
+  }
+
+  if (data.status === 'published') {
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('projects')
+      .select('name, client_name, client_email, share_token')
+      .eq('id', projectId)
+      .single<{ name: string; client_name: string; client_email: string | null; share_token: string }>();
+
+    if (projectError) {
+      console.error('[update.service] createUpdate project fetch error:', projectError);
+    }
+
+    if (project?.client_email) {
+      const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
+      const portalUrl = `${baseUrl}/p/${project.share_token}`;
+      const plainExcerpt = stripMarkdown(data.body);
+      const excerpt = plainExcerpt.slice(0, 300) + (plainExcerpt.length > 300 ? '…' : '');
+
+      let emailSent = false;
+      try {
+        await sendUpdateNotificationEmail(
+          project.client_email,
+          project.client_name,
+          project.name,
+          data.title,
+          data.category,
+          excerpt,
+          portalUrl,
+        );
+        emailSent = true;
+      } catch (err) {
+        console.error('[update.service] notification email failed:', err);
+        // Intentional: email failure must not fail update creation
+      }
+
+      if (emailSent) {
+        try {
+          await supabaseAdmin
+            .from('updates')
+            .update({ notification_sent_at: new Date().toISOString() })
+            .eq('id', data.id);
+        } catch (notifErr) {
+          console.error('[update.service] notification_sent_at update failed:', notifErr);
+        }
+      }
+    }
   }
 
   return data as Update;
