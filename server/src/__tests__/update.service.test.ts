@@ -14,10 +14,10 @@ import {
 
 const mockFrom = supabaseAdmin.from as jest.Mock;
 
-const USER_ID = 'user-1';
-const WORKSPACE_ID = 'ws-1';
-const PROJECT_ID = 'proj-1';
-const UPDATE_ID = 'upd-1';
+const USER_ID = '00000000-0000-0000-0000-000000000001';
+const WORKSPACE_ID = '00000000-0000-0000-0000-000000000002';
+const PROJECT_ID = '00000000-0000-0000-0000-000000000003';
+const UPDATE_ID = '00000000-0000-0000-0000-000000000004';
 
 const WORKSPACE_ROW = { id: WORKSPACE_ID };
 const PROJECT_ROW = { id: PROJECT_ID };
@@ -166,7 +166,7 @@ describe('createUpdate', () => {
     expect(insertedBody).toContain('more content');
   });
 
-  it('throws NOT_FOUND when project not in workspace', async () => {
+  it('throws NOT_FOUND when project not in workspace (PGRST116)', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
@@ -174,6 +174,17 @@ describe('createUpdate', () => {
     await expect(createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' })).rejects.toMatchObject({
       code: 'NOT_FOUND',
       statusCode: 404,
+    });
+  });
+
+  it('throws DB_ERROR when assertProjectOwnership has non-PGRST116 DB error', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+
+    await expect(createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' })).rejects.toMatchObject({
+      code: 'DB_ERROR',
+      statusCode: 500,
     });
   });
 
@@ -210,12 +221,23 @@ describe('listUpdates', () => {
     expect(result).toEqual([]);
   });
 
-  it('throws NOT_FOUND when project not owned', async () => {
+  it('throws NOT_FOUND when project not owned (PGRST116)', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('throws DB_ERROR when assertProjectOwnership has non-PGRST116 DB error', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+
+    await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({
+      code: 'DB_ERROR',
+      statusCode: 500,
+    });
   });
 
   it('throws DB_ERROR on list query failure', async () => {
