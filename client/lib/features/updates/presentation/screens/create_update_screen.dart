@@ -2,9 +2,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/models/update.dart';
+import 'package:clientpulse/shared/providers/storage_service_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
+import 'package:clientpulse/shared/services/storage_service.dart';
 import 'package:clientpulse/shared/services/update_service.dart';
 
 // 10 MB — matches the Supabase Storage bucket hard limit so the client-side
@@ -35,6 +38,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   UpdateCategory _selectedCategory = UpdateCategory.progress;
   bool _previewMode = false;
   List<PlatformFile> _selectedFiles = [];
+  List<double> _fileProgress = []; // 0.0–1.0 per file, populated during upload
   bool _submitting = false;
   bool _isPicking = false; // prevents concurrent picker sessions (BUG-5)
 
@@ -72,7 +76,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
           ..showSnackBar(SnackBar(
             content: Text(
               '${oversized.map((f) => f.name).join(', ')} '
-              'exceed the 20 MB limit and were skipped.',
+              'exceed the 10 MB limit and were skipped.',
             ),
           ));
       }
@@ -81,7 +85,10 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       final remaining = 3 - _selectedFiles.length;
       final toAdd = safe.take(remaining).toList();
       if (toAdd.isNotEmpty) {
-        setState(() => _selectedFiles = [..._selectedFiles, ...toAdd]);
+        setState(() {
+          _selectedFiles = [..._selectedFiles, ...toAdd];
+          _fileProgress = List.filled(_selectedFiles.length, 0.0);
+        });
       }
     } finally {
       if (mounted) setState(() => _isPicking = false);
@@ -91,59 +98,82 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _fileProgress = List.filled(_selectedFiles.length, 0.0);
+    });
 
     try {
-      // Read service once before any async work — avoids provider re-resolution
-      // inside the upload loop after the update record has already been created.
-      // Inside the try so a provider failure resets _submitting (1a).
+      // Read services once before any async work — avoids provider re-resolution
+      // after the update record has been created.
       final svc = await ref.read(updateServiceProvider.future);
-      // Step 1: Create the update record.
-      final update = await ref.read(updateNotifierProvider(widget.projectId).notifier).createUpdate(
+      final storageSvc = await ref.read(storageServiceProvider.future);
+
+      // Pre-flight: reject before creating the update record so no orphan is
+      // left in the DB if bytes were lost (e.g. iOS memory pressure).
+      if (_selectedFiles.isNotEmpty) {
+        final unreadable = _selectedFiles
+            .where((f) => f.bytes == null)
+            .map((f) => f.name)
+            .toList();
+        if (unreadable.isNotEmpty) {
+          throw StorageServiceException(
+            'Could not read ${unreadable.join(', ')}. Please re-select the file(s) and try again.',
+          );
+        }
+      }
+
+      final update = await ref
+          .read(updateNotifierProvider(widget.projectId).notifier)
+          .createUpdate(
             title: _titleController.text.trim(),
             body: _bodyController.text.trim(),
             category: _selectedCategory,
           );
 
-      // Step 2: Upload attachments. If any step fails, roll back the created
-      // update so no ghost record is left in the DB (BUG-2).
       if (_selectedFiles.isNotEmpty) {
+        final uploadedAttachments = <Attachment>[];
         try {
-          for (final file in _selectedFiles) {
-            final bytes = file.bytes;
-            if (bytes == null) continue;
+          for (var i = 0; i < _selectedFiles.length; i++) {
+            final file = _selectedFiles[i];
+            final bytes = file.bytes!; // non-null guaranteed by pre-flight above
 
             final mimeType = file.extension != null
                 ? _mimeTypeForExtension(file.extension!)
                 : 'application/octet-stream';
 
-            final urls = await svc.getAttachmentSignedUrl(
-              update.id,
+            final attachment = await storageSvc.uploadAttachment(
+              updateId: update.id,
               fileName: file.name,
+              bytes: bytes,
               mimeType: mimeType,
+              onProgress: (p) {
+                if (!mounted) return;
+                // Bounds check: _fileProgress can be re-initialized by a
+                // concurrent setState if the widget rebuilds mid-upload.
+                if (i < _fileProgress.length) {
+                  setState(() => _fileProgress[i] = p);
+                }
+              },
             );
-
-            await UpdateService.uploadToSignedUrl(
-              urls['signedUrl']!,
-              bytes, // bytes.length used for fileSize below — more reliable than file.size on web
-              mimeType,
-            );
-
-            await svc.saveAttachment(
-              update.id,
-              fileUrl: urls['publicUrl']!,
-              fileName: file.name,
-              fileSize: bytes.length,
-              mimeType: mimeType,
-            );
+            uploadedAttachments.add(attachment);
           }
         } catch (uploadErr) {
-          // Rollback: remove the orphaned update so the client portal stays clean.
+          // Best-effort rollback. Order matters: deleteAttachment removes both
+          // the DB record AND the physical storage file. deleteUpdate must come
+          // second — calling it first would cascade-delete attachment records,
+          // leaving storage files with no DB entry to look up and orphaning them.
+          for (final att in uploadedAttachments) {
+            try {
+              await storageSvc.deleteAttachment(att.id);
+            } catch (e) {
+              debugPrint('[CreateUpdateScreen] rollback deleteAttachment(${att.id}) failed: $e');
+            }
+          }
           try {
             await svc.deleteUpdate(update.id);
             ref.read(updateNotifierProvider(widget.projectId).notifier).remove(update.id);
           } catch (rollbackErr) {
-            // Best-effort rollback — log so ghost records are observable in production.
             debugPrint('[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');
           }
           rethrow;
@@ -154,8 +184,14 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(const SnackBar(content: Text('Update posted')));
-      // Do not setState here — Navigator.pop() disposes the widget immediately.
+      setState(() => _submitting = false); // reset before pop in case of custom transitions
       Navigator.of(context).pop();
+    } on StorageServiceException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
+      setState(() => _submitting = false);
     } on UpdateServiceException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -300,24 +336,39 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             if (_selectedFiles.isNotEmpty) ...[
               const SizedBox(height: 4),
               ..._selectedFiles.asMap().entries.map((entry) {
+                final i = entry.key;
                 final file = entry.value;
-                return ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading:
-                      const Icon(Icons.insert_drive_file_outlined, size: 20),
-                  title: Text(
-                    file.name,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(_formatFileSize(file.size)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    onPressed: () => setState(
-                      () => _selectedFiles =
-                          List.from(_selectedFiles)..removeAt(entry.key),
+                final progress = _submitting && i < _fileProgress.length
+                    ? _fileProgress[i]
+                    : null;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
+                      title: Text(
+                        file.name,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(_formatFileSize(file.size)),
+                      trailing: _submitting
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () => setState(() {
+                                _selectedFiles = List.from(_selectedFiles)..removeAt(i);
+                                _fileProgress = List.filled(_selectedFiles.length, 0.0);
+                              }),
+                            ),
                     ),
-                  ),
+                    if (progress != null)
+                      LinearProgressIndicator(
+                        value: progress > 0 ? progress : null,
+                        minHeight: 2,
+                      ),
+                  ],
                 );
               }),
             ],
