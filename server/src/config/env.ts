@@ -6,14 +6,34 @@ if (process.env['NODE_ENV'] !== 'production' && process.env['NODE_ENV'] !== 'tes
 
 function required(key: string): string {
   const value = process.env[key];
-  if (!value) throw new Error(`Missing required env var: ${key}`);
-  return value;
+  if (!value?.trim()) throw new Error(`Missing required env var: ${key}`);
+  return value.trim();
 }
 
 function requireMinLength(key: string, min: number): string {
   const value = required(key);
   if (value.length < min) {
     throw new Error(`Env var ${key} must be at least ${min} characters`);
+  }
+  return value;
+}
+
+function requireUrl(key: string): string {
+  const value = required(key);
+  if (!/^https?:\/\//.test(value)) {
+    throw new Error(`Env var ${key} must be a valid URL starting with http:// or https://`);
+  }
+  return value;
+}
+
+function requireFromEmail(key: string): string {
+  const value = required(key);
+  const isPlainEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
+  const isDisplayNameEmail = /<[^@\s]+@[^@\s]+\.[^@\s]+>$/.test(value);
+  if (!isPlainEmail && !isDisplayNameEmail) {
+    throw new Error(
+      `Env var ${key} must be a valid email or "Display Name <email@domain.com>"`,
+    );
   }
   return value;
 }
@@ -40,8 +60,9 @@ export const env = {
   supabaseAnonKey: required('SUPABASE_ANON_KEY'),
   supabaseServiceRoleKey: required('SUPABASE_SERVICE_ROLE_KEY'),
   resendApiKey: required('RESEND_API_KEY'),
-  resendFromEmail: required('RESEND_FROM_EMAIL'),
+  resendFromEmail: requireFromEmail('RESEND_FROM_EMAIL'),
   jwtSecret: requireMinLength('JWT_SECRET', 32),
   cookieSecret: requireMinLength('COOKIE_SECRET', 32),
-  appBaseUrl: required('APP_BASE_URL'),
+  appBaseUrl: requireUrl('APP_BASE_URL'),
+  frontendBaseUrl: requireUrl('FRONTEND_BASE_URL'),
 };
