@@ -1,5 +1,10 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import {
+  getWorkspaceIdForUser,
+  assertProjectOwnership,
+  getProjectIdsForWorkspace,
+} from '../utils/ownership';
 
 const UPDATE_COLUMNS =
   'id, project_id, author_id, title, body, status, category, position, notification_sent_at, created_at, updated_at';
@@ -48,57 +53,7 @@ export interface Comment {
 export const VALID_UPDATE_STATUSES = ['draft', 'published'] as const;
 export const VALID_UPDATE_CATEGORIES = ['general', 'milestone', 'blocker'] as const;
 
-// Single workspace per user is an enforced invariant (one workspace per agency owner).
-// limit(1) mirrors project.service.ts — consistent pattern across services.
-async function getWorkspaceIdForUser(userId: string): Promise<string> {
-  const { data, error } = await supabaseAdmin
-    .from('workspaces')
-    .select('id')
-    .eq('owner_id', userId)
-    .is('deleted_at', null)
-    .limit(1);
-
-  if (error) {
-    console.error('[update.service] getWorkspaceIdForUser DB error:', error);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
-  }
-  if (!data || data.length === 0) {
-    throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
-  }
-
-  return (data[0] as { id: string }).id;
-}
-
-async function assertProjectOwnership(projectId: string, userId: string): Promise<void> {
-  const workspaceId = await getWorkspaceIdForUser(userId);
-
-  const { data, error } = await supabaseAdmin
-    .from('projects')
-    .select('id')
-    .eq('id', projectId)
-    .eq('workspace_id', workspaceId)
-    .is('deleted_at', null)
-    .single();
-
-  if (error || !data) {
-    throw new AppError('Project not found', 404, 'NOT_FOUND');
-  }
-}
-
-async function getProjectIdsForWorkspace(workspaceId: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin
-    .from('projects')
-    .select('id')
-    .eq('workspace_id', workspaceId)
-    .is('deleted_at', null);
-
-  if (error) {
-    console.error('[update.service] getProjectIdsForWorkspace DB error:', error);
-    throw new AppError('Failed to resolve projects', 500, 'DB_ERROR');
-  }
-
-  return ((data ?? []) as { id: string }[]).map((p) => p.id);
-}
+const CONTEXT = 'update.service';
 
 // Strips <script>, <iframe>, <object>, <embed> tags and inline event handlers
 // from Markdown body content before persistence.
@@ -119,7 +74,7 @@ export async function createUpdate(
     status?: 'draft' | 'published';
   },
 ): Promise<Update> {
-  await assertProjectOwnership(projectId, userId);
+  await assertProjectOwnership(projectId, userId, CONTEXT);
 
   const { data, error } = await supabaseAdmin
     .from('updates')
@@ -143,7 +98,7 @@ export async function createUpdate(
 }
 
 export async function listUpdates(userId: string, projectId: string): Promise<Update[]> {
-  await assertProjectOwnership(projectId, userId);
+  await assertProjectOwnership(projectId, userId, CONTEXT);
 
   // Note: updates table has no deleted_at column. If soft-delete is added in a future
   // migration, add .is('deleted_at', null) here to match project.service.ts pattern.
@@ -165,8 +120,8 @@ export async function getUpdate(
   userId: string,
   updateId: string,
 ): Promise<Update & { attachments: Attachment[]; comments: Comment[] }> {
-  const workspaceId = await getWorkspaceIdForUser(userId);
-  const projectIds = await getProjectIdsForWorkspace(workspaceId);
+  const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
+  const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
     throw new AppError('Update not found', 404, 'NOT_FOUND');
@@ -224,7 +179,7 @@ export async function editUpdate(
     position?: number;
   },
 ): Promise<Update> {
-  const workspaceId = await getWorkspaceIdForUser(userId);
+  const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
 
   const payload: Record<string, unknown> = {};
   if (changes.title !== undefined) payload.title = changes.title;
@@ -237,7 +192,7 @@ export async function editUpdate(
     throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
   }
 
-  const projectIds = await getProjectIdsForWorkspace(workspaceId);
+  const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
     throw new AppError('Update not found', 404, 'NOT_FOUND');
@@ -267,8 +222,8 @@ export async function editUpdate(
 }
 
 export async function deleteUpdate(userId: string, updateId: string): Promise<void> {
-  const workspaceId = await getWorkspaceIdForUser(userId);
-  const projectIds = await getProjectIdsForWorkspace(workspaceId);
+  const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
+  const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
     throw new AppError('Update not found', 404, 'NOT_FOUND');
