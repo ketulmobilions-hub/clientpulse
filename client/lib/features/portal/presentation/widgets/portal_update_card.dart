@@ -1,10 +1,10 @@
-import 'dart:html' as html;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../../../../shared/models/portal_update.dart';
 import '../../../../../shared/models/update.dart';
+import 'open_url_stub.dart'
+    if (dart.library.html) 'open_url_web.dart';
 
 class PortalUpdateCard extends StatefulWidget {
   const PortalUpdateCard({super.key, required this.update});
@@ -93,7 +93,7 @@ class _PortalUpdateCardState extends State<PortalUpdateCard> {
                       : null,
                   onTap: () {
                     final url = a.fileUrl;
-                    if (url.isNotEmpty) html.window.open(url, '_blank');
+                    if (url.isNotEmpty) openUrl(url);
                   },
                 ),
               ),
