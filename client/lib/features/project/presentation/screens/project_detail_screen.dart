@@ -85,6 +85,19 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen>
               ),
             ],
           ),
+          floatingActionButton: ListenableBuilder(
+            listenable: _tabs,
+            builder: (_, __) => _tabs.index == 0
+                ? FloatingActionButton(
+                    onPressed: () => context.pushNamed(
+                      RouteNames.createUpdate,
+                      pathParameters: {'id': project.id},
+                    ),
+                    tooltip: 'New update',
+                    child: const Icon(Icons.add),
+                  )
+                : const SizedBox.shrink(),
+          ),
           body: Column(
             children: [
               _ProjectHeader(project: project),

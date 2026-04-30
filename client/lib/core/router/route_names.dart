@@ -9,4 +9,5 @@ final class RouteNames {
   static const editProject = 'edit-project';
   static const settings = 'settings';
   static const portal = 'portal';
+  static const createUpdate = 'create-update';
 }
