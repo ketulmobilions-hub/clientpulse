@@ -46,8 +46,10 @@ Confirm before starting:
    - Start Date: today
    - End Date: 2 weeks from today
 7. Submit
-   - [ ] **Checkpoint:** Redirects to `/projects/{id}`
-   - [ ] **Checkpoint:** Project appears in dashboard list
+   - [ ] **Checkpoint:** Share dialog appears with portal URL (`/p/{share_token}`)
+   - [ ] **Checkpoint:** Copy button copies the link to clipboard
+8. Click "Done"
+   - [ ] **Checkpoint:** Returns to `/dashboard` with project visible in list
 
 ---
 
