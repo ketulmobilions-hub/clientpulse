@@ -117,3 +117,45 @@ export async function sendMagicLinkEmail(
     throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
   }
 }
+
+export async function sendClientCommentNotificationEmail(
+  to: string,
+  projectName: string,
+  updateTitle: string,
+  clientName: string,
+  commentBody: string,
+  dashboardUrl: string,
+): Promise<void> {
+  const allowLocalhost = env.nodeEnv !== 'production';
+  const validUrl =
+    /^https:\/\//.test(dashboardUrl) ||
+    (allowLocalhost && /^http:\/\/localhost/.test(dashboardUrl));
+  if (!validUrl) {
+    throw new AppError('Invalid dashboard URL', 500, 'INTERNAL_ERROR');
+  }
+
+  const chars = [...commentBody];
+  const truncated = chars.length > 500 ? chars.slice(0, 500).join('') + '…' : commentBody;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: env.resendFromEmail,
+      to,
+      subject: `New comment from ${escapeHtml(clientName)} on "${escapeHtml(updateTitle)}"`,
+      html: [
+        `<p>A client left a comment on <strong>${escapeHtml(projectName)}</strong>.</p>`,
+        `<p><strong>Update:</strong> ${escapeHtml(updateTitle)}</p>`,
+        `<p><strong>From:</strong> ${escapeHtml(clientName)}</p>`,
+        `<blockquote style="border-left:3px solid #e5e7eb;margin:12px 0;padding:8px 16px;color:#374151;">${escapeHtml(truncated)}</blockquote>`,
+        `<p style="margin-top:24px;"><a href="${escapeHtml(dashboardUrl)}" style="background:#0ea5e9;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View on Dashboard</a></p>`,
+      ].join(''),
+    });
+
+    if (error) {
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, 'EMAIL_ERROR');
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
+  }
+}
