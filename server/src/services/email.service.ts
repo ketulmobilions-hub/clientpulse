@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const resend = new Resend(env.resendApiKey);
 
@@ -19,7 +20,7 @@ export async function sendInviteEmail(
   inviteUrl: string,
 ): Promise<void> {
   if (!/^https:\/\//.test(inviteUrl)) {
-    throw new AppError('Invalid invite URL', 500, 'INTERNAL_ERROR');
+    throw new AppError('Invalid invite URL', 500, ErrorCodes.INTERNAL_ERROR);
   }
 
   try {
@@ -31,11 +32,11 @@ export async function sendInviteEmail(
     });
 
     if (error) {
-      throw new AppError(`Email delivery failed: ${error.message}`, 502, 'EMAIL_ERROR');
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, ErrorCodes.EMAIL_ERROR);
     }
   } catch (err) {
     if (err instanceof AppError) throw err;
-    throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
+    throw new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR);
   }
 }
 
@@ -59,7 +60,7 @@ export async function sendUpdateNotificationEmail(
   const allowLocalhost = env.nodeEnv !== 'production';
   const validUrl = /^https:\/\//.test(portalUrl) || (allowLocalhost && /^http:\/\/localhost/.test(portalUrl));
   if (!validUrl) {
-    throw new AppError('Invalid portal URL', 500, 'INTERNAL_ERROR');
+    throw new AppError('Invalid portal URL', 500, ErrorCodes.INTERNAL_ERROR);
   }
 
   const categoryLabel = CATEGORY_LABELS[category];
@@ -84,11 +85,11 @@ export async function sendUpdateNotificationEmail(
     });
 
     if (error) {
-      throw new AppError(`Email delivery failed: ${error.message}`, 502, 'EMAIL_ERROR');
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, ErrorCodes.EMAIL_ERROR);
     }
   } catch (err) {
     if (err instanceof AppError) throw err;
-    throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
+    throw new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR);
   }
 }
 
@@ -98,7 +99,7 @@ export async function sendMagicLinkEmail(
   magicLinkUrl: string,
 ): Promise<void> {
   if (!/^https:\/\//.test(magicLinkUrl)) {
-    throw new AppError('Invalid magic link URL', 500, 'INTERNAL_ERROR');
+    throw new AppError('Invalid magic link URL', 500, ErrorCodes.INTERNAL_ERROR);
   }
 
   try {
@@ -110,11 +111,11 @@ export async function sendMagicLinkEmail(
     });
 
     if (error) {
-      throw new AppError(`Email delivery failed: ${error.message}`, 502, 'EMAIL_ERROR');
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, ErrorCodes.EMAIL_ERROR);
     }
   } catch (err) {
     if (err instanceof AppError) throw err;
-    throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
+    throw new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR);
   }
 }
 
@@ -131,7 +132,7 @@ export async function sendClientCommentNotificationEmail(
     /^https:\/\//.test(dashboardUrl) ||
     (allowLocalhost && /^http:\/\/localhost/.test(dashboardUrl));
   if (!validUrl) {
-    throw new AppError('Invalid dashboard URL', 500, 'INTERNAL_ERROR');
+    throw new AppError('Invalid dashboard URL', 500, ErrorCodes.INTERNAL_ERROR);
   }
 
   const chars = [...commentBody];
@@ -152,10 +153,10 @@ export async function sendClientCommentNotificationEmail(
     });
 
     if (error) {
-      throw new AppError(`Email delivery failed: ${error.message}`, 502, 'EMAIL_ERROR');
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, ErrorCodes.EMAIL_ERROR);
     }
   } catch (err) {
     if (err instanceof AppError) throw err;
-    throw new AppError('Email delivery failed', 502, 'EMAIL_ERROR');
+    throw new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR);
   }
 }

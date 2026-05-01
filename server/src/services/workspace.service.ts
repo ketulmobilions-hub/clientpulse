@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const WORKSPACE_COLUMNS = 'id, name, slug, owner_id, logo_url, created_at, updated_at';
 
@@ -17,7 +18,7 @@ function generateSlug(name: string): string {
     throw new AppError(
       'Workspace name must contain at least 2 alphanumeric characters',
       400,
-      'VALIDATION_ERROR',
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -33,7 +34,7 @@ export async function getWorkspace(userId: string) {
     .single();
 
   if (error || !data) {
-    throw new AppError('Workspace not found', 404, 'NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return data;
@@ -48,7 +49,7 @@ export async function createWorkspace(userId: string, name: string) {
     .single();
 
   if (existing) {
-    throw new AppError('Workspace already exists', 409, 'CONFLICT');
+    throw new AppError('Workspace already exists', 409, ErrorCodes.CONFLICT);
   }
 
   const baseSlug = generateSlug(name);
@@ -63,11 +64,11 @@ export async function createWorkspace(userId: string, name: string) {
 
     if (!error) return data;
     if (error.code !== '23505') {
-      throw new AppError('Failed to create workspace', 500, 'DB_ERROR');
+      throw new AppError('Failed to create workspace', 500, ErrorCodes.DB_ERROR);
     }
   }
 
-  throw new AppError('Could not generate unique workspace slug', 500, 'INTERNAL_ERROR');
+  throw new AppError('Could not generate unique workspace slug', 500, ErrorCodes.INTERNAL_ERROR);
 }
 
 export async function updateWorkspace(
@@ -92,7 +93,7 @@ export async function updateWorkspace(
       .single();
 
     if (!current) {
-      throw new AppError('Workspace not found', 404, 'NOT_FOUND');
+      throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
     }
 
     if (current.slug !== baseSlug) {
@@ -108,15 +109,15 @@ export async function updateWorkspace(
 
         if (!error) return data;
         if (error.code !== '23505') {
-          throw new AppError('Failed to update workspace', 500, 'DB_ERROR');
+          throw new AppError('Failed to update workspace', 500, ErrorCodes.DB_ERROR);
         }
       }
-      throw new AppError('Could not generate unique workspace slug', 500, 'INTERNAL_ERROR');
+      throw new AppError('Could not generate unique workspace slug', 500, ErrorCodes.INTERNAL_ERROR);
     }
   }
 
   if (Object.keys(payload).length === 0) {
-    throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
+    throw new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const { data, error } = await supabaseAdmin
@@ -128,7 +129,7 @@ export async function updateWorkspace(
     .single();
 
   if (error || !data) {
-    throw new AppError('Workspace not found', 404, 'NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return data;

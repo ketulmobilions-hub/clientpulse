@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import { supabaseAdmin } from '../config/adminDb';
 
 jest.mock('../config/adminDb', () => ({
@@ -134,16 +135,16 @@ describe('listMilestones', () => {
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
-    await expect(listMilestones(PROJECT_ID, USER_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(listMilestones(PROJECT_ID, USER_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND });
   });
 
   it('throws DB_ERROR when assertProjectOwnership has non-PGRST116 DB error', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: ErrorCodes.INTERNAL_ERROR } }));
 
     await expect(listMilestones(PROJECT_ID, USER_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -154,7 +155,7 @@ describe('listMilestones', () => {
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
       .mockReturnValueOnce(makeListChain({ data: null, error: new Error('db down') }));
 
-    await expect(listMilestones(PROJECT_ID, USER_ID)).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(listMilestones(PROJECT_ID, USER_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
   });
 });
 
@@ -201,7 +202,7 @@ describe('createMilestone', () => {
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(createMilestone(PROJECT_ID, USER_ID, { title: 'T' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -213,7 +214,7 @@ describe('createMilestone', () => {
       .mockReturnValueOnce(makeInsertChain({ data: null, error: new Error('db down') }));
 
     await expect(createMilestone(PROJECT_ID, USER_ID, { title: 'T' })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
     });
   });
 });
@@ -249,10 +250,10 @@ describe('updateMilestone', () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
-      .mockReturnValueOnce(makeFetchCurrentChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+      .mockReturnValueOnce(makeFetchCurrentChain({ data: null, error: { code: ErrorCodes.INTERNAL_ERROR } }));
 
     await expect(updateMilestone(MILESTONE_ID, USER_ID, { completed: true })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -312,7 +313,7 @@ describe('updateMilestone', () => {
 
   it('throws VALIDATION_ERROR when no fields provided — no DB calls made', async () => {
     await expect(updateMilestone(MILESTONE_ID, USER_ID, {})).rejects.toMatchObject({
-      code: 'VALIDATION_ERROR',
+      code: ErrorCodes.VALIDATION_ERROR,
       statusCode: 400,
     });
     expect(mockFrom).not.toHaveBeenCalled();
@@ -324,7 +325,7 @@ describe('updateMilestone', () => {
       .mockReturnValueOnce(makeProjectIdsChain(EMPTY_PROJECT_IDS_RESULT));
 
     await expect(updateMilestone(MILESTONE_ID, USER_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -336,7 +337,7 @@ describe('updateMilestone', () => {
       .mockReturnValueOnce(makeUpdateChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(updateMilestone(MILESTONE_ID, USER_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
     });
   });
 
@@ -347,7 +348,7 @@ describe('updateMilestone', () => {
       .mockReturnValueOnce(makeUpdateChain({ data: null, error: null }));
 
     await expect(updateMilestone(MILESTONE_ID, USER_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -369,7 +370,7 @@ describe('deleteMilestone', () => {
       .mockReturnValueOnce(makeProjectIdsChain(EMPTY_PROJECT_IDS_RESULT));
 
     await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -380,7 +381,7 @@ describe('deleteMilestone', () => {
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
       .mockReturnValueOnce(makeDeleteChain({ error: null, count: 0 }));
 
-    await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND });
   });
 
   it('throws DB_ERROR when count is null — deletion unconfirmed', async () => {
@@ -390,7 +391,7 @@ describe('deleteMilestone', () => {
       .mockReturnValueOnce(makeDeleteChain({ error: null, count: null }));
 
     await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -401,6 +402,6 @@ describe('deleteMilestone', () => {
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
       .mockReturnValueOnce(makeDeleteChain({ error: new Error('db down'), count: null }));
 
-    await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(deleteMilestone(MILESTONE_ID, USER_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
   });
 });

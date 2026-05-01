@@ -11,6 +11,7 @@ import request from 'supertest';
 import app from '../app';
 import * as updateService from '../services/update.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockCreate = updateService.createUpdate as jest.Mock;
 const mockList = updateService.listUpdates as jest.Mock;
@@ -76,7 +77,7 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send({ body: 'No title' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -85,7 +86,7 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send({ title: 'No body' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -94,7 +95,7 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send({ ...validBody, category: 'invalid' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -103,7 +104,7 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send({ ...validBody, status: 'archived' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -112,7 +113,7 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post('/api/v1/projects/not-a-uuid/updates')
       .send(validBody);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -142,17 +143,17 @@ describe('POST /api/v1/projects/:projectId/updates', () => {
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send({ ...validBody, category: 'general' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockCreate.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockCreate.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/projects/${VALID_UUID}/updates`)
       .send(validBody);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -168,15 +169,15 @@ describe('GET /api/v1/projects/:projectId/updates', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID projectId', async () => {
     const res = await request(app).get('/api/v1/projects/not-a-uuid/updates');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockList).not.toHaveBeenCalled();
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockList.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockList.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/projects/${VALID_UUID}/updates`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -192,15 +193,15 @@ describe('GET /api/v1/updates/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).get('/api/v1/updates/not-a-uuid');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockGet).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when update missing', async () => {
-    mockGet.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockGet.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/updates/${VALID_UUID_2}`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -217,18 +218,18 @@ describe('PATCH /api/v1/updates/:id', () => {
   });
 
   it('returns 400 VALIDATION_ERROR for empty body', async () => {
-    mockEdit.mockRejectedValue(new AppError('No fields to update', 400, 'VALIDATION_ERROR'));
+    mockEdit.mockRejectedValue(new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR));
     const res = await request(app)
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).patch('/api/v1/updates/not-a-uuid').send({ title: 'X' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockEdit).not.toHaveBeenCalled();
   });
 
@@ -237,7 +238,7 @@ describe('PATCH /api/v1/updates/:id', () => {
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({ category: 'unknown' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockEdit).not.toHaveBeenCalled();
   });
 
@@ -246,7 +247,7 @@ describe('PATCH /api/v1/updates/:id', () => {
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({ status: 'deleted' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockEdit).not.toHaveBeenCalled();
   });
 
@@ -255,7 +256,7 @@ describe('PATCH /api/v1/updates/:id', () => {
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({ position: -1 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockEdit).not.toHaveBeenCalled();
   });
 
@@ -264,7 +265,7 @@ describe('PATCH /api/v1/updates/:id', () => {
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({ position: 1.5 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockEdit).not.toHaveBeenCalled();
   });
 
@@ -302,12 +303,12 @@ describe('PATCH /api/v1/updates/:id', () => {
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockEdit.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockEdit.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .patch(`/api/v1/updates/${VALID_UUID_2}`)
       .send({ title: 'X' });
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -322,21 +323,21 @@ describe('DELETE /api/v1/updates/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).delete('/api/v1/updates/not-a-uuid');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when update missing', async () => {
-    mockDelete.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockDelete.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).delete(`/api/v1/updates/${VALID_UUID_2}`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 500 DB_ERROR when deletion unconfirmed', async () => {
-    mockDelete.mockRejectedValue(new AppError('Failed to confirm deletion', 500, 'DB_ERROR'));
+    mockDelete.mockRejectedValue(new AppError('Failed to confirm deletion', 500, ErrorCodes.DB_ERROR));
     const res = await request(app).delete(`/api/v1/updates/${VALID_UUID_2}`);
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });

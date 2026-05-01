@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import { supabase } from '../config/db';
 import { supabaseAdmin } from '../config/adminDb';
 
@@ -118,7 +119,7 @@ describe('registerUser', () => {
     });
 
     await expect(registerUser('dup@agency.com', 'pass12345', 'Dup', 'Dup Agency')).rejects.toMatchObject({
-      code: 'REGISTRATION_ERROR',
+      code: ErrorCodes.REGISTRATION_ERROR,
       statusCode: 400,
     });
   });
@@ -130,7 +131,7 @@ describe('registerUser', () => {
     });
 
     await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -140,7 +141,7 @@ describe('registerUser', () => {
     mockFrom.mockReturnValueOnce(makeInsertChain({ data: null, error: new Error('db down') }));
 
     await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
     });
     expect(mockDeleteUser).toHaveBeenCalledWith(AUTH_USER.id);
   });
@@ -154,7 +155,7 @@ describe('registerUser', () => {
       .mockReturnValueOnce(wsDeleteMock);
 
     await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
     });
     expect(wsDeleteMock.delete).toHaveBeenCalled();
     expect(wsDeleteMock._eq).toHaveBeenCalledWith('id', WORKSPACE.id);
@@ -168,7 +169,7 @@ describe('registerUser', () => {
     mockDeleteUser.mockResolvedValue({ error: { message: 'delete failed' } });
 
     await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
     });
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('Rollback failed'),
@@ -202,7 +203,7 @@ describe('loginUser', () => {
 
   it('throws INVALID_CREDENTIALS on wrong password', async () => {
     mockSignIn.mockResolvedValue({ data: { session: null, user: null }, error: { message: 'Invalid login credentials' } });
-    await expect(loginUser('pm@agency.com', 'wrong')).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+    await expect(loginUser('pm@agency.com', 'wrong')).rejects.toMatchObject({ code: ErrorCodes.INVALID_CREDENTIALS });
   });
 
   it('throws DB_ERROR and revokes session when user row not found', async () => {
@@ -212,7 +213,7 @@ describe('loginUser', () => {
     });
     mockFrom.mockReturnValueOnce(makeSelectChain({ data: null, error: new Error('not found') }));
 
-    await expect(loginUser('pm@agency.com', 'pass12345')).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(loginUser('pm@agency.com', 'pass12345')).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
     expect(mockAdminSignOut).toHaveBeenCalledWith('live-token');
   });
 
@@ -225,7 +226,7 @@ describe('loginUser', () => {
     mockFrom.mockReturnValueOnce(makeSelectChain({ data: null, error: new Error('not found') }));
     mockAdminSignOut.mockResolvedValue({ error: { message: 'signout failed' } });
 
-    await expect(loginUser('pm@agency.com', 'pass12345')).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(loginUser('pm@agency.com', 'pass12345')).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to revoke session'),
       'uid-123',
@@ -284,7 +285,7 @@ describe('generateMagicLink', () => {
 
     await expect(
       generateMagicLink('bad-project-id', 'client@example.com', undefined, VALID_USER_ID),
-    ).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 });
+    ).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND, statusCode: 404 });
     expect(mockSendMagicLinkEmail).not.toHaveBeenCalled();
   });
 
@@ -295,7 +296,7 @@ describe('generateMagicLink', () => {
 
     await expect(
       generateMagicLink(PROJECT.id, 'client@example.com', undefined, 'other-user-id'),
-    ).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 });
+    ).rejects.toMatchObject({ code: ErrorCodes.FORBIDDEN, statusCode: 403 });
     expect(mockSendMagicLinkEmail).not.toHaveBeenCalled();
   });
 
@@ -321,7 +322,7 @@ describe('generateMagicLink', () => {
 
     await expect(
       generateMagicLink(PROJECT.id, 'client@example.com', undefined, VALID_USER_ID),
-    ).rejects.toMatchObject({ code: 'DB_ERROR', statusCode: 500 });
+    ).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR, statusCode: 500 });
     expect(mockSendMagicLinkEmail).not.toHaveBeenCalled();
   });
 
@@ -330,11 +331,11 @@ describe('generateMagicLink', () => {
       .mockReturnValueOnce(makeProjectSelectChain({ data: PROJECT, error: null }))
       .mockReturnValueOnce(makeWorkspaceOwnerSelectChain({ data: WORKSPACE, error: null }))
       .mockReturnValueOnce(makeInsertChain({ data: LINK_ROW, error: null }));
-    mockSendMagicLinkEmail.mockRejectedValue({ code: 'EMAIL_ERROR', statusCode: 502 });
+    mockSendMagicLinkEmail.mockRejectedValue({ code: ErrorCodes.EMAIL_ERROR, statusCode: 502 });
 
     await expect(
       generateMagicLink(PROJECT.id, 'client@example.com', 'Alice', VALID_USER_ID),
-    ).rejects.toMatchObject({ code: 'EMAIL_ERROR' });
+    ).rejects.toMatchObject({ code: ErrorCodes.EMAIL_ERROR });
   });
 
   it('logs error but still returns { sent: true } when email_sent_at update fails', async () => {
@@ -394,7 +395,7 @@ describe('verifyMagicLink', () => {
     mockFrom.mockReturnValueOnce(makeAtomicUpdateChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(verifyMagicLink('used-token')).rejects.toMatchObject({
-      code: 'INVALID_TOKEN',
+      code: ErrorCodes.INVALID_TOKEN,
       statusCode: 401,
     });
   });
@@ -405,7 +406,7 @@ describe('verifyMagicLink', () => {
     );
 
     await expect(verifyMagicLink('sometoken')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });

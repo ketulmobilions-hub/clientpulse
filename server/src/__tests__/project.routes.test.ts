@@ -11,6 +11,7 @@ import request from 'supertest';
 import app from '../app';
 import * as projectService from '../services/project.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockList = projectService.listProjects as jest.Mock;
 const mockGet = projectService.getProject as jest.Mock;
@@ -52,10 +53,10 @@ describe('GET /api/v1/projects', () => {
   });
 
   it('propagates service errors', async () => {
-    mockList.mockRejectedValue(new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND'));
+    mockList.mockRejectedValue(new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get('/api/v1/projects');
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('WORKSPACE_NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -74,7 +75,7 @@ describe('POST /api/v1/projects', () => {
       .post('/api/v1/projects')
       .send({ client_name: 'Acme', client_email: 'a@b.com' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -83,7 +84,7 @@ describe('POST /api/v1/projects', () => {
       .post('/api/v1/projects')
       .send({ name: 'X', client_email: 'a@b.com' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 400 VALIDATION_ERROR when client_email missing', async () => {
@@ -91,7 +92,7 @@ describe('POST /api/v1/projects', () => {
       .post('/api/v1/projects')
       .send({ name: 'X', client_name: 'Y' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 400 VALIDATION_ERROR for invalid email format', async () => {
@@ -99,7 +100,7 @@ describe('POST /api/v1/projects', () => {
       .post('/api/v1/projects')
       .send({ ...validBody, client_email: 'notanemail' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -108,7 +109,7 @@ describe('POST /api/v1/projects', () => {
       .post('/api/v1/projects')
       .send({ ...validBody, client_email: 'user@' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('passes optional description to service', async () => {
@@ -121,11 +122,11 @@ describe('POST /api/v1/projects', () => {
 
   it('propagates service VALIDATION_ERROR', async () => {
     mockCreate.mockRejectedValue(
-      new AppError('client_email is not a valid email address', 400, 'VALIDATION_ERROR'),
+      new AppError('client_email is not a valid email address', 400, ErrorCodes.VALIDATION_ERROR),
     );
     const res = await request(app).post('/api/v1/projects').send(validBody);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 });
 
@@ -141,15 +142,15 @@ describe('GET /api/v1/projects/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).get('/api/v1/projects/not-a-uuid');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockGet).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when project missing', async () => {
-    mockGet.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockGet.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/projects/${VALID_UUID}`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -164,7 +165,7 @@ describe('PATCH /api/v1/projects/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).patch('/api/v1/projects/not-a-uuid').send({ name: 'X' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -173,7 +174,7 @@ describe('PATCH /api/v1/projects/:id', () => {
       .patch(`/api/v1/projects/${VALID_UUID}`)
       .send({ status: 'deleted' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -182,7 +183,7 @@ describe('PATCH /api/v1/projects/:id', () => {
       .patch(`/api/v1/projects/${VALID_UUID}`)
       .send({ client_email: 'notanemail' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -225,14 +226,14 @@ describe('DELETE /api/v1/projects/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).delete('/api/v1/projects/not-a-uuid');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockArchive).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when project missing', async () => {
-    mockArchive.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockArchive.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).delete(`/api/v1/projects/${VALID_UUID}`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });

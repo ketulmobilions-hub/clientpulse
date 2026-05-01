@@ -11,6 +11,7 @@ import request from 'supertest';
 import app from '../app';
 import * as milestoneService from '../services/milestone.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockList = milestoneService.listMilestones as jest.Mock;
 const mockCreate = milestoneService.createMilestone as jest.Mock;
@@ -53,15 +54,15 @@ describe('GET /api/v1/projects/:projectId/milestones', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID projectId', async () => {
     const res = await request(app).get('/api/v1/projects/not-a-uuid/milestones');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockList).not.toHaveBeenCalled();
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockList.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockList.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/projects/${VALID_UUID}/milestones`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -83,7 +84,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -92,7 +93,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ title: '' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -101,7 +102,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ title: '   ' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -110,7 +111,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ title: null });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -119,7 +120,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post('/api/v1/projects/not-a-uuid/milestones')
       .send(validBody);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -146,7 +147,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, due_date: 'not-a-date' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -155,7 +156,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, due_date: '2026-99-01' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -164,7 +165,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, due_date: '1999-01-01' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -173,7 +174,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, position: null });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -182,7 +183,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, position: -1 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -191,7 +192,7 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, position: 1.5 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
@@ -200,17 +201,17 @@ describe('POST /api/v1/projects/:projectId/milestones', () => {
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send({ ...validBody, position: 100_001 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockCreate.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockCreate.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/projects/${VALID_UUID}/milestones`)
       .send(validBody);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -241,7 +242,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -250,7 +251,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ completed: 'yes' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -259,7 +260,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ title: '' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -268,14 +269,14 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ title: null });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).patch('/api/v1/milestones/not-a-uuid').send({ title: 'X' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -284,7 +285,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ due_date: 'bad-date' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -293,7 +294,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ due_date: '2026-02-31' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -302,7 +303,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ due_date: '2200-01-01' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -311,7 +312,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ position: null });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -320,7 +321,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ position: -1 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -329,7 +330,7 @@ describe('PATCH /api/v1/milestones/:id', () => {
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ position: 100_001 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
@@ -352,12 +353,12 @@ describe('PATCH /api/v1/milestones/:id', () => {
   });
 
   it('propagates service NOT_FOUND', async () => {
-    mockUpdate.mockRejectedValue(new AppError('Milestone not found', 404, 'NOT_FOUND'));
+    mockUpdate.mockRejectedValue(new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .patch(`/api/v1/milestones/${VALID_UUID_2}`)
       .send({ title: 'X' });
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });
 
@@ -372,21 +373,21 @@ describe('DELETE /api/v1/milestones/:id', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
     const res = await request(app).delete('/api/v1/milestones/not-a-uuid');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockDelete).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when milestone missing', async () => {
-    mockDelete.mockRejectedValue(new AppError('Milestone not found', 404, 'NOT_FOUND'));
+    mockDelete.mockRejectedValue(new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).delete(`/api/v1/milestones/${VALID_UUID_2}`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 500 DB_ERROR when deletion unconfirmed', async () => {
-    mockDelete.mockRejectedValue(new AppError('Failed to confirm deletion', 500, 'DB_ERROR'));
+    mockDelete.mockRejectedValue(new AppError('Failed to confirm deletion', 500, ErrorCodes.DB_ERROR));
     const res = await request(app).delete(`/api/v1/milestones/${VALID_UUID_2}`);
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });

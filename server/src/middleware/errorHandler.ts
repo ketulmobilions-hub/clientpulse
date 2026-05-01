@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import { ErrorCode, ErrorCodes } from '../errors/codes';
 
 export class AppError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
-    public readonly code: string,
+    public readonly code: ErrorCode,
   ) {
     super(message);
     this.name = 'AppError';
@@ -34,13 +35,13 @@ export function errorHandler(
   // Non-operational error — hide internal details from client
   res.status(500).json({
     success: false,
-    error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
+    error: { code: ErrorCodes.INTERNAL_ERROR, message: 'An unexpected error occurred' },
   });
 }
 
 export function notFound(_req: Request, res: Response): void {
   res.status(404).json({
     success: false,
-    error: { code: 'NOT_FOUND', message: 'Route not found' },
+    error: { code: ErrorCodes.NOT_FOUND, message: 'Route not found' },
   });
 }

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import {
@@ -13,14 +14,14 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
 function validateDueDate(value: unknown, field: string): string | null {
   if (value === null) return null;
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new AppError(`${field} must be a date string in YYYY-MM-DD format`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a date string in YYYY-MM-DD format`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   // Parse manually — JS Date rolls over invalid dates (e.g. Feb 31 → Mar 3) so isNaN() alone is unreliable.
   const [yearStr, monthStr, dayStr] = value.split('-');
@@ -29,26 +30,26 @@ function validateDueDate(value: unknown, field: string): string | null {
   const day = parseInt(dayStr, 10);
 
   if (year < 2000 || year > 2100) {
-    throw new AppError(`${field} year must be between 2000 and 2100`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} year must be between 2000 and 2100`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   if (month < 1 || month > 12) {
-    throw new AppError(`${field} must be a valid calendar date`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid calendar date`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   // new Date(year, month, 0) = day-0 of the next month = last day of `month` (months are 0-indexed in Date ctor)
   const daysInMonth = new Date(year, month, 0).getDate();
   if (day < 1 || day > daysInMonth) {
-    throw new AppError(`${field} must be a valid calendar date`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid calendar date`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   return value;
 }
 
 function validatePosition(value: unknown): number {
   if (value === null || typeof value !== 'number') {
-    throw new AppError('position must be a non-negative integer no greater than 100000', 400, 'VALIDATION_ERROR');
+    throw new AppError('position must be a non-negative integer no greater than 100000', 400, ErrorCodes.VALIDATION_ERROR);
   }
   const pos = Number(value);
   if (!Number.isInteger(pos) || pos < 0 || pos > 100_000) {
-    throw new AppError('position must be a non-negative integer no greater than 100000', 400, 'VALIDATION_ERROR');
+    throw new AppError('position must be a non-negative integer no greater than 100000', 400, ErrorCodes.VALIDATION_ERROR);
   }
   return pos;
 }
@@ -116,7 +117,7 @@ milestoneRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
 
     if (req.body?.completed !== undefined) {
       if (typeof req.body.completed !== 'boolean') {
-        throw new AppError('completed must be a boolean', 400, 'VALIDATION_ERROR');
+        throw new AppError('completed must be a boolean', 400, ErrorCodes.VALIDATION_ERROR);
       }
       changes.completed = req.body.completed;
     }
@@ -127,7 +128,7 @@ milestoneRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
 
     // Issue 11: guard against empty payload before hitting the service
     if (Object.keys(changes).length === 0) {
-      throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
+      throw new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR);
     }
 
     const milestone = await updateMilestone(req.params['id'] as string, req.user!.id, changes);

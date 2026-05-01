@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import {
@@ -17,32 +18,32 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function validateDate(value: unknown, field: string): string {
   if (typeof value !== 'string' || !DATE_RE.test(value)) {
-    throw new AppError(`${field} must be a date in YYYY-MM-DD format`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a date in YYYY-MM-DD format`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   // Guard against calendar-invalid dates like Feb 30 or month 13.
   // Append T00:00:00Z to force UTC parse, then verify the ISO string round-trips.
   const parsed = new Date(`${value}T00:00:00Z`);
   if (isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
-    throw new AppError(`${field} is not a valid calendar date`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} is not a valid calendar date`, 400, ErrorCodes.VALIDATION_ERROR);
   }
   return value;
 }
 
 function validateDateOrdering(start: string | undefined | null, end: string | undefined | null): void {
   if (start && end && end < start) {
-    throw new AppError('expected_end_date must be on or after start_date', 400, 'VALIDATION_ERROR');
+    throw new AppError('expected_end_date must be on or after start_date', 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
 function validateEmail(value: string, field: string): void {
   if (!EMAIL_RE.test(value)) {
-    throw new AppError(`${field} must be a valid email address`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid email address`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
@@ -133,7 +134,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction): Pr
         throw new AppError(
           `status must be one of: ${VALID_STATUSES.join(', ')}`,
           400,
-          'VALIDATION_ERROR',
+          ErrorCodes.VALIDATION_ERROR,
         );
       }
       updates.status = req.body.status;

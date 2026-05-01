@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 // Resolves the workspace for a user — either as the workspace owner or as an invited member.
 // Owner path: workspaces.owner_id = userId.
@@ -14,7 +15,7 @@ export async function getWorkspaceIdForUser(userId: string, context: string): Pr
 
   if (ownerError) {
     console.error(`[${context}] getWorkspaceIdForUser owner lookup DB error:`, ownerError);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (ownerData && ownerData.length > 0) {
     return (ownerData[0] as { id: string }).id;
@@ -29,10 +30,10 @@ export async function getWorkspaceIdForUser(userId: string, context: string): Pr
 
   if (memberError) {
     console.error(`[${context}] getWorkspaceIdForUser member lookup DB error:`, memberError);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (!memberData) {
-    throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // Verify the workspace is still active (not soft-deleted).
@@ -45,10 +46,10 @@ export async function getWorkspaceIdForUser(userId: string, context: string): Pr
 
   if (wsError) {
     console.error(`[${context}] getWorkspaceIdForUser workspace verify DB error:`, wsError);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (!wsData) {
-    throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return wsData.id;
@@ -72,12 +73,12 @@ export async function assertProjectOwnership(
   if (error) {
     if (error.code !== 'PGRST116') {
       console.error(`[${context}] assertProjectOwnership DB error:`, error);
-      throw new AppError('Failed to verify project ownership', 500, 'DB_ERROR');
+      throw new AppError('Failed to verify project ownership', 500, ErrorCodes.DB_ERROR);
     }
-    throw new AppError('Project not found', 404, 'NOT_FOUND');
+    throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
   }
   if (!data) {
-    throw new AppError('Project not found', 404, 'NOT_FOUND');
+    throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
   }
 }
 
@@ -93,7 +94,7 @@ export async function getProjectIdsForWorkspace(
 
   if (error) {
     console.error(`[${context}] getProjectIdsForWorkspace DB error:`, error);
-    throw new AppError('Failed to resolve projects', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve projects', 500, ErrorCodes.DB_ERROR);
   }
 
   return ((data ?? []) as { id: string }[]).map((p) => p.id);

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import { getUploadSignedUrl, deleteLogoByUrl } from '../services/storage.service';
@@ -17,7 +18,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        throw new AppError('Authentication required', 401, 'UNAUTHORIZED');
+        throw new AppError('Authentication required', 401, ErrorCodes.UNAUTHORIZED);
       }
 
       const fileName = validateString(req.body?.file_name, 'file_name', 1, 255);
@@ -39,7 +40,7 @@ router.delete(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user) {
-        throw new AppError('Authentication required', 401, 'UNAUTHORIZED');
+        throw new AppError('Authentication required', 401, ErrorCodes.UNAUTHORIZED);
       }
 
       const logoUrl = validateString(req.body?.logo_url, 'logo_url', 1, 2048);
@@ -49,7 +50,7 @@ router.delete(
       if (match) {
         const storagePath = decodeURIComponent(match[1]);
         if (!storagePath.startsWith(`${req.user.id}/`)) {
-          throw new AppError('Cannot delete a logo that does not belong to you', 403, 'FORBIDDEN');
+          throw new AppError('Cannot delete a logo that does not belong to you', 403, ErrorCodes.FORBIDDEN);
         }
       }
 

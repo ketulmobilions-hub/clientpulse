@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const PROJECT_COLUMNS =
   'id, workspace_id, name, description, client_name, client_email, status, share_token, start_date, expected_end_date, created_at, updated_at';
@@ -34,10 +35,10 @@ async function getWorkspaceIdForUser(userId: string): Promise<string> {
 
   if (error) {
     console.error('[project.service] getWorkspaceIdForUser DB error:', error);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (!data || data.length === 0) {
-    throw new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return (data[0] as { id: string }).id;
@@ -55,7 +56,7 @@ export async function listProjects(userId: string): Promise<Project[]> {
 
   if (error) {
     console.error('[project.service] listProjects DB error:', error);
-    throw new AppError('Failed to fetch projects', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch projects', 500, ErrorCodes.DB_ERROR);
   }
 
   return (data ?? []) as Project[];
@@ -76,7 +77,7 @@ export async function getProject(projectId: string, userId: string): Promise<Pro
     if (error?.code !== 'PGRST116') {
       console.error('[project.service] getProject DB error:', error);
     }
-    throw new AppError('Project not found', 404, 'NOT_FOUND');
+    throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return data as Project;
@@ -112,10 +113,10 @@ export async function createProject(
 
   if (error || !data) {
     if (error?.code === '23514') {
-      throw new AppError('client_email is not a valid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('client_email is not a valid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
     console.error('[project.service] createProject DB error:', error);
-    throw new AppError('Failed to create project', 500, 'DB_ERROR');
+    throw new AppError('Failed to create project', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Project;
@@ -136,7 +137,7 @@ export async function updateProject(
 ): Promise<Project> {
   // Runtime status guard — TypeScript types are erased; callers beyond the route layer exist
   if (updates.status !== undefined && !(VALID_STATUSES as readonly string[]).includes(updates.status)) {
-    throw new AppError(`status must be one of: ${VALID_STATUSES.join(', ')}`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`status must be one of: ${VALID_STATUSES.join(', ')}`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const workspaceId = await getWorkspaceIdForUser(userId);
@@ -153,7 +154,7 @@ export async function updateProject(
   if ('expected_end_date' in updates) payload.expected_end_date = updates.expected_end_date ?? null;
 
   if (Object.keys(payload).length === 0) {
-    throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
+    throw new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   // Ownership enforced by workspace_id filter — no separate SELECT needed
@@ -168,13 +169,13 @@ export async function updateProject(
 
   if (error || !data) {
     if (error?.code === '23514') {
-      throw new AppError('client_email is not a valid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('client_email is not a valid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
     if (error?.code === 'PGRST116' || !data) {
-      throw new AppError('Project not found', 404, 'NOT_FOUND');
+      throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
     }
     console.error('[project.service] updateProject DB error:', error);
-    throw new AppError('Failed to update project', 500, 'DB_ERROR');
+    throw new AppError('Failed to update project', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Project;
@@ -196,10 +197,10 @@ export async function archiveProject(projectId: string, userId: string): Promise
 
   if (error || !data) {
     if (error?.code === 'PGRST116' || !data) {
-      throw new AppError('Project not found', 404, 'NOT_FOUND');
+      throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
     }
     console.error('[project.service] archiveProject DB error:', error);
-    throw new AppError('Failed to archive project', 500, 'DB_ERROR');
+    throw new AppError('Failed to archive project', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Project;

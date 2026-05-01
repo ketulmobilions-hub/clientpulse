@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 jest.mock('../config/adminDb', () => ({
   supabaseAdmin: {
     from: jest.fn(),
@@ -187,7 +188,7 @@ describe('generateAttachmentSignedUrl', () => {
 
     await expect(
       generateAttachmentSignedUrl(USER_ID, UPDATE_ID, 'file.pdf', 'application/pdf'),
-    ).rejects.toMatchObject({ code: 'MAX_ATTACHMENTS', statusCode: 409 });
+    ).rejects.toMatchObject({ code: ErrorCodes.MAX_ATTACHMENTS, statusCode: 409 });
   });
 
   it('throws INVALID_FILE_TYPE for blocked single extensions', async () => {
@@ -197,7 +198,7 @@ describe('generateAttachmentSignedUrl', () => {
 
       await expect(
         generateAttachmentSignedUrl(USER_ID, UPDATE_ID, name, 'application/octet-stream'),
-      ).rejects.toMatchObject({ code: 'INVALID_FILE_TYPE', statusCode: 400 });
+      ).rejects.toMatchObject({ code: ErrorCodes.INVALID_FILE_TYPE, statusCode: 400 });
     }
   });
 
@@ -208,7 +209,7 @@ describe('generateAttachmentSignedUrl', () => {
     // evil.pdf.exe — final ext is .exe, must be blocked
     await expect(
       generateAttachmentSignedUrl(USER_ID, UPDATE_ID, 'evil.pdf.exe', 'application/octet-stream'),
-    ).rejects.toMatchObject({ code: 'INVALID_FILE_TYPE' });
+    ).rejects.toMatchObject({ code: ErrorCodes.INVALID_FILE_TYPE });
   });
 
   it('allows safe final extension when name contains a blocked inner segment', async () => {
@@ -229,7 +230,7 @@ describe('generateAttachmentSignedUrl', () => {
 
     await expect(
       generateAttachmentSignedUrl(USER_ID, UPDATE_ID, '!!!!.???', 'application/octet-stream'),
-    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', statusCode: 400 });
+    ).rejects.toMatchObject({ code: ErrorCodes.VALIDATION_ERROR, statusCode: 400 });
   });
 
   it('throws NOT_FOUND when update not owned by user', async () => {
@@ -240,7 +241,7 @@ describe('generateAttachmentSignedUrl', () => {
 
     await expect(
       generateAttachmentSignedUrl(USER_ID, UPDATE_ID, 'file.pdf', 'application/pdf'),
-    ).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 });
+    ).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND, statusCode: 404 });
   });
 
   it('throws STORAGE_ERROR when Supabase storage fails', async () => {
@@ -250,7 +251,7 @@ describe('generateAttachmentSignedUrl', () => {
 
     await expect(
       generateAttachmentSignedUrl(USER_ID, UPDATE_ID, 'file.pdf', 'application/pdf'),
-    ).rejects.toMatchObject({ code: 'STORAGE_ERROR', statusCode: 500 });
+    ).rejects.toMatchObject({ code: ErrorCodes.STORAGE_ERROR, statusCode: 500 });
   });
 });
 
@@ -278,7 +279,7 @@ describe('saveAttachment', () => {
     mockFrom.mockReturnValueOnce(makeCountChain({ count: 3, error: null }));
 
     await expect(saveAttachment(USER_ID, UPDATE_ID, VALID_INPUT)).rejects.toMatchObject({
-      code: 'MAX_ATTACHMENTS',
+      code: ErrorCodes.MAX_ATTACHMENTS,
       statusCode: 409,
     });
   });
@@ -295,7 +296,7 @@ describe('saveAttachment', () => {
     );
 
     await expect(saveAttachment(USER_ID, UPDATE_ID, VALID_INPUT)).rejects.toMatchObject({
-      code: 'MAX_ATTACHMENTS',
+      code: ErrorCodes.MAX_ATTACHMENTS,
       statusCode: 409,
     });
   });
@@ -306,7 +307,7 @@ describe('saveAttachment', () => {
 
     await expect(
       saveAttachment(USER_ID, UPDATE_ID, { ...VALID_INPUT, file_size: 10 * 1024 * 1024 + 1 }),
-    ).rejects.toMatchObject({ code: 'FILE_TOO_LARGE', statusCode: 400 });
+    ).rejects.toMatchObject({ code: ErrorCodes.FILE_TOO_LARGE, statusCode: 400 });
   });
 
   it('accepts file_size exactly at 10MB boundary', async () => {
@@ -332,7 +333,7 @@ describe('saveAttachment', () => {
           file_name: name,
           file_url: `https://test.supabase.co/storage/v1/object/public/attachments/u/upd/${name}`,
         }),
-      ).rejects.toMatchObject({ code: 'INVALID_FILE_TYPE', statusCode: 400 });
+      ).rejects.toMatchObject({ code: ErrorCodes.INVALID_FILE_TYPE, statusCode: 400 });
     }
   });
 
@@ -343,7 +344,7 @@ describe('saveAttachment', () => {
 
     await expect(
       saveAttachment(USER_ID, UPDATE_ID, { ...VALID_INPUT, file_name: '!!!!.???' }),
-    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', statusCode: 400 });
+    ).rejects.toMatchObject({ code: ErrorCodes.VALIDATION_ERROR, statusCode: 400 });
   });
 
   it('throws VALIDATION_ERROR when file_url is an arbitrary external URL', async () => {
@@ -352,7 +353,7 @@ describe('saveAttachment', () => {
 
     await expect(
       saveAttachment(USER_ID, UPDATE_ID, { ...VALID_INPUT, file_url: 'https://evil.com/malware.pdf' }),
-    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', statusCode: 400 });
+    ).rejects.toMatchObject({ code: ErrorCodes.VALIDATION_ERROR, statusCode: 400 });
   });
 
   it('throws VALIDATION_ERROR when file_url uses HTTP instead of HTTPS', async () => {
@@ -364,7 +365,7 @@ describe('saveAttachment', () => {
         ...VALID_INPUT,
         file_url: 'http://test.supabase.co/storage/v1/object/public/attachments/u/f.pdf',
       }),
-    ).rejects.toMatchObject({ code: 'VALIDATION_ERROR', statusCode: 400 });
+    ).rejects.toMatchObject({ code: ErrorCodes.VALIDATION_ERROR, statusCode: 400 });
   });
 
   it('throws NOT_FOUND when update not owned by user', async () => {
@@ -374,7 +375,7 @@ describe('saveAttachment', () => {
       .mockReturnValueOnce(makeUpdateOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(saveAttachment(USER_ID, UPDATE_ID, VALID_INPUT)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -385,7 +386,7 @@ describe('saveAttachment', () => {
     mockFrom.mockReturnValueOnce(makeInsertChain({ data: null, error: new Error('db down') }));
 
     await expect(saveAttachment(USER_ID, UPDATE_ID, VALID_INPUT)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -414,7 +415,7 @@ describe('deleteAttachment', () => {
       );
 
     await expect(deleteAttachment(USER_ID, ATTACHMENT_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -423,7 +424,7 @@ describe('deleteAttachment', () => {
     mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [], error: null }));
 
     await expect(deleteAttachment(USER_ID, ATTACHMENT_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -436,7 +437,7 @@ describe('deleteAttachment', () => {
       .mockReturnValueOnce(makeUpdateIdsChain({ data: [], error: null }));
 
     await expect(deleteAttachment(USER_ID, ATTACHMENT_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -472,7 +473,7 @@ describe('deleteAttachment', () => {
     mockFrom.mockReturnValueOnce(makeDeleteChain({ error: null, count: null }));
 
     await expect(deleteAttachment(USER_ID, ATTACHMENT_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -482,7 +483,7 @@ describe('deleteAttachment', () => {
     mockFrom.mockReturnValueOnce(makeDeleteChain({ error: new Error('db down'), count: null }));
 
     await expect(deleteAttachment(USER_ID, ATTACHMENT_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });

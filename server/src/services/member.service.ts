@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { env } from '../config/env';
 import { sendInviteEmail } from './email.service';
 
@@ -26,10 +27,10 @@ async function getCallerContext(
     .single();
 
   if (error?.code === 'PGRST116' || !data) {
-    throw new AppError('User not found', 404, 'NOT_FOUND');
+    throw new AppError('User not found', 404, ErrorCodes.NOT_FOUND);
   }
   if (error) {
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   return { workspaceId: data.workspace_id, role: data.role as 'admin' | 'member' };
@@ -43,7 +44,7 @@ export async function inviteMember(
   const { workspaceId, role: callerRole } = await getCallerContext(userId);
 
   if (callerRole !== 'admin') {
-    throw new AppError('Only admins can invite members', 403, 'FORBIDDEN');
+    throw new AppError('Only admins can invite members', 403, ErrorCodes.FORBIDDEN);
   }
 
   // Fix #5: normalize email case before all DB and auth operations
@@ -57,11 +58,11 @@ export async function inviteMember(
     .maybeSingle();
 
   if (existingError) {
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (existing && !existing.deleted_at) {
-    throw new AppError('Member already in workspace', 409, 'CONFLICT');
+    throw new AppError('Member already in workspace', 409, ErrorCodes.CONFLICT);
   }
 
   // Fix #6 + #2 + #3: purge soft-deleted row upfront so the fresh-invite path
@@ -74,7 +75,7 @@ export async function inviteMember(
       .eq('id', existing.id);
 
     if (purgeError) {
-      throw new AppError('Failed to reinvite member', 500, 'DB_ERROR');
+      throw new AppError('Failed to reinvite member', 500, ErrorCodes.DB_ERROR);
     }
   }
 
@@ -86,7 +87,7 @@ export async function inviteMember(
     .single();
 
   if (wsError || !workspace) {
-    throw new AppError('Workspace not found', 404, 'NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -96,7 +97,7 @@ export async function inviteMember(
   });
 
   if (linkError || !linkData?.user) {
-    throw new AppError('Failed to generate invite link', 500, 'DB_ERROR');
+    throw new AppError('Failed to generate invite link', 500, ErrorCodes.DB_ERROR);
   }
 
   const { data: member, error: insertError } = await supabaseAdmin
@@ -119,9 +120,9 @@ export async function inviteMember(
       console.error('[INVITE] Auth user rollback failed:', linkData.user.id, rollbackErr);
     }
     if (insertError?.code === '23505') {
-      throw new AppError('Member already in workspace', 409, 'CONFLICT');
+      throw new AppError('Member already in workspace', 409, ErrorCodes.CONFLICT);
     }
-    throw new AppError('Failed to add member', 500, 'DB_ERROR');
+    throw new AppError('Failed to add member', 500, ErrorCodes.DB_ERROR);
   }
 
   try {
@@ -129,7 +130,7 @@ export async function inviteMember(
   } catch (emailErr) {
     // Fix #8: INTERNAL_ERROR means a config/code defect (e.g. bad URL) — don't roll back the
     // DB write, let the real error propagate so operators can diagnose the config problem.
-    if (emailErr instanceof AppError && emailErr.code !== 'EMAIL_ERROR') {
+    if (emailErr instanceof AppError && emailErr.code !== ErrorCodes.EMAIL_ERROR) {
       throw emailErr;
     }
     // Fix #4: deleteUser cascades to remove the users row — no separate delete needed
@@ -138,7 +139,7 @@ export async function inviteMember(
     } catch (rollbackErr) {
       console.error('[INVITE] Email-failure rollback failed:', linkData.user.id, rollbackErr);
     }
-    throw new AppError('Invite created but email failed — retry the invite', 502, 'EMAIL_ERROR');
+    throw new AppError('Invite created but email failed — retry the invite', 502, ErrorCodes.EMAIL_ERROR);
   }
 
   return member as Member;
@@ -155,7 +156,7 @@ export async function listMembers(userId: string): Promise<Member[]> {
     .order('created_at', { ascending: true });
 
   if (error) {
-    throw new AppError('Failed to fetch members', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch members', 500, ErrorCodes.DB_ERROR);
   }
 
   return (data ?? []) as Member[];
@@ -165,11 +166,11 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
   const { workspaceId, role: callerRole } = await getCallerContext(userId);
 
   if (callerRole !== 'admin') {
-    throw new AppError('Only admins can remove members', 403, 'FORBIDDEN');
+    throw new AppError('Only admins can remove members', 403, ErrorCodes.FORBIDDEN);
   }
 
   if (userId === memberId) {
-    throw new AppError('Cannot remove yourself', 400, 'VALIDATION_ERROR');
+    throw new AppError('Cannot remove yourself', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const { data: target, error: targetError } = await supabaseAdmin
@@ -180,14 +181,14 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
     .single();
 
   if (targetError?.code === 'PGRST116' || !target) {
-    throw new AppError('Member not found', 404, 'NOT_FOUND');
+    throw new AppError('Member not found', 404, ErrorCodes.NOT_FOUND);
   }
   if (targetError) {
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (target.workspace_id !== workspaceId) {
-    throw new AppError('Member not found', 404, 'NOT_FOUND');
+    throw new AppError('Member not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   if (target.role === 'admin') {
@@ -200,10 +201,10 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
 
     // Fix #1: surface count query errors — swallowing them allows last-admin deletion
     if (countError) {
-      throw new AppError('Database error', 500, 'DB_ERROR');
+      throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
     }
     if (count !== null && count <= 1) {
-      throw new AppError('Cannot remove the last admin', 400, 'VALIDATION_ERROR');
+      throw new AppError('Cannot remove the last admin', 400, ErrorCodes.VALIDATION_ERROR);
     }
   }
 
@@ -216,9 +217,9 @@ export async function removeMember(userId: string, memberId: string): Promise<vo
     .select('id');
 
   if (deleteError) {
-    throw new AppError('Failed to remove member', 500, 'DB_ERROR');
+    throw new AppError('Failed to remove member', 500, ErrorCodes.DB_ERROR);
   }
   if (!deleted || deleted.length === 0) {
-    throw new AppError('Member not found', 404, 'NOT_FOUND');
+    throw new AppError('Member not found', 404, ErrorCodes.NOT_FOUND);
   }
 }

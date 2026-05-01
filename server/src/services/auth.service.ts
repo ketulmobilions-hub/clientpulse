@@ -3,6 +3,7 @@ import { supabase } from '../config/db';
 import { supabaseAdmin } from '../config/adminDb';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { sendMagicLinkEmail } from './email.service';
 
 export interface RegisterResult {
@@ -32,7 +33,7 @@ export async function registerUser(
     throw new AppError(
       'Registration failed',
       isClientError ? 400 : 500,
-      isClientError ? 'REGISTRATION_ERROR' : 'DB_ERROR',
+      isClientError ? ErrorCodes.REGISTRATION_ERROR : ErrorCodes.DB_ERROR,
     );
   }
 
@@ -56,7 +57,7 @@ export async function registerUser(
     if (deleteError) {
       console.error('[AUTH] Rollback failed — orphaned auth user:', authUserId, deleteError.message);
     }
-    throw new AppError('Registration failed', 500, 'DB_ERROR');
+    throw new AppError('Registration failed', 500, ErrorCodes.DB_ERROR);
   }
 
   const { data: user, error: userError } = await supabaseAdmin
@@ -78,7 +79,7 @@ export async function registerUser(
     if (deleteError) {
       console.error('[AUTH] Rollback failed — orphaned auth user:', authUserId, deleteError.message);
     }
-    throw new AppError('Registration failed', 500, 'DB_ERROR');
+    throw new AppError('Registration failed', 500, ErrorCodes.DB_ERROR);
   }
 
   return { user, workspaceId: workspace.id };
@@ -88,7 +89,7 @@ export async function loginUser(email: string, password: string): Promise<LoginR
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.session) {
-    throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid email or password', 401, ErrorCodes.INVALID_CREDENTIALS);
   }
 
   const { data: userRow, error: userError } = await supabaseAdmin
@@ -102,7 +103,7 @@ export async function loginUser(email: string, password: string): Promise<LoginR
     if (signOutError) {
       console.error('[AUTH] Failed to revoke session for user without DB record:', data.user.id, signOutError.message);
     }
-    throw new AppError('Account setup incomplete — contact support', 500, 'DB_ERROR');
+    throw new AppError('Account setup incomplete — contact support', 500, ErrorCodes.DB_ERROR);
   }
 
   return {
@@ -139,7 +140,7 @@ export async function generateMagicLink(
     .single();
 
   if (projectError || !project) {
-    throw new AppError('Project not found', 404, 'NOT_FOUND');
+    throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data: workspace, error: wsError } = await supabaseAdmin
@@ -151,7 +152,7 @@ export async function generateMagicLink(
     .single();
 
   if (wsError || !workspace) {
-    throw new AppError('Access denied', 403, 'FORBIDDEN');
+    throw new AppError('Access denied', 403, ErrorCodes.FORBIDDEN);
   }
 
   const { data: link, error: insertError } = await supabaseAdmin
@@ -161,7 +162,7 @@ export async function generateMagicLink(
     .single();
 
   if (insertError || !link) {
-    throw new AppError('Failed to generate magic link', 500, 'DB_ERROR');
+    throw new AppError('Failed to generate magic link', 500, ErrorCodes.DB_ERROR);
   }
 
   const magicLinkUrl = `${env.appBaseUrl}/p/verify?token=${encodeURIComponent(link.token)}`;
@@ -192,13 +193,13 @@ export async function verifyMagicLink(token: string): Promise<PortalTokenResult>
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new AppError('Invalid or expired magic link', 401, 'INVALID_TOKEN');
+      throw new AppError('Invalid or expired magic link', 401, ErrorCodes.INVALID_TOKEN);
     }
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (!link) {
-    throw new AppError('Invalid or expired magic link', 401, 'INVALID_TOKEN');
+    throw new AppError('Invalid or expired magic link', 401, ErrorCodes.INVALID_TOKEN);
   }
 
   const portalToken = jwt.sign(

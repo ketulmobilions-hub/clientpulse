@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import { getWorkspace, createWorkspace, updateWorkspace } from '../services/workspace.service';
@@ -43,7 +44,7 @@ router.patch('/', async (req: Request, res: Response, next: NextFunction): Promi
       } else {
         const url = validateString(req.body.logo_url, 'logo_url', 1, 2048);
         if (!/^https:\/\//.test(url)) {
-          throw new AppError('logo_url must start with https://', 400, 'VALIDATION_ERROR');
+          throw new AppError('logo_url must start with https://', 400, ErrorCodes.VALIDATION_ERROR);
         }
         updates.logo_url = url;
       }
@@ -53,7 +54,7 @@ router.patch('/', async (req: Request, res: Response, next: NextFunction): Promi
       throw new AppError(
         'At least one field (name, logo_url) is required',
         400,
-        'VALIDATION_ERROR',
+        ErrorCodes.VALIDATION_ERROR,
       );
     }
 
@@ -85,11 +86,11 @@ router.post('/invite', async (req: Request, res: Response, next: NextFunction): 
     const email = validateString(req.body?.email, 'email', 1, 254);
     // Fix #9: validate email format
     if (!EMAIL_RE.test(email)) {
-      throw new AppError('Invalid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('Invalid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
     const role = req.body?.role;
     if (role !== 'admin' && role !== 'member') {
-      throw new AppError('role must be admin or member', 400, 'VALIDATION_ERROR');
+      throw new AppError('role must be admin or member', 400, ErrorCodes.VALIDATION_ERROR);
     }
     const member = await inviteMember(req.user!.id, email, role);
     res.status(201).json({ success: true, data: { member } });
@@ -114,7 +115,7 @@ router.delete(
       // Fix #12: lowercase before test so uppercase UUIDs (valid per RFC 4122) are accepted
       const memberId = String(req.params.id).toLowerCase();
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(memberId)) {
-        throw new AppError('Invalid member id', 400, 'VALIDATION_ERROR');
+        throw new AppError('Invalid member id', 400, ErrorCodes.VALIDATION_ERROR);
       }
       await removeMember(req.user!.id, memberId);
       res.status(204).send();

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import {
@@ -16,7 +17,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
@@ -37,7 +38,7 @@ projectUpdateRouter.post('/', async (req: Request, res: Response, next: NextFunc
         throw new AppError(
           `category must be one of: ${VALID_UPDATE_CATEGORIES.join(', ')}`,
           400,
-          'VALIDATION_ERROR',
+          ErrorCodes.VALIDATION_ERROR,
         );
       }
       category = req.body.category;
@@ -49,7 +50,7 @@ projectUpdateRouter.post('/', async (req: Request, res: Response, next: NextFunc
         throw new AppError(
           `status must be one of: ${VALID_UPDATE_STATUSES.join(', ')}`,
           400,
-          'VALIDATION_ERROR',
+          ErrorCodes.VALIDATION_ERROR,
         );
       }
       status = req.body.status;
@@ -108,7 +109,7 @@ updateRouter.patch('/:id', async (req: Request, res: Response, next: NextFunctio
         throw new AppError(
           `category must be one of: ${VALID_UPDATE_CATEGORIES.join(', ')}`,
           400,
-          'VALIDATION_ERROR',
+          ErrorCodes.VALIDATION_ERROR,
         );
       }
       changes.category = req.body.category;
@@ -118,7 +119,7 @@ updateRouter.patch('/:id', async (req: Request, res: Response, next: NextFunctio
         throw new AppError(
           `status must be one of: ${VALID_UPDATE_STATUSES.join(', ')}`,
           400,
-          'VALIDATION_ERROR',
+          ErrorCodes.VALIDATION_ERROR,
         );
       }
       changes.status = req.body.status;
@@ -127,7 +128,7 @@ updateRouter.patch('/:id', async (req: Request, res: Response, next: NextFunctio
     if (req.body?.position !== undefined) {
       const pos = Number(req.body.position);
       if (!Number.isInteger(pos) || pos < 0) {
-        throw new AppError('position must be a non-negative integer', 400, 'VALIDATION_ERROR');
+        throw new AppError('position must be a non-negative integer', 400, ErrorCodes.VALIDATION_ERROR);
       }
       changes.position = pos;
     }

@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import {
@@ -13,7 +14,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
@@ -52,10 +53,10 @@ updateAttachmentRouter.post(
 
       const rawSize = req.body?.file_size;
       if (typeof rawSize !== 'number' || !Number.isFinite(rawSize) || rawSize <= 0) {
-        throw new AppError('file_size must be a positive number', 400, 'VALIDATION_ERROR');
+        throw new AppError('file_size must be a positive number', 400, ErrorCodes.VALIDATION_ERROR);
       }
       if (rawSize > MAX_FILE_SIZE_BYTES) {
-        throw new AppError('File exceeds 10 MB limit', 400, 'FILE_TOO_LARGE');
+        throw new AppError('File exceeds 10 MB limit', 400, ErrorCodes.FILE_TOO_LARGE);
       }
       const file_size = rawSize as number;
 
