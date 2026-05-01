@@ -66,6 +66,7 @@ class Update with _$Update {
     @JsonKey(name: 'created_at') required String createdAt,
     @JsonKey(name: 'updated_at') required String updatedAt,
     @JsonKey(name: 'attachment_count') int? attachmentCount,
+    @JsonKey(name: 'comment_count') int? commentCount,
   }) = _Update;
 
   factory Update.fromJson(Map<String, dynamic> json) => _$UpdateFromJson(json);

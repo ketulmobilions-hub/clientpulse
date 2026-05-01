@@ -28,6 +28,7 @@ export interface Update {
   created_at: string;
   updated_at: string;
   attachment_count?: number;
+  comment_count?: number;
 }
 
 export interface Attachment {
@@ -175,7 +176,7 @@ export async function listUpdates(userId: string, projectId: string): Promise<Up
   // migration, add .is('deleted_at', null) here to match project.service.ts pattern.
   const { data, error } = await supabaseAdmin
     .from('updates')
-    .select(`${UPDATE_COLUMNS}, attachments(count)`)
+    .select(`${UPDATE_COLUMNS}, attachments(count), comments(count)`)
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
@@ -185,10 +186,16 @@ export async function listUpdates(userId: string, projectId: string): Promise<Up
   }
 
   return (data ?? []).map((row: Record<string, unknown>) => {
-    const { attachments, ...rest } = row;
-    const countEntry = (attachments as Array<{ count: number | string }> | null)?.[0];
-    const n = countEntry !== undefined ? Number(countEntry.count) : NaN;
-    return { ...rest, attachment_count: Number.isFinite(n) ? n : 0 } as Update;
+    const { attachments, comments, ...rest } = row;
+    const attachCount = (attachments as Array<{ count: number | string }> | null)?.[0];
+    const an = attachCount !== undefined ? Number(attachCount.count) : NaN;
+    const commentCount = (comments as Array<{ count: number | string }> | null)?.[0];
+    const cn = commentCount !== undefined ? Number(commentCount.count) : NaN;
+    return {
+      ...rest,
+      attachment_count: Number.isFinite(an) ? an : 0,
+      comment_count: Number.isFinite(cn) ? cn : 0,
+    } as Update;
   });
 }
 
@@ -317,12 +324,12 @@ export async function listComments(userId: string, updateId: string): Promise<Co
     .in('project_id', projectIds)
     .single<{ id: string }>();
 
-  if (updateError || !updateRow) {
-    if (!updateError || updateError.code === 'PGRST116') {
-      throw new AppError('Update not found', 404, 'NOT_FOUND');
+  if (!updateRow) {
+    if (updateError && updateError.code !== 'PGRST116') {
+      console.error('[update.service] listComments update lookup DB error:', updateError);
+      throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
     }
-    console.error('[update.service] listComments update lookup DB error:', updateError);
-    throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+    throw new AppError('Update not found', 404, 'NOT_FOUND');
   }
 
   const { data, error } = await supabaseAdmin
@@ -359,12 +366,12 @@ export async function createAgencyComment(
     .in('project_id', projectIds)
     .single<{ id: string }>();
 
-  if (updateError || !updateRow) {
-    if (!updateError || updateError.code === 'PGRST116') {
-      throw new AppError('Update not found', 404, 'NOT_FOUND');
+  if (!updateRow) {
+    if (updateError && updateError.code !== 'PGRST116') {
+      console.error('[update.service] createAgencyComment update lookup DB error:', updateError);
+      throw new AppError('Database error', 500, 'DB_ERROR');
     }
-    console.error('[update.service] createAgencyComment update lookup DB error:', updateError);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Update not found', 404, 'NOT_FOUND');
   }
 
   if (input.parent_id !== undefined) {

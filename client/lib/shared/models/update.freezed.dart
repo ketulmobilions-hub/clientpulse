@@ -40,6 +40,8 @@ mixin _$Update {
   String get updatedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'attachment_count')
   int? get attachmentCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'comment_count')
+  int? get commentCount => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -65,7 +67,8 @@ abstract class $UpdateCopyWith<$Res> {
       @JsonKey(name: 'notification_sent_at') String? notificationSentAt,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'updated_at') String updatedAt,
-      @JsonKey(name: 'attachment_count') int? attachmentCount});
+      @JsonKey(name: 'attachment_count') int? attachmentCount,
+      @JsonKey(name: 'comment_count') int? commentCount});
 }
 
 /// @nodoc
@@ -93,6 +96,7 @@ class _$UpdateCopyWithImpl<$Res, $Val extends Update>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? attachmentCount = freezed,
+    Object? commentCount = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -143,6 +147,10 @@ class _$UpdateCopyWithImpl<$Res, $Val extends Update>
           ? _value.attachmentCount
           : attachmentCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      commentCount: freezed == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -168,7 +176,8 @@ abstract class _$$UpdateImplCopyWith<$Res> implements $UpdateCopyWith<$Res> {
       @JsonKey(name: 'notification_sent_at') String? notificationSentAt,
       @JsonKey(name: 'created_at') String createdAt,
       @JsonKey(name: 'updated_at') String updatedAt,
-      @JsonKey(name: 'attachment_count') int? attachmentCount});
+      @JsonKey(name: 'attachment_count') int? attachmentCount,
+      @JsonKey(name: 'comment_count') int? commentCount});
 }
 
 /// @nodoc
@@ -194,6 +203,7 @@ class __$$UpdateImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? attachmentCount = freezed,
+    Object? commentCount = freezed,
   }) {
     return _then(_$UpdateImpl(
       id: null == id
@@ -244,6 +254,10 @@ class __$$UpdateImplCopyWithImpl<$Res>
           ? _value.attachmentCount
           : attachmentCount // ignore: cast_nullable_to_non_nullable
               as int?,
+      commentCount: freezed == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -265,7 +279,8 @@ class _$UpdateImpl implements _Update {
       @JsonKey(name: 'notification_sent_at') this.notificationSentAt,
       @JsonKey(name: 'created_at') required this.createdAt,
       @JsonKey(name: 'updated_at') required this.updatedAt,
-      @JsonKey(name: 'attachment_count') this.attachmentCount});
+      @JsonKey(name: 'attachment_count') this.attachmentCount,
+      @JsonKey(name: 'comment_count') this.commentCount});
 
   factory _$UpdateImpl.fromJson(Map<String, dynamic> json) =>
       _$$UpdateImplFromJson(json);
@@ -302,10 +317,13 @@ class _$UpdateImpl implements _Update {
   @override
   @JsonKey(name: 'attachment_count')
   final int? attachmentCount;
+  @override
+  @JsonKey(name: 'comment_count')
+  final int? commentCount;
 
   @override
   String toString() {
-    return 'Update(id: $id, projectId: $projectId, authorId: $authorId, title: $title, body: $body, status: $status, category: $category, position: $position, notificationSentAt: $notificationSentAt, createdAt: $createdAt, updatedAt: $updatedAt, attachmentCount: $attachmentCount)';
+    return 'Update(id: $id, projectId: $projectId, authorId: $authorId, title: $title, body: $body, status: $status, category: $category, position: $position, notificationSentAt: $notificationSentAt, createdAt: $createdAt, updatedAt: $updatedAt, attachmentCount: $attachmentCount, commentCount: $commentCount)';
   }
 
   @override
@@ -332,7 +350,9 @@ class _$UpdateImpl implements _Update {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             (identical(other.attachmentCount, attachmentCount) ||
-                other.attachmentCount == attachmentCount));
+                other.attachmentCount == attachmentCount) &&
+            (identical(other.commentCount, commentCount) ||
+                other.commentCount == commentCount));
   }
 
   @JsonKey(ignore: true)
@@ -350,7 +370,8 @@ class _$UpdateImpl implements _Update {
       notificationSentAt,
       createdAt,
       updatedAt,
-      attachmentCount);
+      attachmentCount,
+      commentCount);
 
   @JsonKey(ignore: true)
   @override
@@ -381,8 +402,8 @@ abstract class _Update implements Update {
       @JsonKey(name: 'notification_sent_at') final String? notificationSentAt,
       @JsonKey(name: 'created_at') required final String createdAt,
       @JsonKey(name: 'updated_at') required final String updatedAt,
-      @JsonKey(name: 'attachment_count')
-      final int? attachmentCount}) = _$UpdateImpl;
+      @JsonKey(name: 'attachment_count') final int? attachmentCount,
+      @JsonKey(name: 'comment_count') final int? commentCount}) = _$UpdateImpl;
 
   factory _Update.fromJson(Map<String, dynamic> json) = _$UpdateImpl.fromJson;
 
@@ -418,6 +439,9 @@ abstract class _Update implements Update {
   @override
   @JsonKey(name: 'attachment_count')
   int? get attachmentCount;
+  @override
+  @JsonKey(name: 'comment_count')
+  int? get commentCount;
   @override
   @JsonKey(ignore: true)
   _$$UpdateImplCopyWith<_$UpdateImpl> get copyWith =>
