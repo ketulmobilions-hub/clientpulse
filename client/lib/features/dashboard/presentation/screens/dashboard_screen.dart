@@ -23,7 +23,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Projects')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed(RouteNames.createProject),
+        onPressed: () => context.goNamed(RouteNames.createProject),
         child: const Icon(Icons.add),
       ),
       body: projectsAsync.when(
@@ -43,7 +43,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               icon: Icons.folder_open_outlined,
               message: 'No projects yet',
               actionLabel: 'Create Project',
-              onAction: () => context.pushNamed(RouteNames.createProject),
+              onAction: () => context.goNamed(RouteNames.createProject),
             );
           }
           return ListView.separated(

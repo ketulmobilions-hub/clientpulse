@@ -22,7 +22,7 @@ class ProjectCard extends StatelessWidget {
       color: Colors.grey.shade50,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.pushNamed(
+        onTap: () => context.goNamed(
           RouteNames.projectDetail,
           pathParameters: {'id': project.id},
         ),
