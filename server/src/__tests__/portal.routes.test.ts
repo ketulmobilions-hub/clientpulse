@@ -5,6 +5,7 @@ import request from 'supertest';
 import app from '../app';
 import * as portalService from '../services/portal.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockGetOverview = portalService.getPortalOverview as jest.Mock;
 const mockListUpdates = portalService.listPortalUpdates as jest.Mock;
@@ -78,22 +79,22 @@ describe('GET /api/v1/portal/:token', () => {
   it('returns 401 INVALID_TOKEN for non-hex token format', async () => {
     const res = await request(app).get(`/api/v1/portal/${INVALID_TOKEN}`);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     expect(mockGetOverview).not.toHaveBeenCalled();
   });
 
   it('returns 401 INVALID_TOKEN when service throws INVALID_TOKEN', async () => {
-    mockGetOverview.mockRejectedValue(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
+    mockGetOverview.mockRejectedValue(new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN));
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}`);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
   });
 
   it('returns 500 DB_ERROR on service DB failure', async () => {
-    mockGetOverview.mockRejectedValue(new AppError('Database error', 500, 'DB_ERROR'));
+    mockGetOverview.mockRejectedValue(new AppError('Database error', 500, ErrorCodes.DB_ERROR));
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}`);
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });
 
@@ -127,36 +128,36 @@ describe('GET /api/v1/portal/:token/updates', () => {
   it('returns 400 VALIDATION_ERROR when limit exceeds 50', async () => {
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}/updates?limit=51`);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockListUpdates).not.toHaveBeenCalled();
   });
 
   it('returns 400 VALIDATION_ERROR when page is not a valid integer', async () => {
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}/updates?page=abc`);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockListUpdates).not.toHaveBeenCalled();
   });
 
   it('returns 400 VALIDATION_ERROR when page is 0', async () => {
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}/updates?page=0`);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockListUpdates).not.toHaveBeenCalled();
   });
 
   it('returns 401 INVALID_TOKEN for bad token format', async () => {
     const res = await request(app).get(`/api/v1/portal/${INVALID_TOKEN}/updates`);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     expect(mockListUpdates).not.toHaveBeenCalled();
   });
 
   it('returns 401 INVALID_TOKEN when service throws', async () => {
-    mockListUpdates.mockRejectedValue(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
+    mockListUpdates.mockRejectedValue(new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN));
     const res = await request(app).get(`/api/v1/portal/${VALID_TOKEN}/updates`);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
   });
 });
 
@@ -188,7 +189,7 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ body: 'Hi' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
@@ -197,7 +198,7 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ author_name: 'Alice' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
@@ -206,7 +207,7 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ author_name: '', body: 'Hi' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
@@ -215,7 +216,7 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/not-a-uuid/comments`)
       .send(validBody);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
@@ -224,7 +225,7 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: 'not-a-uuid' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
@@ -233,45 +234,45 @@ describe('POST /api/v1/portal/:token/updates/:updateId/comments', () => {
       .post(`/api/v1/portal/${INVALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send(validBody);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     expect(mockCreateComment).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when update does not belong to project', async () => {
-    mockCreateComment.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockCreateComment.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send(validBody);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 401 INVALID_TOKEN when service throws for bad share token', async () => {
-    mockCreateComment.mockRejectedValue(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
+    mockCreateComment.mockRejectedValue(new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN));
     const res = await request(app)
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send(validBody);
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
   });
 
   it('returns 404 NOT_FOUND when parent comment does not belong to update', async () => {
     const parentId = '22222222-2222-2222-2222-222222222222';
-    mockCreateComment.mockRejectedValue(new AppError('Parent comment not found', 404, 'NOT_FOUND'));
+    mockCreateComment.mockRejectedValue(new AppError('Parent comment not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: parentId });
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 400 VALIDATION_ERROR when parent comment is itself a reply (depth > 1)', async () => {
     const parentId = '33333333-3333-3333-3333-333333333333';
-    mockCreateComment.mockRejectedValue(new AppError('Replies can only be made to top-level comments', 400, 'VALIDATION_ERROR'));
+    mockCreateComment.mockRejectedValue(new AppError('Replies can only be made to top-level comments', 400, ErrorCodes.VALIDATION_ERROR));
     const res = await request(app)
       .post(`/api/v1/portal/${VALID_TOKEN}/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: parentId });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 });

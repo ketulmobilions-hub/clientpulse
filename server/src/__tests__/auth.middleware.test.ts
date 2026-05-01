@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import request from 'supertest';
 import express from 'express';
 import { supabase } from '../config/db';
@@ -42,7 +43,7 @@ describe('requireAuth middleware', () => {
     const res = await request(makeApp()).get('/protected');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
     expect(mockGetUser).not.toHaveBeenCalled();
   });
 
@@ -52,7 +53,7 @@ describe('requireAuth middleware', () => {
       .set('Authorization', 'Token bad-format');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
   });
 
   it('returns 401 UNAUTHORIZED when token is invalid or expired', async () => {
@@ -66,7 +67,7 @@ describe('requireAuth middleware', () => {
       .set('Authorization', 'Bearer expired-token');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
   });
 
   it('returns 401 UNAUTHORIZED when user has no email (non-email auth user)', async () => {
@@ -80,6 +81,6 @@ describe('requireAuth middleware', () => {
       .set('Authorization', 'Bearer valid-token');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
   });
 });

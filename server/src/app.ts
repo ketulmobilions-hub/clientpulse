@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import router from './routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import { ErrorCodes } from './errors/codes';
 import { requestId } from './middleware/requestId';
 
 const app = express();
@@ -29,7 +30,7 @@ app.use(rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many requests, please try again later.' } },
 }));
 
 // Tighter auth limiter applied before body parsing — prevents large-body floods from consuming parse resources
@@ -38,7 +39,7 @@ app.use('/api/v1/auth', rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many attempts, please try again later.' } },
 }));
 
 // Tighter portal limiter to reduce share_token brute-force window
@@ -47,7 +48,7 @@ app.use('/api/v1/portal', rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many requests, please try again later.' } },
 }));
 
 // Fix #10: invite limiter — each call creates a Supabase Auth user + sends a Resend email
@@ -56,7 +57,7 @@ app.use('/api/v1/workspace/invite', rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many invite attempts, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many invite attempts, please try again later.' } },
 }));
 
 // Storage signed-URL limiter — each call allocates a Supabase Storage upload slot
@@ -65,7 +66,7 @@ app.use('/api/v1/storage', rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many upload requests, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many upload requests, please try again later.' } },
 }));
 
 app.use(requestId);

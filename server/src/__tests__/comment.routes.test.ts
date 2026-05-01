@@ -11,6 +11,7 @@ import request from 'supertest';
 import app from '../app';
 import * as updateService from '../services/update.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockListComments = updateService.listComments as jest.Mock;
 const mockCreateAgencyComment = updateService.createAgencyComment as jest.Mock;
@@ -53,29 +54,29 @@ describe('GET /api/v1/updates/:updateId/comments', () => {
   it('returns 400 VALIDATION_ERROR for non-UUID updateId', async () => {
     const res = await request(app).get('/api/v1/updates/not-a-uuid/comments');
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockListComments).not.toHaveBeenCalled();
   });
 
   it('returns 404 NOT_FOUND when update missing', async () => {
-    mockListComments.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockListComments.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/updates/${VALID_UUID}/comments`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
-  it('returns 404 WORKSPACE_NOT_FOUND when user has no workspace', async () => {
-    mockListComments.mockRejectedValue(new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND'));
+  it('returns 404 NOT_FOUND when user has no workspace', async () => {
+    mockListComments.mockRejectedValue(new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app).get(`/api/v1/updates/${VALID_UUID}/comments`);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('WORKSPACE_NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 500 DB_ERROR on service failure', async () => {
-    mockListComments.mockRejectedValue(new AppError('Failed to fetch comments', 500, 'DB_ERROR'));
+    mockListComments.mockRejectedValue(new AppError('Failed to fetch comments', 500, ErrorCodes.DB_ERROR));
     const res = await request(app).get(`/api/v1/updates/${VALID_UUID}/comments`);
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });
 
@@ -110,7 +111,7 @@ describe('POST /api/v1/updates/:updateId/comments', () => {
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateAgencyComment).not.toHaveBeenCalled();
   });
 
@@ -119,7 +120,7 @@ describe('POST /api/v1/updates/:updateId/comments', () => {
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send({ body: 'x'.repeat(5001) });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateAgencyComment).not.toHaveBeenCalled();
   });
 
@@ -128,7 +129,7 @@ describe('POST /api/v1/updates/:updateId/comments', () => {
       .post('/api/v1/updates/not-a-uuid/comments')
       .send(validBody);
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateAgencyComment).not.toHaveBeenCalled();
   });
 
@@ -137,7 +138,7 @@ describe('POST /api/v1/updates/:updateId/comments', () => {
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: 'not-a-uuid' });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockCreateAgencyComment).not.toHaveBeenCalled();
   });
 
@@ -150,43 +151,43 @@ describe('POST /api/v1/updates/:updateId/comments', () => {
     expect(mockCreateAgencyComment).toHaveBeenCalledWith('user-1', VALID_UUID, { body: 'Looking great!' });
   });
 
-  it('returns 404 WORKSPACE_NOT_FOUND when user has no workspace', async () => {
-    mockCreateAgencyComment.mockRejectedValue(new AppError('Workspace not found', 404, 'WORKSPACE_NOT_FOUND'));
+  it('returns 404 NOT_FOUND when user has no workspace', async () => {
+    mockCreateAgencyComment.mockRejectedValue(new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send(validBody);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('WORKSPACE_NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 400 VALIDATION_ERROR when parent is not top-level', async () => {
     mockCreateAgencyComment.mockRejectedValue(
-      new AppError('Replies can only be made to top-level comments', 400, 'VALIDATION_ERROR'),
+      new AppError('Replies can only be made to top-level comments', 400, ErrorCodes.VALIDATION_ERROR),
     );
     const res = await request(app)
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: VALID_UUID_2 });
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 404 NOT_FOUND when update missing', async () => {
-    mockCreateAgencyComment.mockRejectedValue(new AppError('Update not found', 404, 'NOT_FOUND'));
+    mockCreateAgencyComment.mockRejectedValue(new AppError('Update not found', 404, ErrorCodes.NOT_FOUND));
     const res = await request(app)
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send(validBody);
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 404 NOT_FOUND when parent comment missing', async () => {
     mockCreateAgencyComment.mockRejectedValue(
-      new AppError('Parent comment not found', 404, 'NOT_FOUND'),
+      new AppError('Parent comment not found', 404, ErrorCodes.NOT_FOUND),
     );
     const res = await request(app)
       .post(`/api/v1/updates/${VALID_UUID}/comments`)
       .send({ ...validBody, parent_id: VALID_UUID_2 });
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 });

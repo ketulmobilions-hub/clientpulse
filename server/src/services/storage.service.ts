@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const LOGOS_BUCKET = 'logos';
 
@@ -16,7 +17,7 @@ export async function getUploadSignedUrl(userId: string, fileName: string) {
     throw new AppError(
       'Only image files are allowed (png, jpg, jpeg, gif, webp)',
       400,
-      'VALIDATION_ERROR',
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -28,7 +29,7 @@ export async function getUploadSignedUrl(userId: string, fileName: string) {
     .createSignedUploadUrl(path);
 
   if (error || !data) {
-    throw new AppError('Failed to generate upload URL', 500, 'STORAGE_ERROR');
+    throw new AppError('Failed to generate upload URL', 500, ErrorCodes.STORAGE_ERROR);
   }
 
   const {

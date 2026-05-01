@@ -19,6 +19,7 @@ jest.mock('../services/email.service', () => ({
 import { inviteMember, listMembers, removeMember } from '../services/member.service';
 import { sendInviteEmail } from '../services/email.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockFrom = supabaseAdmin.from as jest.Mock;
 const mockGenerateLink = supabaseAdmin.auth.admin.generateLink as jest.Mock;
@@ -163,7 +164,7 @@ describe('inviteMember', () => {
     mockFrom.mockReturnValueOnce(makeSelectSingleChain({ data: CALLER_MEMBER, error: null }));
 
     await expect(inviteMember(USER_ID, 'x@x.com', 'member')).rejects.toMatchObject({
-      code: 'FORBIDDEN',
+      code: ErrorCodes.FORBIDDEN,
       statusCode: 403,
     });
     expect(mockGenerateLink).not.toHaveBeenCalled();
@@ -173,7 +174,7 @@ describe('inviteMember', () => {
     mockFrom.mockReturnValueOnce(makeSelectSingleChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(inviteMember(USER_ID, 'x@x.com', 'member')).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -184,7 +185,7 @@ describe('inviteMember', () => {
       .mockReturnValueOnce(makeExistingChain({ data: { id: MEMBER_ID, deleted_at: null }, error: null }));
 
     await expect(inviteMember(USER_ID, 'existing@example.com', 'member')).rejects.toMatchObject({
-      code: 'CONFLICT',
+      code: ErrorCodes.CONFLICT,
       statusCode: 409,
     });
     expect(mockGenerateLink).not.toHaveBeenCalled();
@@ -197,7 +198,7 @@ describe('inviteMember', () => {
       .mockReturnValueOnce(makeWsNameChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(inviteMember(USER_ID, 'x@x.com', 'member')).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
     expect(mockGenerateLink).not.toHaveBeenCalled();
@@ -211,7 +212,7 @@ describe('inviteMember', () => {
     mockGenerateLink.mockResolvedValueOnce({ data: null, error: new Error('auth failure') });
 
     await expect(inviteMember(USER_ID, 'x@x.com', 'member')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -220,7 +221,7 @@ describe('inviteMember', () => {
     setupFreshInvite({ data: null, error: { code: '23505' } });
 
     await expect(inviteMember(USER_ID, 'new@example.com', 'member')).rejects.toMatchObject({
-      code: 'CONFLICT',
+      code: ErrorCodes.CONFLICT,
       statusCode: 409,
     });
     expect(mockDeleteUser).toHaveBeenCalledWith(MEMBER_ID);
@@ -230,7 +231,7 @@ describe('inviteMember', () => {
     setupFreshInvite({ data: null, error: { code: '99999' } });
 
     await expect(inviteMember(USER_ID, 'new@example.com', 'member')).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
     expect(mockDeleteUser).toHaveBeenCalledWith(MEMBER_ID);
@@ -239,10 +240,10 @@ describe('inviteMember', () => {
   // Fix #13: email failure path
   it('rolls back auth user (cascade) when email fails and throws EMAIL_ERROR', async () => {
     setupFreshInvite({ data: MEMBER_ROW, error: null });
-    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Email delivery failed', 502, 'EMAIL_ERROR'));
+    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR));
 
     await expect(inviteMember(USER_ID, 'new@example.com', 'member')).rejects.toMatchObject({
-      code: 'EMAIL_ERROR',
+      code: ErrorCodes.EMAIL_ERROR,
       statusCode: 502,
     });
     expect(mockDeleteUser).toHaveBeenCalledWith(MEMBER_ID);
@@ -251,10 +252,10 @@ describe('inviteMember', () => {
   // Fix #8: INTERNAL_ERROR from sendInviteEmail must propagate, not trigger rollback
   it('propagates INTERNAL_ERROR from email service without rolling back', async () => {
     setupFreshInvite({ data: MEMBER_ROW, error: null });
-    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Invalid invite URL', 500, 'INTERNAL_ERROR'));
+    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Invalid invite URL', 500, ErrorCodes.INTERNAL_ERROR));
 
     await expect(inviteMember(USER_ID, 'new@example.com', 'member')).rejects.toMatchObject({
-      code: 'INTERNAL_ERROR',
+      code: ErrorCodes.INTERNAL_ERROR,
       statusCode: 500,
     });
     expect(mockDeleteUser).not.toHaveBeenCalled();
@@ -289,10 +290,10 @@ describe('inviteMember', () => {
       .mockReturnValueOnce(makeWsNameChain({ data: { name: 'Acme' }, error: null }))
       .mockReturnValueOnce(makeInsertChain({ data: MEMBER_ROW, error: null }));
     mockGenerateLink.mockResolvedValueOnce({ data: LINK_DATA, error: null });
-    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Email delivery failed', 502, 'EMAIL_ERROR'));
+    mockSendInviteEmail.mockRejectedValueOnce(new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR));
 
     await expect(inviteMember(USER_ID, 'old@example.com', 'member')).rejects.toMatchObject({
-      code: 'EMAIL_ERROR',
+      code: ErrorCodes.EMAIL_ERROR,
       statusCode: 502,
     });
     expect(mockDeleteUser).toHaveBeenCalledWith(MEMBER_ID);
@@ -321,7 +322,7 @@ describe('listMembers', () => {
   it('throws NOT_FOUND when caller has no users record', async () => {
     mockFrom.mockReturnValueOnce(makeSelectSingleChain({ data: null, error: { code: 'PGRST116' } }));
 
-    await expect(listMembers(USER_ID)).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 });
+    await expect(listMembers(USER_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND, statusCode: 404 });
   });
 
   it('throws DB_ERROR on list query failure', async () => {
@@ -329,7 +330,7 @@ describe('listMembers', () => {
       .mockReturnValueOnce(makeSelectSingleChain({ data: CALLER_ADMIN, error: null }))
       .mockReturnValueOnce(makeListChain({ data: null, error: new Error('db down') }));
 
-    await expect(listMembers(USER_ID)).rejects.toMatchObject({ code: 'DB_ERROR', statusCode: 500 });
+    await expect(listMembers(USER_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR, statusCode: 500 });
   });
 });
 
@@ -352,7 +353,7 @@ describe('removeMember', () => {
     mockFrom.mockReturnValueOnce(makeSelectSingleChain({ data: CALLER_MEMBER, error: null }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'FORBIDDEN', statusCode: 403,
+      code: ErrorCodes.FORBIDDEN, statusCode: 403,
     });
   });
 
@@ -360,7 +361,7 @@ describe('removeMember', () => {
     mockFrom.mockReturnValueOnce(makeSelectSingleChain({ data: CALLER_ADMIN, error: null }));
 
     await expect(removeMember(USER_ID, USER_ID)).rejects.toMatchObject({
-      code: 'VALIDATION_ERROR', statusCode: 400,
+      code: ErrorCodes.VALIDATION_ERROR, statusCode: 400,
     });
   });
 
@@ -370,7 +371,7 @@ describe('removeMember', () => {
       .mockReturnValueOnce(makeSelectSingleChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND', statusCode: 404,
+      code: ErrorCodes.NOT_FOUND, statusCode: 404,
     });
   });
 
@@ -383,7 +384,7 @@ describe('removeMember', () => {
       }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND', statusCode: 404,
+      code: ErrorCodes.NOT_FOUND, statusCode: 404,
     });
   });
 
@@ -394,7 +395,7 @@ describe('removeMember', () => {
       .mockReturnValueOnce(makeCountChain({ count: 1, error: null }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'VALIDATION_ERROR', statusCode: 400,
+      code: ErrorCodes.VALIDATION_ERROR, statusCode: 400,
     });
   });
 
@@ -406,7 +407,7 @@ describe('removeMember', () => {
       .mockReturnValueOnce(makeCountChain({ count: null, error: new Error('db timeout') }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR', statusCode: 500,
+      code: ErrorCodes.DB_ERROR, statusCode: 500,
     });
   });
 
@@ -428,7 +429,7 @@ describe('removeMember', () => {
       .mockReturnValueOnce(makeSoftDeleteChain({ data: [], error: null }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND', statusCode: 404,
+      code: ErrorCodes.NOT_FOUND, statusCode: 404,
     });
   });
 
@@ -439,7 +440,7 @@ describe('removeMember', () => {
       .mockReturnValueOnce(makeSoftDeleteChain({ data: null, error: new Error('db down') }));
 
     await expect(removeMember(USER_ID, MEMBER_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR', statusCode: 500,
+      code: ErrorCodes.DB_ERROR, statusCode: 500,
     });
   });
 });

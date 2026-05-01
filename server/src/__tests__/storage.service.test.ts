@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 jest.mock('../config/adminDb', () => ({
   supabaseAdmin: {
     storage: {
@@ -53,7 +54,7 @@ describe('getUploadSignedUrl', () => {
   it('rejects svg (XSS vector)', async () => {
     await expect(getUploadSignedUrl('user-1', 'logo.svg')).rejects.toMatchObject({
       statusCode: 400,
-      code: 'VALIDATION_ERROR',
+      code: ErrorCodes.VALIDATION_ERROR,
     });
   });
 
@@ -67,7 +68,7 @@ describe('getUploadSignedUrl', () => {
     makeStorageMock({ uploadError: { message: 'bucket not found' } });
     await expect(getUploadSignedUrl('user-1', 'logo.png')).rejects.toMatchObject({
       statusCode: 500,
-      code: 'STORAGE_ERROR',
+      code: ErrorCodes.STORAGE_ERROR,
     });
   });
 

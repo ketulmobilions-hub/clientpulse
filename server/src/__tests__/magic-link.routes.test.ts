@@ -9,6 +9,7 @@ import app from '../app';
 import * as authService from '../services/auth.service';
 import { supabase } from '../config/db';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockGenerateMagicLink = authService.generateMagicLink as jest.Mock;
 const mockVerifyMagicLink = authService.verifyMagicLink as jest.Mock;
@@ -73,7 +74,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send(validBody);
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
     expect(mockGenerateMagicLink).not.toHaveBeenCalled();
   });
 
@@ -86,7 +87,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send(validBody);
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
   });
 
   it('returns 400 VALIDATION_ERROR when projectId missing', async () => {
@@ -96,7 +97,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send({ email: 'client@example.com' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockGenerateMagicLink).not.toHaveBeenCalled();
   });
 
@@ -107,7 +108,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send({ ...validBody, projectId: 'not-a-uuid' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockGenerateMagicLink).not.toHaveBeenCalled();
   });
 
@@ -118,7 +119,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send({ projectId: VALID_PROJECT_ID });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 400 VALIDATION_ERROR for invalid email format', async () => {
@@ -128,7 +129,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send({ ...validBody, email: 'notanemail' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 400 VALIDATION_ERROR for clientName exceeding 100 chars', async () => {
@@ -138,11 +139,11 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send({ ...validBody, clientName: 'a'.repeat(101) });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 404 NOT_FOUND when project does not exist', async () => {
-    mockGenerateMagicLink.mockRejectedValue(new AppError('Project not found', 404, 'NOT_FOUND'));
+    mockGenerateMagicLink.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
 
     const res = await request(app)
       .post('/api/v1/auth/magic-link')
@@ -150,11 +151,11 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send(validBody);
 
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
 
   it('returns 403 FORBIDDEN when project belongs to a different workspace', async () => {
-    mockGenerateMagicLink.mockRejectedValue(new AppError('Access denied', 403, 'FORBIDDEN'));
+    mockGenerateMagicLink.mockRejectedValue(new AppError('Access denied', 403, ErrorCodes.FORBIDDEN));
 
     const res = await request(app)
       .post('/api/v1/auth/magic-link')
@@ -162,11 +163,11 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send(validBody);
 
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.code).toBe(ErrorCodes.FORBIDDEN);
   });
 
   it('propagates DB_ERROR from service', async () => {
-    mockGenerateMagicLink.mockRejectedValue(new AppError('Failed to generate magic link', 500, 'DB_ERROR'));
+    mockGenerateMagicLink.mockRejectedValue(new AppError('Failed to generate magic link', 500, ErrorCodes.DB_ERROR));
 
     const res = await request(app)
       .post('/api/v1/auth/magic-link')
@@ -174,7 +175,7 @@ describe('POST /api/v1/auth/magic-link', () => {
       .send(validBody);
 
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });
 
@@ -198,7 +199,7 @@ describe('GET /api/v1/auth/magic-link/verify', () => {
       .get('/api/v1/auth/magic-link/verify');
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockVerifyMagicLink).not.toHaveBeenCalled();
   });
 
@@ -208,28 +209,28 @@ describe('GET /api/v1/auth/magic-link/verify', () => {
       .query({ token: '   ' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
   it('returns 401 INVALID_TOKEN on expired or used token', async () => {
-    mockVerifyMagicLink.mockRejectedValue(new AppError('Invalid or expired magic link', 401, 'INVALID_TOKEN'));
+    mockVerifyMagicLink.mockRejectedValue(new AppError('Invalid or expired magic link', 401, ErrorCodes.INVALID_TOKEN));
 
     const res = await request(app)
       .get('/api/v1/auth/magic-link/verify')
       .query({ token: 'expiredtoken' });
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_TOKEN');
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
   });
 
   it('propagates DB errors from service', async () => {
-    mockVerifyMagicLink.mockRejectedValue(new AppError('Failed to consume magic link', 500, 'DB_ERROR'));
+    mockVerifyMagicLink.mockRejectedValue(new AppError('Failed to consume magic link', 500, ErrorCodes.DB_ERROR));
 
     const res = await request(app)
       .get('/api/v1/auth/magic-link/verify')
       .query({ token: 'sometoken' });
 
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('DB_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
   });
 });

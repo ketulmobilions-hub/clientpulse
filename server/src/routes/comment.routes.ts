@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { requireAuth } from '../middleware/auth.middleware';
 import { validateString } from '../utils/validation';
 import { listComments, createAgencyComment } from '../services/update.service';
@@ -13,14 +14,14 @@ const commentRateLimit = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many comments, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many comments, please try again later.' } },
 });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
@@ -48,7 +49,7 @@ commentRouter.post('/', commentRateLimit, async (req: Request, res: Response, ne
     let parent_id: string | undefined;
     if (req.body?.parent_id !== undefined && req.body.parent_id !== null) {
       if (typeof req.body.parent_id !== 'string' || !UUID_RE.test(req.body.parent_id)) {
-        throw new AppError('parent_id must be a valid UUID', 400, 'VALIDATION_ERROR');
+        throw new AppError('parent_id must be a valid UUID', 400, ErrorCodes.VALIDATION_ERROR);
       }
       parent_id = req.body.parent_id;
     }

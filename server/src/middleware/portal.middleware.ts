@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { supabaseAdmin } from '../config/adminDb';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
+import { ErrorCode, ErrorCodes } from '../errors/codes';
 import { SHARE_TOKEN_RE } from '../utils/token';
 
 export interface PortalJwtPayload extends JwtPayload {
@@ -12,7 +13,11 @@ export interface PortalJwtPayload extends JwtPayload {
   clientName?: string;
 }
 
-function rejectPortal(res: Response, message: string, statusCode: number, code: string): never {
+// Sets WWW-Authenticate before throwing so the header reaches the client via errorHandler.
+// This is safe because Express buffers headers until res.json() is called — res.set() alone
+// does not flush. Constraint: do not call res.json() before this function, or the header
+// will be silently dropped (headers-already-sent).
+function rejectPortal(res: Response, message: string, statusCode: number, code: ErrorCode): never {
   res.set('WWW-Authenticate', 'Bearer realm="ClientPulse Portal"');
   throw new AppError(message, statusCode, code);
 }
@@ -57,7 +62,7 @@ export async function requirePortal(req: Request, res: Response, next: NextFunct
           ip: req.ip,
           source: bearerToken !== undefined ? 'bearer' : 'cookie',
         });
-        rejectPortal(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+        rejectPortal(res, 'Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
       }
 
       if (!isPortalPayload(payload)) {
@@ -65,7 +70,7 @@ export async function requirePortal(req: Request, res: Response, next: NextFunct
           requestId: req.id,
           ip: req.ip,
         });
-        rejectPortal(res, 'Invalid token type', 401, 'INVALID_TOKEN');
+        rejectPortal(res, 'Invalid token type', 401, ErrorCodes.INVALID_TOKEN);
       }
 
       req.portal = {
@@ -83,7 +88,7 @@ export async function requirePortal(req: Request, res: Response, next: NextFunct
           requestId: req.id,
           ip: req.ip,
         });
-        rejectPortal(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+        rejectPortal(res, 'Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
       }
 
       const { data: project, error } = await supabaseAdmin
@@ -99,18 +104,18 @@ export async function requirePortal(req: Request, res: Response, next: NextFunct
             requestId: req.id,
             ip: req.ip,
           });
-          rejectPortal(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+          rejectPortal(res, 'Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
         }
         console.error('[PORTAL_AUTH] DB error during share_token lookup', {
           requestId: req.id,
           ip: req.ip,
           code: error.code,
         });
-        throw new AppError('Database error', 500, 'DB_ERROR');
+        throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
       }
 
       if (!project?.id) {
-        rejectPortal(res, 'Invalid or expired token', 401, 'INVALID_TOKEN');
+        rejectPortal(res, 'Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
       }
 
       req.portal = { projectId: project.id };
@@ -118,7 +123,7 @@ export async function requirePortal(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    rejectPortal(res, 'Authentication required', 401, 'UNAUTHORIZED');
+    rejectPortal(res, 'Authentication required', 401, ErrorCodes.UNAUTHORIZED);
   } catch (err) {
     next(err);
   }

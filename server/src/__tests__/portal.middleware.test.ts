@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -110,7 +111,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer bad-jwt');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
       expect(res.headers['www-authenticate']).toMatch(/Bearer/);
     });
 
@@ -123,7 +124,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer expired-jwt');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when JWT type is not portal', async () => {
@@ -134,7 +135,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer wrong-type-jwt');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when JWT has no projectId', async () => {
@@ -145,7 +146,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer no-project-jwt');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when projectId is not a string', async () => {
@@ -156,7 +157,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer number-projectid-jwt');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when Authorization value after Bearer is empty', async () => {
@@ -169,7 +170,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer ');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when Authorization is bare "Bearer" with no trailing space', async () => {
@@ -182,7 +183,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Bearer');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
   });
 
@@ -213,7 +214,7 @@ describe('requirePortal middleware', () => {
         .set('Cookie', 'portal_token=unsigned-value');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHORIZED');
+      expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
       expect(mockJwtVerify).not.toHaveBeenCalled();
     });
   });
@@ -271,7 +272,7 @@ describe('requirePortal middleware', () => {
         .get(`/portal-resource?share_token=${TOKEN}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 500 DB_ERROR on unexpected DB error for share_token', async () => {
@@ -287,7 +288,7 @@ describe('requirePortal middleware', () => {
         .get(`/portal-resource?share_token=${TOKEN}`);
 
       expect(res.status).toBe(500);
-      expect(res.body.error.code).toBe('DB_ERROR');
+      expect(res.body.error.code).toBe(ErrorCodes.DB_ERROR);
     });
 
     it('returns 401 INVALID_TOKEN when project row has no id', async () => {
@@ -303,7 +304,7 @@ describe('requirePortal middleware', () => {
         .get(`/portal-resource?share_token=${TOKEN}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
     });
 
     it('returns 401 INVALID_TOKEN when share_token fails format check (not hex)', async () => {
@@ -311,7 +312,7 @@ describe('requirePortal middleware', () => {
         .get('/portal-resource?share_token=not-a-valid-hex-token!!');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('INVALID_TOKEN');
+      expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
       expect(mockFrom).not.toHaveBeenCalled();
     });
 
@@ -321,7 +322,7 @@ describe('requirePortal middleware', () => {
 
       // array fails typeof === 'string' guard → treated as no token
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHORIZED');
+      expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
       expect(mockFrom).not.toHaveBeenCalled();
     });
   });
@@ -331,7 +332,7 @@ describe('requirePortal middleware', () => {
       const res = await request(makeApp()).get('/portal-resource');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHORIZED');
+      expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
       expect(res.headers['www-authenticate']).toMatch(/Bearer/);
       expect(mockJwtVerify).not.toHaveBeenCalled();
       expect(mockFrom).not.toHaveBeenCalled();
@@ -343,7 +344,7 @@ describe('requirePortal middleware', () => {
         .set('Authorization', 'Token some-token');
 
       expect(res.status).toBe(401);
-      expect(res.body.error.code).toBe('UNAUTHORIZED');
+      expect(res.body.error.code).toBe(ErrorCodes.UNAUTHORIZED);
       expect(mockJwtVerify).not.toHaveBeenCalled();
     });
   });

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import {
   getWorkspaceIdForUser,
   assertProjectOwnership,
@@ -116,7 +117,7 @@ export async function createUpdate(
 
   if (error || !data) {
     console.error('[update.service] createUpdate DB error:', error);
-    throw new AppError('Failed to create update', 500, 'DB_ERROR');
+    throw new AppError('Failed to create update', 500, ErrorCodes.DB_ERROR);
   }
 
   if (data.status === 'published') {
@@ -182,7 +183,7 @@ export async function listUpdates(userId: string, projectId: string): Promise<Up
 
   if (error) {
     console.error('[update.service] listUpdates DB error:', error);
-    throw new AppError('Failed to fetch updates', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch updates', 500, ErrorCodes.DB_ERROR);
   }
 
   return (data ?? []).map((row: Record<string, unknown>) => {
@@ -207,7 +208,7 @@ export async function getUpdate(
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // Ownership enforced via .in('project_id', projectIds) — avoids unreliable
@@ -223,7 +224,7 @@ export async function getUpdate(
     if (updateError?.code !== 'PGRST116') {
       console.error('[update.service] getUpdate DB error:', updateError);
     }
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const [attachmentsResult, commentsResult] = await Promise.all([
@@ -237,11 +238,11 @@ export async function getUpdate(
 
   if (attachmentsResult.error) {
     console.error('[update.service] getUpdate attachments DB error:', attachmentsResult.error);
-    throw new AppError('Failed to fetch attachments', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch attachments', 500, ErrorCodes.DB_ERROR);
   }
   if (commentsResult.error) {
     console.error('[update.service] getUpdate comments DB error:', commentsResult.error);
-    throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch comments', 500, ErrorCodes.DB_ERROR);
   }
 
   return {
@@ -272,13 +273,13 @@ export async function editUpdate(
   if (changes.position !== undefined) payload.position = changes.position;
 
   if (Object.keys(payload).length === 0) {
-    throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
+    throw new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data, error } = await supabaseAdmin
@@ -291,14 +292,14 @@ export async function editUpdate(
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new AppError('Update not found', 404, 'NOT_FOUND');
+      throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
     }
     console.error('[update.service] editUpdate DB error:', error);
-    throw new AppError('Failed to update update', 500, 'DB_ERROR');
+    throw new AppError('Failed to update update', 500, ErrorCodes.DB_ERROR);
   }
   if (!data) {
     console.error('[update.service] editUpdate returned null data without error');
-    throw new AppError('Failed to update update', 500, 'DB_ERROR');
+    throw new AppError('Failed to update update', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Update;
@@ -312,7 +313,7 @@ export async function listComments(userId: string, updateId: string): Promise<Co
   // It avoids an empty .in() call (which PostgREST may reject) at the cost of a slight timing
   // difference vs. the normal not-found path. Auth is required, so the attack surface is limited.
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // #1: Agency can comment on updates of any status (draft or published) — they own the content
@@ -327,9 +328,9 @@ export async function listComments(userId: string, updateId: string): Promise<Co
   if (!updateRow) {
     if (updateError && updateError.code !== 'PGRST116') {
       console.error('[update.service] listComments update lookup DB error:', updateError);
-      throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+      throw new AppError('Failed to fetch comments', 500, ErrorCodes.DB_ERROR);
     }
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data, error } = await supabaseAdmin
@@ -340,7 +341,7 @@ export async function listComments(userId: string, updateId: string): Promise<Co
 
   if (error) {
     console.error('[update.service] listComments DB error:', error);
-    throw new AppError('Failed to fetch comments', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch comments', 500, ErrorCodes.DB_ERROR);
   }
 
   return (data ?? []) as Comment[];
@@ -355,7 +356,7 @@ export async function createAgencyComment(
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // Agency can comment on any owned update regardless of status (see listComments note above).
@@ -369,9 +370,9 @@ export async function createAgencyComment(
   if (!updateRow) {
     if (updateError && updateError.code !== 'PGRST116') {
       console.error('[update.service] createAgencyComment update lookup DB error:', updateError);
-      throw new AppError('Database error', 500, 'DB_ERROR');
+      throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
     }
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   if (input.parent_id !== undefined) {
@@ -384,14 +385,14 @@ export async function createAgencyComment(
 
     if (parentError || !parentRow) {
       if (!parentError || parentError.code === 'PGRST116') {
-        throw new AppError('Parent comment not found', 404, 'NOT_FOUND');
+        throw new AppError('Parent comment not found', 404, ErrorCodes.NOT_FOUND);
       }
       console.error('[update.service] createAgencyComment parent lookup DB error:', parentError);
-      throw new AppError('Database error', 500, 'DB_ERROR');
+      throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
     }
 
     if (parentRow.parent_id !== null) {
-      throw new AppError('Replies can only be made to top-level comments', 400, 'VALIDATION_ERROR');
+      throw new AppError('Replies can only be made to top-level comments', 400, ErrorCodes.VALIDATION_ERROR);
     }
   }
 
@@ -424,7 +425,7 @@ export async function createAgencyComment(
 
   if (insertError || !comment) {
     console.error('[update.service] createAgencyComment insert DB error:', insertError);
-    throw new AppError('Failed to create comment', 500, 'DB_ERROR');
+    throw new AppError('Failed to create comment', 500, ErrorCodes.DB_ERROR);
   }
 
   return comment as Comment;
@@ -435,7 +436,7 @@ export async function deleteUpdate(userId: string, updateId: string): Promise<vo
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { error, count } = await supabaseAdmin
@@ -446,15 +447,15 @@ export async function deleteUpdate(userId: string, updateId: string): Promise<vo
 
   if (error) {
     console.error('[update.service] deleteUpdate DB error:', error);
-    throw new AppError('Failed to delete update', 500, 'DB_ERROR');
+    throw new AppError('Failed to delete update', 500, ErrorCodes.DB_ERROR);
   }
 
   if (count === null) {
     console.error('[update.service] deleteUpdate returned null count — deletion unconfirmed');
-    throw new AppError('Failed to confirm deletion', 500, 'DB_ERROR');
+    throw new AppError('Failed to confirm deletion', 500, ErrorCodes.DB_ERROR);
   }
 
   if (count === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 }

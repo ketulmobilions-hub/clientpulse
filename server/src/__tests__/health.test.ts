@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import request from 'supertest';
 import { supabaseAdmin } from '../config/adminDb';
 
@@ -35,7 +36,7 @@ describe('GET /api/v1/health', () => {
     const res = await request(app).get('/api/v1/health');
     expect(res.status).toBe(503);
     expect(res.body.success).toBe(false);
-    expect(res.body.error.code).toBe('DB_UNAVAILABLE');
+    expect(res.body.error.code).toBe(ErrorCodes.DB_UNAVAILABLE);
   });
 });
 
@@ -45,7 +46,7 @@ describe('404 handler', () => {
     expect(res.status).toBe(404);
     expect(res.body).toEqual({
       success: false,
-      error: { code: 'NOT_FOUND', message: 'Route not found' },
+      error: { code: ErrorCodes.NOT_FOUND, message: 'Route not found' },
     });
   });
 });

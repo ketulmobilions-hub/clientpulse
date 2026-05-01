@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 const mockSend = jest.fn();
 
 jest.mock('resend', () => ({
@@ -62,7 +63,7 @@ describe('sendMagicLinkEmail', () => {
   it('throws INTERNAL_ERROR for non-https URL', async () => {
     await expect(
       sendMagicLinkEmail('client@example.com', 'Alice', 'http://example.com/verify'),
-    ).rejects.toMatchObject({ code: 'INTERNAL_ERROR', statusCode: 500 });
+    ).rejects.toMatchObject({ code: ErrorCodes.INTERNAL_ERROR, statusCode: 500 });
   });
 
   it('throws EMAIL_ERROR when Resend returns an error object', async () => {
@@ -70,7 +71,7 @@ describe('sendMagicLinkEmail', () => {
 
     await expect(
       sendMagicLinkEmail('client@example.com', 'Alice', LINK_URL),
-    ).rejects.toMatchObject({ code: 'EMAIL_ERROR', statusCode: 502 });
+    ).rejects.toMatchObject({ code: ErrorCodes.EMAIL_ERROR, statusCode: 502 });
   });
 
   it('throws EMAIL_ERROR when Resend SDK rejects (network failure)', async () => {
@@ -78,7 +79,7 @@ describe('sendMagicLinkEmail', () => {
 
     await expect(
       sendMagicLinkEmail('client@example.com', 'Alice', LINK_URL),
-    ).rejects.toMatchObject({ code: 'EMAIL_ERROR', statusCode: 502 });
+    ).rejects.toMatchObject({ code: ErrorCodes.EMAIL_ERROR, statusCode: 502 });
   });
 });
 
@@ -157,7 +158,7 @@ describe('sendClientCommentNotificationEmail', () => {
         ARGS.to, ARGS.projectName, ARGS.updateTitle,
         ARGS.clientName, ARGS.commentBody, DASHBOARD_URL,
       ),
-    ).rejects.toMatchObject({ code: 'EMAIL_ERROR', statusCode: 502 });
+    ).rejects.toMatchObject({ code: ErrorCodes.EMAIL_ERROR, statusCode: 502 });
   });
 
   it('throws EMAIL_ERROR when Resend SDK rejects (network failure)', async () => {
@@ -168,7 +169,7 @@ describe('sendClientCommentNotificationEmail', () => {
         ARGS.to, ARGS.projectName, ARGS.updateTitle,
         ARGS.clientName, ARGS.commentBody, DASHBOARD_URL,
       ),
-    ).rejects.toMatchObject({ code: 'EMAIL_ERROR', statusCode: 502 });
+    ).rejects.toMatchObject({ code: ErrorCodes.EMAIL_ERROR, statusCode: 502 });
   });
 
   it('throws INTERNAL_ERROR for non-localhost http URLs in non-production', async () => {
@@ -177,7 +178,7 @@ describe('sendClientCommentNotificationEmail', () => {
         ARGS.to, ARGS.projectName, ARGS.updateTitle,
         ARGS.clientName, ARGS.commentBody, 'http://example.com/dashboard',
       ),
-    ).rejects.toMatchObject({ code: 'INTERNAL_ERROR', statusCode: 500 });
+    ).rejects.toMatchObject({ code: ErrorCodes.INTERNAL_ERROR, statusCode: 500 });
   });
 
   it('throws INTERNAL_ERROR for http://localhost URL in production', async () => {
@@ -187,7 +188,7 @@ describe('sendClientCommentNotificationEmail', () => {
         ARGS.to, ARGS.projectName, ARGS.updateTitle,
         ARGS.clientName, ARGS.commentBody, 'http://localhost:3000/dashboard',
       ),
-    ).rejects.toMatchObject({ code: 'INTERNAL_ERROR', statusCode: 500 });
+    ).rejects.toMatchObject({ code: ErrorCodes.INTERNAL_ERROR, statusCode: 500 });
     mockEnvObj.nodeEnv = 'test';
   });
 });

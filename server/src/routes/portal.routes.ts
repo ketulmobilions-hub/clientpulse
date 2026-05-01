@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { validateString } from '../utils/validation';
 import { SHARE_TOKEN_RE } from '../utils/token';
 import { getPortalOverview, listPortalUpdates, createPortalComment } from '../services/portal.service';
@@ -13,20 +14,20 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 async function validateToken(token: string): Promise<void> {
   if (!SHARE_TOKEN_RE.test(token)) {
     await new Promise((resolve) => setTimeout(resolve, 5 + Math.random() * 10));
-    throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+    throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
   }
 }
 
 function validateUuid(value: string, field: string): void {
   if (!UUID_RE.test(value)) {
-    throw new AppError(`${field} must be a valid UUID`, 400, 'VALIDATION_ERROR');
+    throw new AppError(`${field} must be a valid UUID`, 400, ErrorCodes.VALIDATION_ERROR);
   }
 }
 
 function parsePage(raw: unknown): number {
   const n = parseInt(String(raw ?? '1'), 10);
   if (!Number.isFinite(n) || n < 1) {
-    throw new AppError('page must be a positive integer', 400, 'VALIDATION_ERROR');
+    throw new AppError('page must be a positive integer', 400, ErrorCodes.VALIDATION_ERROR);
   }
   return n;
 }
@@ -34,7 +35,7 @@ function parsePage(raw: unknown): number {
 function parseLimit(raw: unknown): number {
   const n = parseInt(String(raw ?? '20'), 10);
   if (!Number.isFinite(n) || n < 1 || n > 50) {
-    throw new AppError('limit must be an integer between 1 and 50', 400, 'VALIDATION_ERROR');
+    throw new AppError('limit must be an integer between 1 and 50', 400, ErrorCodes.VALIDATION_ERROR);
   }
   return n;
 }
@@ -45,7 +46,7 @@ const commentRateLimit = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many comments, please try again later.' } },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many comments, please try again later.' } },
 });
 
 export const portalRouter = Router();

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { env } from '../config/env';
 import { Attachment } from './update.service';
 
@@ -35,10 +36,10 @@ async function assertUpdateOwnership(
 
   if (wsError) {
     console.error('[attachment.service] assertUpdateOwnership workspace error:', wsError);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (!wsData || wsData.length === 0) {
-    throw new AppError('Workspace not found', 404, 'NOT_FOUND');
+    throw new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const workspaceId = (wsData[0] as { id: string }).id;
@@ -51,13 +52,13 @@ async function assertUpdateOwnership(
 
   if (projectError) {
     console.error('[attachment.service] assertUpdateOwnership projects error:', projectError);
-    throw new AppError('Failed to resolve projects', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve projects', 500, ErrorCodes.DB_ERROR);
   }
 
   const projectIds = ((projectData ?? []) as { id: string }[]).map((p) => p.id);
 
   if (projectIds.length === 0) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data: update, error: updateError } = await supabaseAdmin
@@ -68,7 +69,7 @@ async function assertUpdateOwnership(
     .single();
 
   if (updateError || !update) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   return update as { id: string; project_id: string };
@@ -82,7 +83,7 @@ async function countAttachments(updateId: string): Promise<number> {
 
   if (error) {
     console.error('[attachment.service] countAttachments DB error:', error);
-    throw new AppError('Failed to count attachments', 500, 'DB_ERROR');
+    throw new AppError('Failed to count attachments', 500, ErrorCodes.DB_ERROR);
   }
   return count ?? 0;
 }
@@ -100,12 +101,12 @@ export async function generateAttachmentSignedUrl(
     throw new AppError(
       `Maximum ${MAX_ATTACHMENTS_PER_UPDATE} attachments allowed per update`,
       409,
-      'MAX_ATTACHMENTS',
+      ErrorCodes.MAX_ATTACHMENTS,
     );
   }
 
   if (BLOCKED_EXT.test(fileName)) {
-    throw new AppError('File type not allowed', 400, 'INVALID_FILE_TYPE');
+    throw new AppError('File type not allowed', 400, ErrorCodes.INVALID_FILE_TYPE);
   }
 
   // Fix #7: reject filenames whose printable content is entirely special characters.
@@ -113,7 +114,7 @@ export async function generateAttachmentSignedUrl(
     throw new AppError(
       'file_name must contain at least one alphanumeric character',
       400,
-      'VALIDATION_ERROR',
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -126,7 +127,7 @@ export async function generateAttachmentSignedUrl(
 
   if (error || !data) {
     console.error('[attachment.service] generateAttachmentSignedUrl storage error:', error);
-    throw new AppError('Failed to generate upload URL', 500, 'STORAGE_ERROR');
+    throw new AppError('Failed to generate upload URL', 500, ErrorCodes.STORAGE_ERROR);
   }
 
   const {
@@ -148,17 +149,17 @@ export async function saveAttachment(
     throw new AppError(
       `Maximum ${MAX_ATTACHMENTS_PER_UPDATE} attachments allowed per update`,
       409,
-      'MAX_ATTACHMENTS',
+      ErrorCodes.MAX_ATTACHMENTS,
     );
   }
 
   if (input.file_size > MAX_FILE_SIZE_BYTES) {
-    throw new AppError('File exceeds 10 MB limit', 400, 'FILE_TOO_LARGE');
+    throw new AppError('File exceeds 10 MB limit', 400, ErrorCodes.FILE_TOO_LARGE);
   }
 
   // Fix #2: block dangerous extensions even if caller bypasses the signed-URL flow.
   if (BLOCKED_EXT.test(input.file_name)) {
-    throw new AppError('File type not allowed', 400, 'INVALID_FILE_TYPE');
+    throw new AppError('File type not allowed', 400, ErrorCodes.INVALID_FILE_TYPE);
   }
 
   // Fix #7: reject filenames with no alphanumeric content.
@@ -166,7 +167,7 @@ export async function saveAttachment(
     throw new AppError(
       'file_name must contain at least one alphanumeric character',
       400,
-      'VALIDATION_ERROR',
+      ErrorCodes.VALIDATION_ERROR,
     );
   }
 
@@ -174,7 +175,7 @@ export async function saveAttachment(
   // attachments bucket. Hostname is pinned to env.supabaseUrl, preventing callers from
   // recording arbitrary external URLs or URLs from other Supabase projects.
   if (!input.file_url.startsWith(ATTACHMENTS_URL_PREFIX)) {
-    throw new AppError('file_url must be a valid attachment storage URL', 400, 'VALIDATION_ERROR');
+    throw new AppError('file_url must be a valid attachment storage URL', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const { data, error } = await supabaseAdmin
@@ -198,14 +199,14 @@ export async function saveAttachment(
       throw new AppError(
         `Maximum ${MAX_ATTACHMENTS_PER_UPDATE} attachments allowed per update`,
         409,
-        'MAX_ATTACHMENTS',
+        ErrorCodes.MAX_ATTACHMENTS,
       );
     }
     console.error('[attachment.service] saveAttachment DB error:', error);
-    throw new AppError('Failed to save attachment', 500, 'DB_ERROR');
+    throw new AppError('Failed to save attachment', 500, ErrorCodes.DB_ERROR);
   }
   if (!data) {
-    throw new AppError('Failed to save attachment', 500, 'DB_ERROR');
+    throw new AppError('Failed to save attachment', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Attachment;
@@ -226,10 +227,10 @@ export async function deleteAttachment(userId: string, attachmentId: string): Pr
 
   if (wsError) {
     console.error('[attachment.service] deleteAttachment workspace error:', wsError);
-    throw new AppError('Failed to resolve workspace', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve workspace', 500, ErrorCodes.DB_ERROR);
   }
   if (!wsData || wsData.length === 0) {
-    throw new AppError('Attachment not found', 404, 'NOT_FOUND');
+    throw new AppError('Attachment not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const workspaceId = (wsData[0] as { id: string }).id;
@@ -242,12 +243,12 @@ export async function deleteAttachment(userId: string, attachmentId: string): Pr
 
   if (projectError) {
     console.error('[attachment.service] deleteAttachment projects error:', projectError);
-    throw new AppError('Failed to resolve projects', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve projects', 500, ErrorCodes.DB_ERROR);
   }
 
   const projectIds = ((projectData ?? []) as { id: string }[]).map((p) => p.id);
   if (projectIds.length === 0) {
-    throw new AppError('Attachment not found', 404, 'NOT_FOUND');
+    throw new AppError('Attachment not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { data: updateData, error: updateError } = await supabaseAdmin
@@ -257,12 +258,12 @@ export async function deleteAttachment(userId: string, attachmentId: string): Pr
 
   if (updateError) {
     console.error('[attachment.service] deleteAttachment updates error:', updateError);
-    throw new AppError('Failed to resolve updates', 500, 'DB_ERROR');
+    throw new AppError('Failed to resolve updates', 500, ErrorCodes.DB_ERROR);
   }
 
   const updateIds = ((updateData ?? []) as { id: string }[]).map((u) => u.id);
   if (updateIds.length === 0) {
-    throw new AppError('Attachment not found', 404, 'NOT_FOUND');
+    throw new AppError('Attachment not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // Ownership-filtered fetch: only returns the attachment if it belongs to this user's workspace.
@@ -274,7 +275,7 @@ export async function deleteAttachment(userId: string, attachmentId: string): Pr
     .single();
 
   if (fetchError || !attachment) {
-    throw new AppError('Attachment not found', 404, 'NOT_FOUND');
+    throw new AppError('Attachment not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const fileUrl = (attachment as { file_url: string }).file_url;
@@ -289,12 +290,12 @@ export async function deleteAttachment(userId: string, attachmentId: string): Pr
 
   if (deleteError) {
     console.error('[attachment.service] deleteAttachment DB error:', deleteError);
-    throw new AppError('Failed to delete attachment', 500, 'DB_ERROR');
+    throw new AppError('Failed to delete attachment', 500, ErrorCodes.DB_ERROR);
   }
 
   if (count === null) {
     console.error('[attachment.service] deleteAttachment returned null count — deletion unconfirmed');
-    throw new AppError('Failed to confirm deletion', 500, 'DB_ERROR');
+    throw new AppError('Failed to confirm deletion', 500, ErrorCodes.DB_ERROR);
   }
 
   // Delete storage file after DB record is confirmed gone.

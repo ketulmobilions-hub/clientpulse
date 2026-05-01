@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { stripDangerousHtml } from './update.service';
 import { SHARE_TOKEN_RE } from '../utils/token';
 import { env } from '../config/env';
@@ -69,7 +70,7 @@ export interface PortalUpdatesPage {
 // reducing timing side-channel leakage on this public endpoint.
 async function timingRejectInvalidToken(): Promise<never> {
   await new Promise((resolve) => setTimeout(resolve, 5 + Math.random() * 10));
-  throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+  throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
 }
 
 async function resolveProjectId(shareToken: string): Promise<string> {
@@ -86,14 +87,14 @@ async function resolveProjectId(shareToken: string): Promise<string> {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+      throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
     }
     console.error('[portal.service] resolveProjectId DB error:', error);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (!data?.id) {
-    throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+    throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
   }
 
   return data.id;
@@ -124,20 +125,20 @@ export async function getPortalOverview(shareToken: string): Promise<PortalOverv
 
   if (projectError) {
     if (projectError.code === 'PGRST116') {
-      throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+      throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
     }
     console.error('[portal.service] getPortalOverview project DB error:', projectError);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (!projectRow) {
-    throw new AppError('Invalid or expired token', 401, 'INVALID_TOKEN');
+    throw new AppError('Invalid or expired token', 401, ErrorCodes.INVALID_TOKEN);
   }
 
   // Workspace join returns null for orphaned projects — guard before returning
   if (!projectRow.workspaces) {
     console.error('[portal.service] getPortalOverview: project has no workspace', { projectId: projectRow.id });
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   const { data: milestoneRows, error: milestoneError } = await supabaseAdmin
@@ -148,7 +149,7 @@ export async function getPortalOverview(shareToken: string): Promise<PortalOverv
 
   if (milestoneError) {
     console.error('[portal.service] getPortalOverview milestones DB error:', milestoneError);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   const milestones = (milestoneRows ?? []) as PortalMilestone[];
@@ -203,11 +204,11 @@ export async function listPortalUpdates(
 
   if (updatesResult.error) {
     console.error('[portal.service] listPortalUpdates DB error:', updatesResult.error);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
   if (countResult.error) {
     console.error('[portal.service] listPortalUpdates count DB error:', countResult.error);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   // Sanitize body on read as a second layer of defense against stored XSS
@@ -239,14 +240,14 @@ export async function createPortalComment(
 
   if (updateError) {
     if (updateError.code === 'PGRST116') {
-      throw new AppError('Update not found', 404, 'NOT_FOUND');
+      throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
     }
     console.error('[portal.service] createPortalComment update lookup DB error:', updateError);
-    throw new AppError('Database error', 500, 'DB_ERROR');
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
   }
 
   if (!updateRow) {
-    throw new AppError('Update not found', 404, 'NOT_FOUND');
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   // Validate parent_id: must belong to this update AND be a top-level comment (no nesting beyond depth 1)
@@ -260,19 +261,19 @@ export async function createPortalComment(
 
     if (parentError) {
       if (parentError.code === 'PGRST116') {
-        throw new AppError('Parent comment not found', 404, 'NOT_FOUND');
+        throw new AppError('Parent comment not found', 404, ErrorCodes.NOT_FOUND);
       }
       console.error('[portal.service] createPortalComment parent lookup DB error:', parentError);
-      throw new AppError('Database error', 500, 'DB_ERROR');
+      throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
     }
 
     if (!parentRow) {
-      throw new AppError('Parent comment not found', 404, 'NOT_FOUND');
+      throw new AppError('Parent comment not found', 404, ErrorCodes.NOT_FOUND);
     }
 
     // Enforce max depth of 1: parent must be a top-level comment
     if (parentRow.parent_id !== null) {
-      throw new AppError('Replies can only be made to top-level comments', 400, 'VALIDATION_ERROR');
+      throw new AppError('Replies can only be made to top-level comments', 400, ErrorCodes.VALIDATION_ERROR);
     }
   }
 
@@ -291,7 +292,7 @@ export async function createPortalComment(
 
   if (insertError || !comment) {
     console.error('[portal.service] createPortalComment insert DB error:', insertError);
-    throw new AppError('Failed to create comment', 500, 'DB_ERROR');
+    throw new AppError('Failed to create comment', 500, ErrorCodes.DB_ERROR);
   }
 
   // email failure must not fail comment creation

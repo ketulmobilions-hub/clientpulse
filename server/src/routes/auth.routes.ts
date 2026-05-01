@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import { validateString } from '../utils/validation';
 import { registerUser, loginUser, generateMagicLink, verifyMagicLink } from '../services/auth.service';
 
@@ -17,7 +18,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
     const workspaceName = validateString(req.body?.workspaceName, 'workspaceName');
 
     if (!EMAIL_RE.test(email)) {
-      throw new AppError('Invalid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('Invalid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
 
     const result = await registerUser(email, password, name, workspaceName);
@@ -33,7 +34,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction): P
     const password = validateString(req.body?.password, 'password', 8, 128);
 
     if (!EMAIL_RE.test(email)) {
-      throw new AppError('Invalid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('Invalid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
 
     const result = await loginUser(email, password);
@@ -47,11 +48,11 @@ router.post('/magic-link', requireAuth, async (req: Request, res: Response, next
   try {
     const projectId = validateString(req.body?.projectId, 'projectId');
     if (!UUID_RE.test(projectId)) {
-      throw new AppError('projectId must be a valid UUID', 400, 'VALIDATION_ERROR');
+      throw new AppError('projectId must be a valid UUID', 400, ErrorCodes.VALIDATION_ERROR);
     }
     const email = validateString(req.body?.email, 'email');
     if (!EMAIL_RE.test(email)) {
-      throw new AppError('Invalid email address', 400, 'VALIDATION_ERROR');
+      throw new AppError('Invalid email address', 400, ErrorCodes.VALIDATION_ERROR);
     }
     const clientName = req.body?.clientName !== undefined
       ? validateString(req.body.clientName, 'clientName', 1, 100)
@@ -68,7 +69,7 @@ router.get('/magic-link/verify', async (req: Request, res: Response, next: NextF
   try {
     const token = req.query['token'];
     if (typeof token !== 'string' || token.trim().length === 0) {
-      throw new AppError('token query param is required', 400, 'VALIDATION_ERROR');
+      throw new AppError('token query param is required', 400, ErrorCodes.VALIDATION_ERROR);
     }
 
     const result = await verifyMagicLink(token.trim());

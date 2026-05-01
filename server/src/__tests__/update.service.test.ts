@@ -1,3 +1,4 @@
+import { ErrorCodes } from '../errors/codes';
 import { supabaseAdmin } from '../config/adminDb';
 
 jest.mock('../config/adminDb', () => ({
@@ -206,7 +207,7 @@ describe('createUpdate', () => {
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -214,10 +215,10 @@ describe('createUpdate', () => {
   it('throws DB_ERROR when assertProjectOwnership has non-PGRST116 DB error', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: ErrorCodes.INTERNAL_ERROR } }));
 
     await expect(createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -229,7 +230,7 @@ describe('createUpdate', () => {
       .mockReturnValueOnce(makeInsertChain({ data: null, error: new Error('db down') }));
 
     await expect(createUpdate(USER_ID, PROJECT_ID, { title: 'T', body: 'B' })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
     });
   });
 });
@@ -283,16 +284,16 @@ describe('listUpdates', () => {
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'PGRST116' } }));
 
-    await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND });
   });
 
   it('throws DB_ERROR when assertProjectOwnership has non-PGRST116 DB error', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: 'INTERNAL_ERROR' } }));
+      .mockReturnValueOnce(makeProjectOwnershipChain({ data: null, error: { code: ErrorCodes.INTERNAL_ERROR } }));
 
     await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -303,7 +304,7 @@ describe('listUpdates', () => {
       .mockReturnValueOnce(makeProjectOwnershipChain({ data: PROJECT_ROW, error: null }))
       .mockReturnValueOnce(makeListChain({ data: null, error: new Error('db down') }));
 
-    await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(listUpdates(USER_ID, PROJECT_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
   });
 });
 
@@ -347,7 +348,7 @@ describe('getUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(EMPTY_PROJECT_IDS_RESULT));
 
     await expect(getUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -358,16 +359,16 @@ describe('getUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
       .mockReturnValueOnce(makeGetUpdateChain({ data: null, error: { code: 'PGRST116' } }));
 
-    await expect(getUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(getUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND });
   });
 
-  it('throws WORKSPACE_NOT_FOUND when user has no workspace', async () => {
+  it('throws NOT_FOUND when user has no workspace', async () => {
     mockFrom
       .mockReturnValueOnce(makeWsLimitChain({ data: [], error: null }))
       .mockReturnValueOnce(makeWsMemberChain({ data: null, error: null }));
 
     await expect(getUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({
-      code: 'WORKSPACE_NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
     });
   });
 });
@@ -413,7 +414,7 @@ describe('editUpdate', () => {
     mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
 
     await expect(editUpdate(USER_ID, UPDATE_ID, {})).rejects.toMatchObject({
-      code: 'VALIDATION_ERROR',
+      code: ErrorCodes.VALIDATION_ERROR,
       statusCode: 400,
     });
   });
@@ -424,7 +425,7 @@ describe('editUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(EMPTY_PROJECT_IDS_RESULT));
 
     await expect(editUpdate(USER_ID, UPDATE_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -436,7 +437,7 @@ describe('editUpdate', () => {
       .mockReturnValueOnce(makeEditChain({ data: null, error: { code: 'PGRST116' } }));
 
     await expect(editUpdate(USER_ID, UPDATE_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
     });
   });
 
@@ -447,7 +448,7 @@ describe('editUpdate', () => {
       .mockReturnValueOnce(makeEditChain({ data: null, error: null }));
 
     await expect(editUpdate(USER_ID, UPDATE_ID, { title: 'X' })).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -469,7 +470,7 @@ describe('deleteUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(EMPTY_PROJECT_IDS_RESULT));
 
     await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
+      code: ErrorCodes.NOT_FOUND,
       statusCode: 404,
     });
   });
@@ -480,7 +481,7 @@ describe('deleteUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
       .mockReturnValueOnce(makeDeleteChain({ error: null, count: 0 }));
 
-    await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND });
   });
 
   it('throws DB_ERROR when count is null — deletion unconfirmed', async () => {
@@ -490,7 +491,7 @@ describe('deleteUpdate', () => {
       .mockReturnValueOnce(makeDeleteChain({ error: null, count: null }));
 
     await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({
-      code: 'DB_ERROR',
+      code: ErrorCodes.DB_ERROR,
       statusCode: 500,
     });
   });
@@ -501,6 +502,6 @@ describe('deleteUpdate', () => {
       .mockReturnValueOnce(makeProjectIdsChain(PROJECT_IDS_RESULT))
       .mockReturnValueOnce(makeDeleteChain({ error: new Error('db down'), count: null }));
 
-    await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: 'DB_ERROR' });
+    await expect(deleteUpdate(USER_ID, UPDATE_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR });
   });
 });

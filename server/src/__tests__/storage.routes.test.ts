@@ -15,6 +15,7 @@ import app from '../app';
 import * as storageService from '../services/storage.service';
 import * as workspaceService from '../services/workspace.service';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 
 const mockGetSignedUrl = storageService.getUploadSignedUrl as jest.Mock;
 const mockGetWorkspace = workspaceService.getWorkspace as jest.Mock;
@@ -63,7 +64,7 @@ describe('POST /api/v1/storage/signed-url', () => {
   });
 
   it('returns 404 when user is not workspace owner', async () => {
-    mockGetWorkspace.mockRejectedValue(new AppError('Workspace not found', 404, 'NOT_FOUND'));
+    mockGetWorkspace.mockRejectedValue(new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND));
 
     const res = await request(app)
       .post('/api/v1/storage/signed-url')
@@ -76,13 +77,13 @@ describe('POST /api/v1/storage/signed-url', () => {
   it('returns 400 when file_name is missing', async () => {
     const res = await request(app).post('/api/v1/storage/signed-url').send({});
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockGetSignedUrl).not.toHaveBeenCalled();
   });
 
   it('returns 400 for disallowed file type including svg', async () => {
     mockGetSignedUrl.mockRejectedValue(
-      new AppError('Only image files are allowed', 400, 'VALIDATION_ERROR'),
+      new AppError('Only image files are allowed', 400, ErrorCodes.VALIDATION_ERROR),
     );
 
     const res = await request(app)
@@ -94,7 +95,7 @@ describe('POST /api/v1/storage/signed-url', () => {
 
   it('returns 500 when storage service fails', async () => {
     mockGetSignedUrl.mockRejectedValue(
-      new AppError('Failed to generate upload URL', 500, 'STORAGE_ERROR'),
+      new AppError('Failed to generate upload URL', 500, ErrorCodes.STORAGE_ERROR),
     );
 
     const res = await request(app)
@@ -102,7 +103,7 @@ describe('POST /api/v1/storage/signed-url', () => {
       .send({ file_name: 'logo.png' });
 
     expect(res.status).toBe(500);
-    expect(res.body.error.code).toBe('STORAGE_ERROR');
+    expect(res.body.error.code).toBe(ErrorCodes.STORAGE_ERROR);
   });
 });
 
@@ -141,7 +142,7 @@ describe('DELETE /api/v1/storage/logo', () => {
 
   it('returns 404 when user is not workspace owner', async () => {
     mockGetWorkspace.mockRejectedValueOnce(
-      new AppError('Workspace not found', 404, 'NOT_FOUND'),
+      new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND),
     );
     const res = await request(app)
       .delete('/api/v1/storage/logo')

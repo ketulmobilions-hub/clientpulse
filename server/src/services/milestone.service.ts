@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
+import { ErrorCodes } from '../errors/codes';
 import {
   getWorkspaceIdForUser,
   assertProjectOwnership,
@@ -34,7 +35,7 @@ export async function listMilestones(projectId: string, userId: string): Promise
 
   if (error) {
     console.error('[milestone.service] listMilestones DB error:', error);
-    throw new AppError('Failed to fetch milestones', 500, 'DB_ERROR');
+    throw new AppError('Failed to fetch milestones', 500, ErrorCodes.DB_ERROR);
   }
 
   return (data ?? []) as Milestone[];
@@ -64,7 +65,7 @@ export async function createMilestone(
 
   if (error || !data) {
     console.error('[milestone.service] createMilestone DB error:', error);
-    throw new AppError('Failed to create milestone', 500, 'DB_ERROR');
+    throw new AppError('Failed to create milestone', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Milestone;
@@ -88,14 +89,14 @@ export async function updateMilestone(
     changes.position !== undefined;
 
   if (!hasChanges) {
-    throw new AppError('No fields to update', 400, 'VALIDATION_ERROR');
+    throw new AppError('No fields to update', 400, ErrorCodes.VALIDATION_ERROR);
   }
 
   const workspaceId = await getWorkspaceIdForUser(userId, CONTEXT);
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Milestone not found', 404, 'NOT_FOUND');
+    throw new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const payload: Record<string, unknown> = {};
@@ -121,7 +122,7 @@ export async function updateMilestone(
 
       if (fetchError) {
         console.error('[milestone.service] updateMilestone fetch-current DB error:', fetchError);
-        throw new AppError('Failed to verify milestone state', 500, 'DB_ERROR');
+        throw new AppError('Failed to verify milestone state', 500, ErrorCodes.DB_ERROR);
       }
       if (!current) {
         // Milestone vanished between fetch and update (extreme race) — update below
@@ -145,14 +146,14 @@ export async function updateMilestone(
 
   if (error) {
     if (error.code === 'PGRST116') {
-      throw new AppError('Milestone not found', 404, 'NOT_FOUND');
+      throw new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND);
     }
     console.error('[milestone.service] updateMilestone DB error:', error);
-    throw new AppError('Failed to update milestone', 500, 'DB_ERROR');
+    throw new AppError('Failed to update milestone', 500, ErrorCodes.DB_ERROR);
   }
   if (!data) {
     console.error('[milestone.service] updateMilestone returned null data without error');
-    throw new AppError('Failed to update milestone', 500, 'DB_ERROR');
+    throw new AppError('Failed to update milestone', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Milestone;
@@ -163,7 +164,7 @@ export async function deleteMilestone(milestoneId: string, userId: string): Prom
   const projectIds = await getProjectIdsForWorkspace(workspaceId, CONTEXT);
 
   if (projectIds.length === 0) {
-    throw new AppError('Milestone not found', 404, 'NOT_FOUND');
+    throw new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND);
   }
 
   const { error, count } = await supabaseAdmin
@@ -174,15 +175,15 @@ export async function deleteMilestone(milestoneId: string, userId: string): Prom
 
   if (error) {
     console.error('[milestone.service] deleteMilestone DB error:', error);
-    throw new AppError('Failed to delete milestone', 500, 'DB_ERROR');
+    throw new AppError('Failed to delete milestone', 500, ErrorCodes.DB_ERROR);
   }
 
   if (count === null) {
     console.error('[milestone.service] deleteMilestone returned null count — deletion unconfirmed');
-    throw new AppError('Failed to confirm deletion', 500, 'DB_ERROR');
+    throw new AppError('Failed to confirm deletion', 500, ErrorCodes.DB_ERROR);
   }
 
   if (count === 0) {
-    throw new AppError('Milestone not found', 404, 'NOT_FOUND');
+    throw new AppError('Milestone not found', 404, ErrorCodes.NOT_FOUND);
   }
 }
