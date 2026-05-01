@@ -6,7 +6,7 @@ part of 'workspace_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workspaceNotifierHash() => r'7fc368aebf47e4249211127c42577750a500f508';
+String _$workspaceNotifierHash() => r'8c926ebe5df7a988aa42aac7c8f24ae3db02e0e4';
 
 /// See also [WorkspaceNotifier].
 @ProviderFor(WorkspaceNotifier)
