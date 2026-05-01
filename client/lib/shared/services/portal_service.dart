@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../models/portal_comment.dart';
 import '../models/portal_overview.dart';
 import '../models/portal_update.dart';
 import '../utils/api_utils.dart';
@@ -86,6 +87,37 @@ class PortalService {
     }
   }
 
+  Future<PortalComment> createPortalComment({
+    required String token,
+    required String updateId,
+    required String authorName,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    _validateToken(token);
+    try {
+      final res = await _api.post<Map<String, dynamic>>(
+        '/portal/$token/updates/$updateId/comments',
+        data: {'author_name': authorName, 'body': body},
+        cancelToken: cancelToken,
+      );
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const PortalException('PARSE_ERROR', 'Unexpected response format');
+      final comment = data['comment'];
+      if (comment is! Map<String, dynamic>) {
+        throw const PortalException('PARSE_ERROR', 'Unexpected response format');
+      }
+      return PortalComment.fromJson(comment);
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) rethrow;
+      throw _mapDioError(e);
+    } on PortalException {
+      rethrow;
+    } catch (e) {
+      throw PortalException('UNEXPECTED', 'Unexpected error: $e');
+    }
+  }
+
   void _validateToken(String token) {
     if (!_shareTokenRe.hasMatch(token)) {
       throw const PortalException('INVALID_TOKEN', 'Invalid or expired token');
@@ -93,6 +125,12 @@ class PortalService {
   }
 
   PortalException _mapDioError(DioException e) {
+    if (e.response?.statusCode == 429) {
+      return const PortalException(
+        'RATE_LIMITED',
+        'Too many comments. Please wait a few minutes and try again.',
+      );
+    }
     final body = e.response?.data;
     if (body is Map<String, dynamic>) {
       final err = body['error'];
