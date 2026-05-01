@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "client-pulse-9b146",
+    "staging": "client-pulse-9b146"
+  }
+}
