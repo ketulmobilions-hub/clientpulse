@@ -154,6 +154,7 @@ class _PortalContent extends ConsumerWidget {
                         itemBuilder: (_, i) => PortalUpdateCard(
                           key: ValueKey(updatesState.updates[i].id),
                           update: updatesState.updates[i],
+                          token: token,
                         ),
                       ),
                     ),
