@@ -1,0 +1,86 @@
+name: Deploy Flutter Web to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'firebase.json'
+      - '.firebaserc'
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'client/**'
+      - 'firebase.json'
+      - '.firebaserc'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          missing=""
+          [ -z "$API_BASE_URL" ] && missing="$missing API_BASE_URL"
+          [ -z "$FIREBASE_SERVICE_ACCOUNT" ] && missing="$missing FIREBASE_SERVICE_ACCOUNT"
+          if [ -n "$missing" ]; then
+            echo "Missing required secrets:$missing"
+            exit 1
+          fi
+
+      - name: Read Flutter version from FVM
+        id: fvm
+        run: |
+          echo "flutter-version=$(python3 -c "import json; print(json.load(open('client/.fvmrc'))['flutter'])")" >> $GITHUB_OUTPUT
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.flutter-version }}
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        working-directory: client
+        run: flutter pub get
+
+      - name: Build Flutter Web
+        working-directory: client
+        run: |
+          flutter build web --release \
+            --base-href / \
+            --dart-define=API_BASE_URL=${{ secrets.API_BASE_URL }} \
+            --dart-define=APP_BASE_URL=${{ secrets.APP_BASE_URL }}
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "client/build/web/index.html" ]; then
+            echo "Build failed: index.html not found in client/build/web"
+            exit 1
+          fi
+          echo "Build verified: $(ls client/build/web | wc -l | tr -d ' ') files"
+
+      - name: Deploy to Firebase Hosting (live)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: client-pulse-9b146
+          entryPoint: .
+
+      - name: Deploy to Firebase Hosting (preview)
+        if: github.event_name == 'pull_request'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: client-pulse-9b146
+          entryPoint: .

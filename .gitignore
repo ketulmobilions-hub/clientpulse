@@ -27,6 +27,9 @@ client/pubspec.lock
 # FVM
 client/.fvm/flutter_sdk
 
+# Firebase CLI cache
+.firebase/
+
 # OS
 .DS_Store
 Thumbs.db
