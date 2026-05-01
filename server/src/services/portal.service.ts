@@ -2,6 +2,8 @@ import { supabaseAdmin } from '../config/adminDb';
 import { AppError } from '../middleware/errorHandler';
 import { stripDangerousHtml } from './update.service';
 import { SHARE_TOKEN_RE } from '../utils/token';
+import { env } from '../config/env';
+import { sendClientCommentNotificationEmail } from './email.service';
 
 export interface PortalMilestone {
   id: string;
@@ -229,11 +231,11 @@ export async function createPortalComment(
   // Verify update belongs to this project and is published
   const { data: updateRow, error: updateError } = await supabaseAdmin
     .from('updates')
-    .select('id')
+    .select('id, title')
     .eq('id', updateId)
     .eq('project_id', projectId)
     .eq('status', 'published')
-    .single<{ id: string }>();
+    .single<{ id: string; title: string }>();
 
   if (updateError) {
     if (updateError.code === 'PGRST116') {
@@ -292,5 +294,54 @@ export async function createPortalComment(
     throw new AppError('Failed to create comment', 500, 'DB_ERROR');
   }
 
-  return comment as PortalComment;
+  // email failure must not fail comment creation
+  const savedComment = comment as PortalComment;
+  void (async () => {
+    try {
+      const { data: project, error: projectFetchError } = await supabaseAdmin
+        .from('projects')
+        .select('workspace_id, name')
+        .eq('id', projectId)
+        .single<{ workspace_id: string; name: string }>();
+
+      if (projectFetchError) {
+        console.error('[portal.service] createPortalComment email: project fetch error', projectFetchError);
+        return;
+      }
+      if (!project) return;
+
+      const { data: members, error: membersFetchError } = await supabaseAdmin
+        .from('users')
+        .select('email')
+        .eq('workspace_id', project.workspace_id)
+        .in('role', ['admin', 'member'])
+        .is('deleted_at', null);
+
+      if (membersFetchError) {
+        console.error('[portal.service] createPortalComment email: members fetch error', membersFetchError);
+        return;
+      }
+      if (!members?.length) return;
+
+      const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
+      const dashboardUrl = `${baseUrl}/dashboard/projects/${projectId}/updates/${updateId}`;
+
+      await Promise.allSettled(
+        members.map((m) =>
+          sendClientCommentNotificationEmail(
+            m.email,
+            project.name,
+            updateRow.title,
+            savedComment.author_name,
+            savedComment.body,
+            dashboardUrl,
+          ),
+        ),
+      );
+    } catch (err) {
+      console.error('[portal.service] createPortalComment email notification error:', err);
+    }
+  })();
+
+  return savedComment;
 }
