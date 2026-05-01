@@ -42,4 +42,13 @@ class UpdateNotifier extends _$UpdateNotifier {
     if (current == null) return;
     state = AsyncData(current.where((u) => u.id != updateId).toList());
   }
+
+  void incrementCommentCount(String updateId) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData(current.map((u) {
+      if (u.id != updateId) return u;
+      return u.copyWith(commentCount: (u.commentCount ?? 0) + 1);
+    }).toList());
+  }
 }

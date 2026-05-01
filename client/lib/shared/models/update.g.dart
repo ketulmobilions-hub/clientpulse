@@ -19,6 +19,7 @@ _$UpdateImpl _$$UpdateImplFromJson(Map<String, dynamic> json) => _$UpdateImpl(
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
       attachmentCount: (json['attachment_count'] as num?)?.toInt(),
+      commentCount: (json['comment_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$UpdateImplToJson(_$UpdateImpl instance) =>
@@ -35,4 +36,5 @@ Map<String, dynamic> _$$UpdateImplToJson(_$UpdateImpl instance) =>
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
       'attachment_count': instance.attachmentCount,
+      'comment_count': instance.commentCount,
     };

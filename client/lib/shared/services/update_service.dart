@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/comment.dart';
 import '../models/update.dart';
 import '../utils/api_utils.dart';
 import 'api_service.dart';
@@ -63,6 +64,58 @@ class UpdateService {
         }
         return Update.fromJson(u);
       }).toList();
+    } on DioException catch (e) {
+      throw UpdateServiceException(extractDioErrorMessage(e));
+    } on UpdateServiceException {
+      rethrow;
+    } catch (e) {
+      throw UpdateServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<List<Comment>> listComments(String updateId) async {
+    try {
+      final res = await _api.get<Map<String, dynamic>>(
+        '/updates/$updateId/comments',
+      );
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const UpdateServiceException('Unexpected response format');
+      final comments = data['comments'];
+      if (comments is! List) throw const UpdateServiceException('Unexpected response format');
+      return comments.map((c) {
+        if (c is! Map<String, dynamic>) {
+          throw const UpdateServiceException('Unexpected element in comments list');
+        }
+        return Comment.fromJson(c);
+      }).toList();
+    } on DioException catch (e) {
+      throw UpdateServiceException(extractDioErrorMessage(e));
+    } on UpdateServiceException {
+      rethrow;
+    } catch (e) {
+      throw UpdateServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<Comment> createComment(
+    String updateId,
+    String body, {
+    String? parentId,
+  }) async {
+    try {
+      final payload = <String, dynamic>{'body': body};
+      if (parentId != null) payload['parent_id'] = parentId;
+      final res = await _api.post<Map<String, dynamic>>(
+        '/updates/$updateId/comments',
+        data: payload,
+      );
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const UpdateServiceException('Unexpected response format');
+      final comment = data['comment'];
+      if (comment is! Map<String, dynamic>) {
+        throw const UpdateServiceException('Unexpected response format');
+      }
+      return Comment.fromJson(comment);
     } on DioException catch (e) {
       throw UpdateServiceException(extractDioErrorMessage(e));
     } on UpdateServiceException {
