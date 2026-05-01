@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
+import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
+import 'package:clientpulse/shared/widgets/error_state_widget.dart';
+import 'package:clientpulse/shared/widgets/shimmer_card.dart';
 import 'milestone_tile.dart';
 
 class MilestoneListWidget extends ConsumerWidget {
@@ -17,27 +20,22 @@ class MilestoneListWidget extends ConsumerWidget {
       children: [
         Expanded(
           child: milestonesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Failed to load milestones',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => ref
-                        .read(milestoneNotifierProvider(projectId).notifier)
-                        .load(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            loading: () => ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, __) => const ShimmerCard(height: 60),
+            ),
+            error: (e, _) => ErrorStateWidget(
+              message: 'Failed to load milestones',
+              onRetry: () =>
+                  ref.read(milestoneNotifierProvider(projectId).notifier).load(),
             ),
             data: (milestones) => milestones.isEmpty
-                ? const Center(child: Text('No milestones yet'))
+                ? const EmptyStateWidget(
+                    icon: Icons.flag_outlined,
+                    message: 'No milestones yet',
+                  )
                 : ReorderableListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: milestones.length,

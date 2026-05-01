@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../../shared/providers/portal_provider.dart';
 import '../../../../shared/services/portal_service.dart';
+import '../../../../shared/widgets/shimmer_card.dart';
 import '../widgets/portal_branding_header.dart';
 import '../widgets/portal_milestone_section.dart';
 import '../widgets/portal_update_card.dart';
@@ -18,7 +19,7 @@ class PortalScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(portalOverviewProvider(token));
 
     return overviewAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: _PortalLoadingScreen()),
       error: (e, _) {
         final isTokenError = e is PortalException && e.isInvalidToken;
         return _PortalErrorScreen(
@@ -115,10 +116,12 @@ class _PortalContent extends ConsumerWidget {
               // Updates content — lazy via SliverList
               ...updatesAsync.when(
                 loading: () => [
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(sidePad, 0, sidePad, 0),
+                    sliver: SliverList.separated(
+                      itemCount: 3,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, __) => const ShimmerCard(height: 120),
                     ),
                   ),
                 ],
@@ -230,6 +233,51 @@ class _StatusBadge extends StatelessWidget {
         status.displayLabel,
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
       ),
+    );
+  }
+}
+
+class _PortalLoadingScreen extends StatelessWidget {
+  const _PortalLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hPad = constraints.maxWidth < 600 ? 16.0 : 24.0;
+        final sidePad = constraints.maxWidth > 720
+            ? (constraints.maxWidth - 720) / 2
+            : hPad;
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShimmerCard(height: 32, width: constraints.maxWidth * 0.4),
+                    const SizedBox(height: 8),
+                    ShimmerCard(height: 18, width: constraints.maxWidth * 0.25),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(sidePad, 24, sidePad, 0),
+              sliver: const SliverToBoxAdapter(child: ShimmerCard(height: 80)),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(sidePad, 28, sidePad, 0),
+              sliver: SliverList.separated(
+                itemCount: 3,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (_, __) => const ShimmerCard(height: 120),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
