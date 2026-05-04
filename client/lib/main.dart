@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/router/app_router.dart';
+import 'package:clientpulse/core/theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +32,7 @@ class _ClientPulseAppState extends ConsumerState<ClientPulseApp> {
     return MaterialApp.router(
       title: 'ClientPulse',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      theme: AppTheme.light(),
       routerConfig: _router,
     );
   }

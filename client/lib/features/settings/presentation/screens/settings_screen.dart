@@ -142,17 +142,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final workspaceAsync = ref.watch(workspaceNotifierProvider);
 
-    // Pre-fill name controller using ref.listen (runs outside build, so
-    // side effects on TextEditingController are safe here).
-    ref.listen<AsyncValue<Workspace?>>(workspaceNotifierProvider, (_, next) {
-      next.whenData((workspace) {
-        if (workspace != null && !_nameInitialized) {
-          _nameInitialized = true;
-          _nameCtrl.text = workspace.name;
-        }
-      });
-    });
-
     return Scaffold(
       appBar: AppBar(title: const Text('Workspace Settings')),
       body: workspaceAsync.when(
@@ -307,12 +296,6 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      color: Colors.grey.shade50,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

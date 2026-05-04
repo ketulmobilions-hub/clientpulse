@@ -54,12 +54,6 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      color: Colors.grey.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      elevation: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -68,9 +62,9 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
               _isExpanded = !_isExpanded;
               if (_isExpanded) _hasEverExpanded = true;
             }),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

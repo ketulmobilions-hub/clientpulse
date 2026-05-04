@@ -274,18 +274,36 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
       ),
       body: _loadingProject
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+          : Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                     TextFormField(
                       controller: _nameCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Project Name *',
-                        border: OutlineInputBorder(),
+                
                       ),
                       textInputAction: TextInputAction.next,
                       enabled: !disabled,
@@ -297,7 +315,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       controller: _clientNameCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Client Name *',
-                        border: OutlineInputBorder(),
+                
                       ),
                       textInputAction: TextInputAction.next,
                       enabled: !disabled,
@@ -309,7 +327,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       controller: _clientEmailCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Client Email *',
-                        border: OutlineInputBorder(),
+                
                       ),
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
@@ -327,7 +345,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       controller: _descCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Description',
-                        border: OutlineInputBorder(),
+                
                       ),
                       maxLines: 3,
                       enabled: !disabled,
@@ -338,7 +356,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                         value: _status,
                         decoration: const InputDecoration(
                           labelText: 'Status *',
-                          border: OutlineInputBorder(),
+                  
                         ),
                         items: ProjectStatus.values
                             .map((s) => DropdownMenuItem(
@@ -389,6 +407,10 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                 ),
               ),
             ),
+                    ),
+                  ),
+                ),
+              ),
     );
   }
 
@@ -419,11 +441,10 @@ class _DatePickerField extends StatelessWidget {
     final display = value != null ? _format(value!) : 'Not set';
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(10),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
           suffixIcon: value != null
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 18),
