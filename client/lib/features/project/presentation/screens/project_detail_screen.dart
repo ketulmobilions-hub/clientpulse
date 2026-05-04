@@ -359,33 +359,46 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progressCard = _ProgressCard(
+      pct: progressPct,
+      completed: completedMilestones,
+      total: totalMilestones,
+    );
+    final updatesCard = _UpdatesStatCard(
+      count: updateCount,
+      comments: totalComments,
+      attachments: totalAttachments,
+    );
+    final milestoneCard = _NextMilestoneCard(milestone: nextMilestone);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _ProgressCard(
-                pct: progressPct,
-                completed: completedMilestones,
-                total: totalMilestones,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth <= 375) {
+            return Column(
+              children: [
+                progressCard,
+                const SizedBox(height: 10),
+                updatesCard,
+                const SizedBox(height: 10),
+                milestoneCard,
+              ],
+            );
+          }
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: progressCard),
+                const SizedBox(width: 10),
+                Expanded(child: updatesCard),
+                const SizedBox(width: 10),
+                Expanded(child: milestoneCard),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _UpdatesStatCard(
-                count: updateCount,
-                comments: totalComments,
-                attachments: totalAttachments,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _NextMilestoneCard(milestone: nextMilestone),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
