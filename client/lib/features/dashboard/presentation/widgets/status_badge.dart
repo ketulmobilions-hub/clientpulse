@@ -8,10 +8,17 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (bg, fg, label) = switch (status) {
-      ProjectStatus.active => (Colors.green.shade100, Colors.green.shade800, 'Active'),
-      ProjectStatus.completed => (Colors.blue.shade100, Colors.blue.shade800, 'Completed'),
-      ProjectStatus.archived => (Colors.grey.shade200, Colors.grey.shade700, 'Archived'),
+      ProjectStatus.active => isDark
+          ? (const Color(0xFF14532D), const Color(0xFF4ADE80), 'Active')
+          : (Colors.green.shade100, Colors.green.shade800, 'Active'),
+      ProjectStatus.completed => isDark
+          ? (const Color(0xFF1E3A5F), const Color(0xFF60A5FA), 'Completed')
+          : (Colors.blue.shade100, Colors.blue.shade800, 'Completed'),
+      ProjectStatus.archived => isDark
+          ? (const Color(0xFF27272A), const Color(0xFF71717A), 'Archived')
+          : (Colors.grey.shade200, Colors.grey.shade700, 'Archived'),
     };
 
     return Container(
@@ -20,13 +27,22 @@ class StatusBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isDark) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }

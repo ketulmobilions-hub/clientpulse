@@ -7,8 +7,6 @@ import 'agency_comment_section.dart';
 import 'attachment_list.dart';
 import 'category_tag.dart';
 
-/// Returns a human-readable relative time string for an ISO-8601 timestamp.
-/// Falls back to a short date if parsing fails, never shows a raw DB string.
 String formatUpdateDate(String isoString) {
   final dt = DateTime.tryParse(isoString)?.toLocal();
   if (dt == null) {
@@ -22,6 +20,17 @@ String formatUpdateDate(String isoString) {
   return '${(diff.inDays / 30).floor()}mo ago';
 }
 
+const _kAvatarColors = [
+  Color(0xFF7C3AED),
+  Color(0xFF0891B2),
+  Color(0xFF059669),
+  Color(0xFFD97706),
+  Color(0xFFDC2626),
+  Color(0xFF2563EB),
+  Color(0xFF0D9488),
+  Color(0xFF9333EA),
+];
+
 class UpdateCard extends ConsumerStatefulWidget {
   const UpdateCard({super.key, required this.update});
 
@@ -33,11 +42,8 @@ class UpdateCard extends ConsumerStatefulWidget {
 
 class _UpdateCardState extends ConsumerState<UpdateCard> {
   bool _isExpanded = false;
-  // True once the card has been expanded at least once. AttachmentList is only
-  // mounted after first expand so it doesn't fire HTTP requests for collapsed
-  // cards on initial list render.
+  // Lazy-mount: only insert heavy widgets after first expand.
   bool _hasEverExpanded = false;
-  // Cached once on first build — avoids DateTime.now() drift across rebuilds.
   late final String _formattedDate = formatUpdateDate(widget.update.createdAt);
 
   void _onCommentAdded() {
@@ -53,7 +59,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
     final commentCount = widget.update.commentCount ?? 0;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -64,75 +70,66 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
             }),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
+                  _AvatarBadge(authorId: widget.update.authorId),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
                           widget.update.title,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      CategoryTag(category: widget.update.category),
-                      const SizedBox(width: 4),
-                      AnimatedRotation(
-                        turns: _isExpanded ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(Icons.expand_more,
-                            size: 18, color: Colors.grey.shade500),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formattedDate,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                  // Body markdown shown only when expanded — prevents building
-                  // heavy layout widgets for every card simultaneously (#10).
-                  if (_isExpanded && widget.update.body.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    MarkdownBody(
-                      data: widget.update.body,
-                      styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                        p: theme.textTheme.bodySmall,
-                      ),
-                      shrinkWrap: true,
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (attachCount > 0) ...[
-                        Icon(Icons.attach_file, size: 14,
-                            color: theme.colorScheme.primary.withOpacity(0.8)),
-                        const SizedBox(width: 4),
+                        const SizedBox(height: 3),
                         Text(
-                          '$attachCount ${attachCount == 1 ? 'attachment' : 'attachments'}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            decoration: TextDecoration.underline,
-                          ),
+                          _formattedDate,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF71717A)),
                         ),
-                        const SizedBox(width: 12),
                       ],
-                      if (commentCount > 0)
-                        _CommentBadge(count: commentCount),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (attachCount > 0) ...[
+                    _CountChip(icon: Icons.attach_file, count: attachCount),
+                    const SizedBox(width: 8),
+                  ],
+                  if (commentCount > 0) ...[
+                    _CountChip(icon: Icons.chat_bubble_outline, count: commentCount),
+                    const SizedBox(width: 8),
+                  ],
+                  CategoryTag(category: widget.update.category),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more,
+                        size: 18, color: Color(0xFF71717A)),
                   ),
                 ],
               ),
             ),
           ),
+          if (_isExpanded && widget.update.body.isNotEmpty) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: MarkdownBody(
+                data: widget.update.body,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodySmall,
+                ),
+                shrinkWrap: true,
+              ),
+            ),
+          ],
           // Lazy-mount: only inserted after first expand so collapsed cards
           // don't fire HTTP requests on initial list render. Once mounted,
           // Visibility keeps it alive to avoid reloading on toggle.
@@ -142,8 +139,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
               maintainState: true,
               child: AttachmentList(updateId: widget.update.id),
             ),
-          if (attachCount > 0 && _isExpanded)
-            Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+          if (attachCount > 0 && _isExpanded) const Divider(height: 1),
           if (_isExpanded)
             AgencyCommentSection(
               updateId: widget.update.id,
@@ -155,9 +151,38 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
   }
 }
 
-class _CommentBadge extends StatelessWidget {
-  const _CommentBadge({required this.count});
+class _AvatarBadge extends StatelessWidget {
+  const _AvatarBadge({required this.authorId});
 
+  final String authorId;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _kAvatarColors[authorId.hashCode.abs() % _kAvatarColors.length];
+    final initials = authorId.length >= 2
+        ? authorId.substring(0, 2).toUpperCase()
+        : authorId.toUpperCase();
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _CountChip extends StatelessWidget {
+  const _CountChip({required this.icon, required this.count});
+
+  final IconData icon;
   final int count;
 
   @override
@@ -165,15 +190,11 @@ class _CommentBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.chat_bubble_outline, size: 13, color: Colors.amber.shade700),
+        Icon(icon, size: 13, color: const Color(0xFF71717A)),
         const SizedBox(width: 3),
         Text(
-          '$count ${count == 1 ? 'comment' : 'comments'}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.amber.shade800,
-            fontWeight: FontWeight.w500,
-          ),
+          '$count',
+          style: const TextStyle(fontSize: 12, color: Color(0xFF71717A)),
         ),
       ],
     );
