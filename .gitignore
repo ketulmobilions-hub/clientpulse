@@ -27,6 +27,9 @@ client/pubspec.lock
 # FVM
 client/.fvm/flutter_sdk
 
+# Firebase CLI cache
+.firebase/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -35,3 +38,12 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+# FVM (root-level)
+.fvm/flutter_sdk
+.fvm/fvm_config.json
+.fvm/release
+.fvm/versions/
+.fvm/version
+
+# Supabase CLI temp
+server/supabase/.temp/
