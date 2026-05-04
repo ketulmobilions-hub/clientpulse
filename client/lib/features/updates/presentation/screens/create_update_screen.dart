@@ -18,8 +18,21 @@ const _kMaxFileSizeBytes = 10 * 1024 * 1024;
 // Safe document and media types only. Executable/script extensions excluded to
 // prevent using ClientPulse as a malware distribution vector.
 const _kAllowedExtensions = [
-  'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp',
-  'mp4', 'mov', 'zip', 'csv', 'txt', 'doc', 'docx', 'xls', 'xlsx',
+  'pdf',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'mp4',
+  'mov',
+  'zip',
+  'csv',
+  'txt',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
 ];
 
 class CreateUpdateScreen extends ConsumerStatefulWidget {
@@ -63,7 +76,8 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       );
       if (result == null || !mounted) return;
 
-      final oversized = result.files.where((f) => (f.size) > _kMaxFileSizeBytes).toList();
+      final oversized =
+          result.files.where((f) => (f.size) > _kMaxFileSizeBytes).toList();
       if (oversized.isNotEmpty) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
@@ -75,7 +89,8 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
           ));
       }
 
-      final safe = result.files.where((f) => f.size <= _kMaxFileSizeBytes).toList();
+      final safe =
+          result.files.where((f) => f.size <= _kMaxFileSizeBytes).toList();
       final remaining = 3 - _selectedFiles.length;
       final toAdd = safe.take(remaining).toList();
       if (toAdd.isNotEmpty) {
@@ -90,6 +105,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   }
 
   Future<void> _confirmAndSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -152,7 +168,8 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
         try {
           for (var i = 0; i < _selectedFiles.length; i++) {
             final file = _selectedFiles[i];
-            final bytes = file.bytes!; // non-null guaranteed by pre-flight above
+            final bytes =
+                file.bytes!; // non-null guaranteed by pre-flight above
 
             final mimeType = file.extension != null
                 ? _mimeTypeForExtension(file.extension!)
@@ -183,14 +200,18 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             try {
               await storageSvc.deleteAttachment(att.id);
             } catch (e) {
-              debugPrint('[CreateUpdateScreen] rollback deleteAttachment(${att.id}) failed: $e');
+              debugPrint(
+                  '[CreateUpdateScreen] rollback deleteAttachment(${att.id}) failed: $e');
             }
           }
           try {
             await svc.deleteUpdate(update.id);
-            ref.read(updateNotifierProvider(widget.projectId).notifier).remove(update.id);
+            ref
+                .read(updateNotifierProvider(widget.projectId).notifier)
+                .remove(update.id);
           } catch (rollbackErr) {
-            debugPrint('[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');
+            debugPrint(
+                '[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');
           }
           rethrow;
         }
@@ -199,14 +220,17 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       // Refresh list so server-computed attachment_count is reflected.
       // Non-fatal: count will catch up on next list load if this fails.
       try {
-        await ref.read(updateNotifierProvider(widget.projectId).notifier).load();
+        await ref
+            .read(updateNotifierProvider(widget.projectId).notifier)
+            .load();
       } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(const SnackBar(content: Text('Update posted')));
-      setState(() => _submitting = false); // reset before pop in case of custom transitions
+      setState(() => _submitting =
+          false); // reset before pop in case of custom transitions
       Navigator.of(context).pop();
     } on StorageServiceException catch (e) {
       if (!mounted) return;
@@ -242,13 +266,15 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
               style: FilledButton.styleFrom(
                 minimumSize: const Size(72, 36),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                textStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
               child: _submitting
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Text('Post'),
             ),
@@ -264,151 +290,159 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               children: [
-            // Title
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'What would you like to share?',
-              ),
-              maxLength: 200,
-              textInputAction: TextInputAction.next,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Title is required';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
+                // Title
+                TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    hintText: 'What would you like to share?',
+                  ),
+                  maxLength: 200,
+                  textInputAction: TextInputAction.next,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty)
+                      return 'Title is required';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-            // Body with preview toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Content',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                TextButton(
-                  onPressed: () =>
-                      setState(() => _previewMode = !_previewMode),
-                  child: Text(_previewMode ? 'Edit' : 'Preview'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            if (!_previewMode)
-              TextFormField(
-                controller: _bodyController,
-                decoration: const InputDecoration(
-                  hintText: 'Markdown supported…',
-                  alignLabelWithHint: true,
-                ),
-                minLines: 5,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Body is required';
-                  return null;
-                },
-              )
-            else
-              Container(
-                constraints: const BoxConstraints(minHeight: 120),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  border: Border.all(color: Colors.grey.shade200),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: _bodyController.text.trim().isEmpty
-                    ? Text(
-                        'Nothing to preview',
-                        style: TextStyle(color: Colors.grey.shade500),
-                      )
-                    : MarkdownBody(data: _bodyController.text),
-              ),
-            const SizedBox(height: 20),
-
-            // Category chips
-            Text(
-              'Category',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: UpdateCategory.values.map((cat) {
-                return ChoiceChip(
-                  label: Text(cat.displayLabel),
-                  selected: _selectedCategory == cat,
-                  onSelected: (_) =>
-                      setState(() => _selectedCategory = cat),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-
-            // Attachments
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Attachments',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                TextButton.icon(
-                  onPressed: (_selectedFiles.length >= 3 || _isPicking)
-                      ? null
-                      : _pickFiles,
-                  icon: const Icon(Icons.attach_file, size: 18),
-                  label: const Text('Add files'),
-                ),
-              ],
-            ),
-            if (_selectedFiles.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              ..._selectedFiles.asMap().entries.map((entry) {
-                final i = entry.key;
-                final file = entry.value;
-                final progress = _submitting && i < _fileProgress.length
-                    ? _fileProgress[i]
-                    : null;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Body with preview toggle
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
-                      title: Text(
-                        file.name,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(formatFileSize(file.size)),
-                      trailing: _submitting
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => setState(() {
-                                _selectedFiles = List.from(_selectedFiles)..removeAt(i);
-                                _fileProgress = List.filled(_selectedFiles.length, 0.0);
-                              }),
-                            ),
+                    Text(
+                      'Content',
+                      style: Theme.of(context).textTheme.labelLarge,
                     ),
-                    if (progress != null)
-                      LinearProgressIndicator(
-                        value: progress > 0 ? progress : null,
-                        minHeight: 2,
-                      ),
+                    TextButton(
+                      onPressed: () =>
+                          setState(() => _previewMode = !_previewMode),
+                      child: Text(_previewMode ? 'Edit' : 'Preview'),
+                    ),
                   ],
-                );
-              }),
-            ],
-            // Keyboard clearance
-            const SizedBox(height: 80),
-          ],
-        ),
+                ),
+                const SizedBox(height: 4),
+                if (!_previewMode)
+                  TextFormField(
+                    controller: _bodyController,
+                    decoration: const InputDecoration(
+                      hintText: 'Markdown supported…',
+                      alignLabelWithHint: true,
+                    ),
+                    minLines: 5,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return 'Body is required';
+                      return null;
+                    },
+                  )
+                else
+                  Container(
+                    constraints: const BoxConstraints(minHeight: 120),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      border: Border.all(color: const Color(0xFF3F3F46)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: _bodyController.text.trim().isEmpty
+                        ? const Text(
+                            'Nothing to preview',
+                            style: TextStyle(color: Color(0xFF71717A)),
+                          )
+                        : MarkdownBody(data: _bodyController.text),
+                  ),
+                const SizedBox(height: 20),
+
+                // Category chips
+                Text(
+                  'Category',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: UpdateCategory.values.map((cat) {
+                    return ChoiceChip(
+                      label: Text(
+                        cat.displayLabel,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      selected: _selectedCategory == cat,
+                      onSelected: (_) =>
+                          setState(() => _selectedCategory = cat),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // Attachments
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Attachments',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    TextButton.icon(
+                      onPressed: (_selectedFiles.length >= 3 || _isPicking)
+                          ? null
+                          : _pickFiles,
+                      icon: const Icon(Icons.attach_file, size: 18),
+                      label: const Text('Add files'),
+                    ),
+                  ],
+                ),
+                if (_selectedFiles.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  ..._selectedFiles.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final file = entry.value;
+                    final progress = _submitting && i < _fileProgress.length
+                        ? _fileProgress[i]
+                        : null;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.insert_drive_file_outlined,
+                              size: 20),
+                          title: Text(
+                            file.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(formatFileSize(file.size)),
+                          trailing: _submitting
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.close, size: 18),
+                                  onPressed: () => setState(() {
+                                    _selectedFiles = List.from(_selectedFiles)
+                                      ..removeAt(i);
+                                    _fileProgress =
+                                        List.filled(_selectedFiles.length, 0.0);
+                                  }),
+                                ),
+                        ),
+                        if (progress != null)
+                          LinearProgressIndicator(
+                            value: progress > 0 ? progress : null,
+                            minHeight: 2,
+                          ),
+                      ],
+                    );
+                  }),
+                ],
+                // Keyboard clearance
+                const SizedBox(height: 80),
+              ],
+            ),
           ),
         ),
       ),
