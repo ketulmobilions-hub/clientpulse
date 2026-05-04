@@ -206,7 +206,7 @@ class _SettingsBody extends StatelessWidget {
     final logoUrl = pendingLogoUrl ?? workspace.logoUrl;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
@@ -266,7 +266,7 @@ class _SettingsBody extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 FilledButton(
                   key: const Key('save_button'),
                   onPressed: (isSaving || isUploading) ? null : onSave,
@@ -297,7 +297,7 @@ class _SectionCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -305,7 +305,7 @@ class _SectionCard extends StatelessWidget {
               title,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             child,
           ],
         ),

@@ -105,7 +105,7 @@ class _PortalContent extends ConsumerWidget {
 
               // Updates section header
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(sidePad, 28, sidePad, 8),
+                padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 8),
                 sliver: SliverToBoxAdapter(
                   child: Text('Updates',
                       style: theme.textTheme.titleMedium

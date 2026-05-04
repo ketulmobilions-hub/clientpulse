@@ -276,7 +276,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
           ? const Center(child: CircularProgressIndicator())
           : Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: DecoratedBox(
@@ -293,7 +293,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
                       child: Form(
                         key: _formKey,
                         child: Column(
@@ -389,7 +389,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                         _expectedEndDateCleared = true;
                       }),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     FilledButton(
                       onPressed: disabled ? null : _submit,
                       child: _submitting
