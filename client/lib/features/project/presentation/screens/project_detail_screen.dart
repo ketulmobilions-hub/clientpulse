@@ -377,6 +377,7 @@ class _StatsRow extends StatelessWidget {
         builder: (context, constraints) {
           if (constraints.maxWidth <= 375) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 progressCard,
                 const SizedBox(height: 10),
