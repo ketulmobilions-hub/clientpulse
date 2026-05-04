@@ -224,8 +224,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                     index: widget.index,
                     child: const Padding(
                       padding: EdgeInsets.all(6),
-                      child:
-                          Icon(Icons.drag_indicator, size: 20, color: _kMuted),
+                      child: Icon(Icons.reorder, size: 16, color: _kMuted),
                     ),
                   ),
                 ],
