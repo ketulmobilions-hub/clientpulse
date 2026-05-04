@@ -332,7 +332,7 @@ class _CommentSection extends StatelessWidget {
                   labelText: 'Your name',
                   hintText: 'Enter your name',
                   isDense: true,
-                  border: OutlineInputBorder(),
+
                 ),
                 textInputAction: TextInputAction.next,
                 maxLength: 100,
@@ -345,7 +345,7 @@ class _CommentSection extends StatelessWidget {
                   labelText: 'Comment',
                   hintText: 'Write your comment here',
                   isDense: true,
-                  border: OutlineInputBorder(),
+
                 ),
                 minLines: 2,
                 maxLines: 5,

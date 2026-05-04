@@ -151,9 +151,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                     focusNode: _focusNode,
                     decoration: const InputDecoration(
                       isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     ),
                     onSubmitted: (_) => _commitTitle(),
                     textInputAction: TextInputAction.done,

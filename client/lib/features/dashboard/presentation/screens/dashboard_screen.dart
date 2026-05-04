@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../shared/providers/auth_notifier.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
@@ -19,19 +20,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final projectsAsync = ref.watch(projectNotifierProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Projects')),
-      floatingActionButton: FloatingActionButton(
+      appBar: AppBar(
+        title: const Text('Projects'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Sign out',
+            onPressed: () async {
+              await ref.read(authNotifierProvider.notifier).logout();
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.goNamed(RouteNames.createProject),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('New Project'),
       ),
       body: projectsAsync.when(
         loading: () => ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
           itemCount: 4,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (_, __) => const ShimmerCard(height: 88),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (_, __) => const ShimmerCard(height: 96),
         ),
         error: (e, _) => ErrorStateWidget(
           message: 'Failed to load projects',
@@ -46,11 +61,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               onAction: () => context.goNamed(RouteNames.createProject),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: projects.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) => ProjectCard(project: projects[i]),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Text(
+                  '${projects.length} ${projects.length == 1 ? 'project' : 'projects'}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  itemCount: projects.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) => ProjectCard(project: projects[i]),
+                ),
+              ),
+            ],
           );
         },
       ),

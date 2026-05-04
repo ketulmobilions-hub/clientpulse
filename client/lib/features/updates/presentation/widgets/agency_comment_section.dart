@@ -118,7 +118,6 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
                         labelText: 'Reply',
                         hintText: 'Write a comment…',
                         isDense: true,
-                        border: OutlineInputBorder(),
                       ),
                       minLines: 2,
                       maxLines: 4,
