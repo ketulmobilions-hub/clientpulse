@@ -201,14 +201,6 @@ class _ProjectPageHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              InkWell(
-                onTap: () => context.pop(),
-                borderRadius: BorderRadius.circular(8),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.arrow_back, size: 20, color: Color(0xFFA1A1AA)),
-                ),
-              ),
               const Spacer(),
               InkWell(
                 onTap: () => context.pushNamed(
