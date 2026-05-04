@@ -60,6 +60,73 @@ export const VALID_UPDATE_CATEGORIES = ['progress', 'milestone', 'deliverable', 
 
 const CONTEXT = 'update.service';
 
+/**
+ * Atomically claims the notification slot for an update (sets notification_sent_at)
+ * and sends the client email if a client_email exists on the project.
+ *
+ * Returns the ISO timestamp that was stamped, or null if another concurrent
+ * request already claimed it (in which case no email is sent).
+ *
+ * Always stamps notification_sent_at when status becomes published — even if
+ * client_email is absent — so later email additions don't trigger retroactive sends.
+ */
+async function sendPublishNotification(
+  updateId: string,
+  projectId: string,
+  updateData: { title: string; body: string; category: string },
+  context: string,
+): Promise<string | null> {
+  const stamp = new Date().toISOString();
+
+  // Atomic claim: only the first concurrent writer wins (IS NULL guard).
+  const { data: claimed } = await supabaseAdmin
+    .from('updates')
+    .update({ notification_sent_at: stamp })
+    .eq('id', updateId)
+    .is('notification_sent_at', null)
+    .select('id')
+    .maybeSingle();
+
+  if (!claimed) return null; // another request already sent the notification
+
+  const { data: project, error: projectError } = await supabaseAdmin
+    .from('projects')
+    .select('name, client_name, client_email, share_token')
+    .eq('id', projectId)
+    .single<{ name: string; client_name: string; client_email: string | null; share_token: string }>();
+
+  if (projectError) {
+    console.error(`[update.service] ${context} project fetch error:`, projectError);
+    return stamp;
+  }
+
+  if (!project?.client_email) {
+    console.info(`[update.service] ${context} no client_email — notification_sent_at stamped, no email sent.`);
+    return stamp;
+  }
+
+  const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
+  const portalUrl = `${baseUrl}/p/${project.share_token}`;
+  const plainExcerpt = stripMarkdown(updateData.body);
+  const excerpt = plainExcerpt.slice(0, 300) + (plainExcerpt.length > 300 ? '…' : '');
+
+  try {
+    await sendUpdateNotificationEmail(
+      project.client_email,
+      project.client_name,
+      project.name,
+      updateData.title,
+      updateData.category,
+      excerpt,
+      portalUrl,
+    );
+  } catch (err) {
+    console.error(`[update.service] ${context} notification email failed:`, err);
+  }
+
+  return stamp;
+}
+
 function stripMarkdown(text: string): string {
   return text
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')         // images
@@ -121,50 +188,8 @@ export async function createUpdate(
   }
 
   if (data.status === 'published') {
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('projects')
-      .select('name, client_name, client_email, share_token')
-      .eq('id', projectId)
-      .single<{ name: string; client_name: string; client_email: string | null; share_token: string }>();
-
-    if (projectError) {
-      console.error('[update.service] createUpdate project fetch error:', projectError);
-    }
-
-    if (project?.client_email) {
-      const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
-      const portalUrl = `${baseUrl}/p/${project.share_token}`;
-      const plainExcerpt = stripMarkdown(data.body);
-      const excerpt = plainExcerpt.slice(0, 300) + (plainExcerpt.length > 300 ? '…' : '');
-
-      let emailSent = false;
-      try {
-        await sendUpdateNotificationEmail(
-          project.client_email,
-          project.client_name,
-          project.name,
-          data.title,
-          data.category,
-          excerpt,
-          portalUrl,
-        );
-        emailSent = true;
-      } catch (err) {
-        console.error('[update.service] notification email failed:', err);
-        // Intentional: email failure must not fail update creation
-      }
-
-      if (emailSent) {
-        try {
-          await supabaseAdmin
-            .from('updates')
-            .update({ notification_sent_at: new Date().toISOString() })
-            .eq('id', data.id);
-        } catch (notifErr) {
-          console.error('[update.service] notification_sent_at update failed:', notifErr);
-        }
-      }
-    }
+    const notificationSentAt = await sendPublishNotification(data.id, projectId, data, 'createUpdate');
+    return { ...(data as Update), notification_sent_at: notificationSentAt ?? data.notification_sent_at };
   }
 
   return data as Update;
@@ -300,6 +325,11 @@ export async function editUpdate(
   if (!data) {
     console.error('[update.service] editUpdate returned null data without error');
     throw new AppError('Failed to update update', 500, ErrorCodes.DB_ERROR);
+  }
+
+  if (changes.status === 'published') {
+    const notificationSentAt = await sendPublishNotification(data.id, data.project_id, data, 'editUpdate');
+    return { ...(data as Update), notification_sent_at: notificationSentAt ?? data.notification_sent_at };
   }
 
   return data as Update;

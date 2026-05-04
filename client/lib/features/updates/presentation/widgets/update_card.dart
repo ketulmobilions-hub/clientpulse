@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'agency_comment_section.dart';
+import 'attachment_list.dart';
 import 'category_tag.dart';
 
 /// Returns a human-readable relative time string for an ISO-8601 timestamp.
@@ -32,6 +33,12 @@ class UpdateCard extends ConsumerStatefulWidget {
 
 class _UpdateCardState extends ConsumerState<UpdateCard> {
   bool _isExpanded = false;
+  // True once the card has been expanded at least once. AttachmentList is only
+  // mounted after first expand so it doesn't fire HTTP requests for collapsed
+  // cards on initial list render.
+  bool _hasEverExpanded = false;
+  // Cached once on first build — avoids DateTime.now() drift across rebuilds.
+  late final String _formattedDate = formatUpdateDate(widget.update.createdAt);
 
   void _onCommentAdded() {
     ref
@@ -57,7 +64,10 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            onTap: () => setState(() {
+              _isExpanded = !_isExpanded;
+              if (_isExpanded) _hasEverExpanded = true;
+            }),
             borderRadius: BorderRadius.circular(10),
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -88,7 +98,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    formatUpdateDate(widget.update.createdAt),
+                    _formattedDate,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.grey.shade500,
                     ),
@@ -127,6 +137,17 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
               ),
             ),
           ),
+          // Lazy-mount: only inserted after first expand so collapsed cards
+          // don't fire HTTP requests on initial list render. Once mounted,
+          // Visibility keeps it alive to avoid reloading on toggle.
+          if (attachCount > 0 && _hasEverExpanded)
+            Visibility(
+              visible: _isExpanded,
+              maintainState: true,
+              child: AttachmentList(updateId: widget.update.id),
+            ),
+          if (attachCount > 0 && _isExpanded)
+            Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
           if (_isExpanded)
             AgencyCommentSection(
               updateId: widget.update.id,

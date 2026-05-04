@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/attachment.dart';
 import '../models/comment.dart';
 import '../models/update.dart';
 import '../utils/api_utils.dart';
@@ -40,6 +41,34 @@ class UpdateService {
         throw const UpdateServiceException('Unexpected response format');
       }
       return Update.fromJson(update);
+    } on DioException catch (e) {
+      throw UpdateServiceException(extractDioErrorMessage(e));
+    } on UpdateServiceException {
+      rethrow;
+    } catch (e) {
+      throw UpdateServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<({Update update, List<Attachment> attachments})> getUpdate(
+    String updateId,
+  ) async {
+    try {
+      final res = await _api.get<Map<String, dynamic>>('/updates/$updateId');
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const UpdateServiceException('Unexpected response format');
+      final updateJson = data['update'];
+      if (updateJson is! Map<String, dynamic>) {
+        throw const UpdateServiceException('Unexpected response format');
+      }
+      final attachmentsJson = updateJson['attachments'];
+      final attachments = attachmentsJson is List
+          ? attachmentsJson
+              .whereType<Map<String, dynamic>>()
+              .map(Attachment.fromJson)
+              .toList()
+          : <Attachment>[];
+      return (update: Update.fromJson(updateJson), attachments: attachments);
     } on DioException catch (e) {
       throw UpdateServiceException(extractDioErrorMessage(e));
     } on UpdateServiceException {
@@ -116,6 +145,41 @@ class UpdateService {
         throw const UpdateServiceException('Unexpected response format');
       }
       return Comment.fromJson(comment);
+    } on DioException catch (e) {
+      throw UpdateServiceException(extractDioErrorMessage(e));
+    } on UpdateServiceException {
+      rethrow;
+    } catch (e) {
+      throw UpdateServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<Update> editUpdate(
+    String updateId, {
+    String? title,
+    String? body,
+    UpdateCategory? category,
+    String? status,
+    int? position,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) payload['title'] = title;
+    if (body != null) payload['body'] = body;
+    if (category != null) payload['category'] = category.apiValue;
+    if (status != null) payload['status'] = status;
+    if (position != null) payload['position'] = position;
+    try {
+      final res = await _api.patch<Map<String, dynamic>>(
+        '/updates/$updateId',
+        data: payload,
+      );
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const UpdateServiceException('Unexpected response format');
+      final update = data['update'];
+      if (update is! Map<String, dynamic>) {
+        throw const UpdateServiceException('Unexpected response format');
+      }
+      return Update.fromJson(update);
     } on DioException catch (e) {
       throw UpdateServiceException(extractDioErrorMessage(e));
     } on UpdateServiceException {
