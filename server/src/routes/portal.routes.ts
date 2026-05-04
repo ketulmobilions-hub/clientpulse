@@ -4,7 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { ErrorCodes } from '../errors/codes';
 import { validateString } from '../utils/validation';
 import { SHARE_TOKEN_RE } from '../utils/token';
-import { getPortalOverview, listPortalUpdates, createPortalComment } from '../services/portal.service';
+import { getPortalOverview, listPortalUpdates, createPortalComment, listPortalComments } from '../services/portal.service';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -72,6 +72,23 @@ portalRouter.get('/:token/updates', async (req: Request, res: Response, next: Ne
     next(err);
   }
 });
+
+portalRouter.get(
+  '/:token/updates/:updateId/comments',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await validateToken(req.params['token'] as string);
+      validateUuid(req.params['updateId'] as string, 'updateId');
+      const comments = await listPortalComments(
+        req.params['token'] as string,
+        req.params['updateId'] as string,
+      );
+      res.json({ success: true, data: { comments } });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 portalRouter.post(
   '/:token/updates/:updateId/comments',

@@ -118,6 +118,37 @@ class PortalService {
     }
   }
 
+  Future<List<PortalComment>> listPortalComments(
+    String token,
+    String updateId, {
+    CancelToken? cancelToken,
+  }) async {
+    _validateToken(token);
+    try {
+      final res = await _api.get<Map<String, dynamic>>(
+        '/portal/$token/updates/$updateId/comments',
+        cancelToken: cancelToken,
+      );
+      final data = tryUnwrapApiData(res.data);
+      if (data == null) throw const PortalException('PARSE_ERROR', 'Unexpected response format');
+      final rawComments = data['comments'];
+      if (rawComments is! List) throw const PortalException('PARSE_ERROR', 'Unexpected response format');
+      return rawComments.map((c) {
+        if (c is! Map<String, dynamic>) {
+          throw const PortalException('PARSE_ERROR', 'Unexpected element in comments list');
+        }
+        return PortalComment.fromJson(c);
+      }).toList();
+    } on DioException catch (e) {
+      if (CancelToken.isCancel(e)) rethrow;
+      throw _mapDioError(e);
+    } on PortalException {
+      rethrow;
+    } catch (e) {
+      throw PortalException('UNEXPECTED', 'Unexpected error: $e');
+    }
+  }
+
   void _validateToken(String token) {
     if (!_shareTokenRe.hasMatch(token)) {
       throw const PortalException('INVALID_TOKEN', 'Invalid or expired token');
