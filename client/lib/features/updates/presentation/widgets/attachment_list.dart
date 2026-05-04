@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
 import 'package:clientpulse/shared/utils/file_utils.dart';
-import 'open_url_stub.dart'
-    if (dart.library.html) 'open_url_web.dart';
+import 'package:clientpulse/shared/utils/open_url_stub.dart'
+    if (dart.library.html) 'package:clientpulse/shared/utils/open_url_web.dart';
 
 class AttachmentList extends ConsumerStatefulWidget {
   const AttachmentList({super.key, required this.updateId});

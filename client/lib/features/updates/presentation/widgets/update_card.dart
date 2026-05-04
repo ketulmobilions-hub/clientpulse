@@ -119,12 +119,14 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                   Row(
                     children: [
                       if (attachCount > 0) ...[
-                        Icon(Icons.attach_file, size: 14, color: Colors.grey.shade500),
+                        Icon(Icons.attach_file, size: 14,
+                            color: theme.colorScheme.primary.withOpacity(0.8)),
                         const SizedBox(width: 4),
                         Text(
                           '$attachCount ${attachCount == 1 ? 'attachment' : 'attachments'}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: theme.colorScheme.primary,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                         const SizedBox(width: 12),
