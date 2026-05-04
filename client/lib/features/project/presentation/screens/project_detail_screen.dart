@@ -270,7 +270,7 @@ class _ProjectPageHeader extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.link_rounded, size: 15),
-                    label: const Text('Share'),
+                    label: const Text('Client Portal Link'),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 34),
                       padding: const EdgeInsets.symmetric(
