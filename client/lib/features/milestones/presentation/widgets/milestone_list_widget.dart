@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
@@ -15,8 +14,6 @@ class MilestoneListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final milestonesAsync = ref.watch(milestoneNotifierProvider(projectId));
-    // Root Column with Expanded list + fixed-height footer.
-    // Requires bounded height from parent (e.g. TabBarView slot).
     return Column(
       children: [
         Expanded(
@@ -32,80 +29,34 @@ class MilestoneListWidget extends ConsumerWidget {
               onRetry: () =>
                   ref.read(milestoneNotifierProvider(projectId).notifier).load(),
             ),
-            data: (milestones) => milestones.isEmpty
-                ? const EmptyStateWidget(
-                    icon: Icons.flag_outlined,
-                    message: 'No milestones yet',
-                  )
-                : Column(
-                    children: [
-                      _MilestoneProgressHeader(milestones: milestones),
-                      Expanded(
-                        child: ReorderableListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: milestones.length,
-                          onReorder: (oldIndex, newIndex) => ref
-                              .read(milestoneNotifierProvider(projectId).notifier)
-                              .reorder(oldIndex, newIndex),
-                          itemBuilder: (_, i) => MilestoneTile(
-                            key: ValueKey(milestones[i].id),
-                            milestone: milestones[i],
-                            projectId: projectId,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+            data: (milestones) {
+              if (milestones.isEmpty) {
+                return const EmptyStateWidget(
+                  icon: Icons.flag_outlined,
+                  message: 'No milestones yet',
+                );
+              }
+              final firstIncompleteIdx = milestones.indexWhere((m) => !m.completed);
+              return ReorderableListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: milestones.length,
+                onReorder: (oldIndex, newIndex) => ref
+                    .read(milestoneNotifierProvider(projectId).notifier)
+                    .reorder(oldIndex, newIndex),
+                itemBuilder: (_, i) => MilestoneTile(
+                  key: ValueKey(milestones[i].id),
+                  milestone: milestones[i],
+                  projectId: projectId,
+                  displayIndex: i + 1,
+                  isCurrentMilestone: i == firstIncompleteIdx,
+                ),
+              );
+            },
           ),
         ),
-        // Show add button only when data is loaded and not in a stale-error state.
         if (milestonesAsync.hasValue && !milestonesAsync.hasError)
           _AddMilestoneButton(projectId: projectId),
       ],
-    );
-  }
-}
-
-class _MilestoneProgressHeader extends StatelessWidget {
-  const _MilestoneProgressHeader({required this.milestones});
-
-  final List<Milestone> milestones;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final total = milestones.length;
-    final completed = milestones.where((m) => m.completed).length;
-    final pct = total == 0 ? 0 : (completed / total * 100).round();
-    final progress = total == 0 ? 0.0 : completed / total;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Milestones', style: theme.textTheme.titleSmall),
-              Text(
-                '$completed of $total • $pct%',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.outline),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
     );
   }
 }
@@ -116,8 +67,7 @@ class _AddMilestoneButton extends ConsumerStatefulWidget {
   final String projectId;
 
   @override
-  ConsumerState<_AddMilestoneButton> createState() =>
-      _AddMilestoneButtonState();
+  ConsumerState<_AddMilestoneButton> createState() => _AddMilestoneButtonState();
 }
 
 class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
@@ -138,7 +88,6 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
       setState(() => _expanded = false);
       return;
     }
-    // Collapse UI immediately; restore input on failure so user doesn't lose typed text.
     _ctrl.clear();
     setState(() => _expanded = false);
     _create(title);
@@ -200,9 +149,7 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: TextButton.icon(
-        onPressed: () {
-          setState(() => _expanded = true);
-        },
+        onPressed: () => setState(() => _expanded = true),
         icon: const Icon(Icons.add, size: 18),
         label: const Text('Add milestone'),
       ),

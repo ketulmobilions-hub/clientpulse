@@ -32,7 +32,7 @@ class _ClientPulseAppState extends ConsumerState<ClientPulseApp> {
     return MaterialApp.router(
       title: 'ClientPulse',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      theme: AppTheme.dark(),
       routerConfig: _router,
     );
   }
