@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/shared/models/update.dart';
-import 'package:clientpulse/shared/providers/update_provider.dart';
-import 'agency_comment_section.dart';
-import 'attachment_list.dart';
 import 'category_tag.dart';
 
 String formatUpdateDate(String isoString) {
@@ -31,121 +28,73 @@ const _kAvatarColors = [
   Color(0xFF9333EA),
 ];
 
-class UpdateCard extends ConsumerStatefulWidget {
+const _kMuted = Color(0xFF71717A);
+
+class UpdateCard extends StatelessWidget {
   const UpdateCard({super.key, required this.update});
 
   final Update update;
 
   @override
-  ConsumerState<UpdateCard> createState() => _UpdateCardState();
-}
-
-class _UpdateCardState extends ConsumerState<UpdateCard> {
-  bool _isExpanded = false;
-  // Lazy-mount: only insert heavy widgets after first expand.
-  bool _hasEverExpanded = false;
-  late final String _formattedDate = formatUpdateDate(widget.update.createdAt);
-
-  void _onCommentAdded() {
-    ref
-        .read(updateNotifierProvider(widget.update.projectId).notifier)
-        .incrementCommentCount(widget.update.id);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final attachCount = widget.update.attachmentCount ?? 0;
-    final commentCount = widget.update.commentCount ?? 0;
+    final attachCount = update.attachmentCount ?? 0;
+    final commentCount = update.commentCount ?? 0;
+    final formattedDate = formatUpdateDate(update.createdAt);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => setState(() {
-              _isExpanded = !_isExpanded;
-              if (_isExpanded) _hasEverExpanded = true;
-            }),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _AvatarBadge(authorId: widget.update.authorId),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.update.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _formattedDate,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF71717A)),
-                        ),
-                      ],
+      child: InkWell(
+        onTap: () => context.goNamed(
+          RouteNames.updateDetail,
+          pathParameters: {
+            'id': update.projectId,
+            'updateId': update.id,
+          },
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _AvatarBadge(authorId: update.authorId),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      update.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (attachCount > 0) ...[
-                    _CountChip(icon: Icons.attach_file, count: attachCount),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 3),
+                    Text(
+                      formattedDate,
+                      style: const TextStyle(fontSize: 12, color: _kMuted),
+                    ),
                   ],
-                  if (commentCount > 0) ...[
-                    _CountChip(icon: Icons.chat_bubble_outline, count: commentCount),
-                    const SizedBox(width: 8),
-                  ],
-                  CategoryTag(category: widget.update.category),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: const Icon(Icons.expand_more,
-                        size: 18, color: Color(0xFF71717A)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isExpanded && widget.update.body.isNotEmpty) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: MarkdownBody(
-                data: widget.update.body,
-                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodySmall,
                 ),
-                shrinkWrap: true,
               ),
-            ),
-          ],
-          // Lazy-mount: only inserted after first expand so collapsed cards
-          // don't fire HTTP requests on initial list render. Once mounted,
-          // Visibility keeps it alive to avoid reloading on toggle.
-          if (attachCount > 0 && _hasEverExpanded)
-            Visibility(
-              visible: _isExpanded,
-              maintainState: true,
-              child: AttachmentList(updateId: widget.update.id),
-            ),
-          if (attachCount > 0 && _isExpanded) const Divider(height: 1),
-          if (_isExpanded)
-            AgencyCommentSection(
-              updateId: widget.update.id,
-              onCommentAdded: _onCommentAdded,
-            ),
-        ],
+              const SizedBox(width: 8),
+              if (attachCount > 0) ...[
+                _CountChip(icon: Icons.attach_file, count: attachCount),
+                const SizedBox(width: 8),
+              ],
+              if (commentCount > 0) ...[
+                _CountChip(icon: Icons.chat_bubble_outline, count: commentCount),
+                const SizedBox(width: 8),
+              ],
+              CategoryTag(category: update.category),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right_rounded, size: 16, color: _kMuted),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -190,12 +139,9 @@ class _CountChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: const Color(0xFF71717A)),
+        Icon(icon, size: 13, color: _kMuted),
         const SizedBox(width: 3),
-        Text(
-          '$count',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF71717A)),
-        ),
+        Text('$count', style: const TextStyle(fontSize: 12, color: _kMuted)),
       ],
     );
   }
