@@ -32,6 +32,8 @@ class _PortalUpdateCardState extends ConsumerState<PortalUpdateCard>
     with AutomaticKeepAliveClientMixin {
   bool _expanded = false;
   final List<PortalComment> _comments = [];
+  bool _commentsLoaded = false;
+  bool _isLoadingComments = false;
   final _nameController = TextEditingController();
   final _bodyController = TextEditingController();
   bool _isSubmitting = false;
@@ -62,6 +64,30 @@ class _PortalUpdateCardState extends ConsumerState<PortalUpdateCard>
     _nameController.dispose();
     _bodyController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadComments() async {
+    setState(() => _isLoadingComments = true);
+    try {
+      final portalService = await ref.read(portalServiceProvider.future);
+      if (!mounted) return;
+      final fetched = await portalService.listPortalComments(
+        widget.token,
+        widget.update.id,
+      );
+      if (mounted) {
+        setState(() {
+          _comments
+            ..clear()
+            ..addAll(fetched);
+          _commentsLoaded = true;
+        });
+      }
+    } catch (_) {
+      // silent — empty state is acceptable fallback
+    } finally {
+      if (mounted) setState(() => _isLoadingComments = false);
+    }
   }
 
   Future<void> _submitComment() async {
@@ -108,7 +134,7 @@ class _PortalUpdateCardState extends ConsumerState<PortalUpdateCard>
       );
       if (mounted) {
         setState(() {
-          _comments.insert(0, comment);
+          _comments.add(comment);
           _bodyController.clear();
           _isSubmitting = false;
         });
@@ -155,7 +181,11 @@ class _PortalUpdateCardState extends ConsumerState<PortalUpdateCard>
                 : 'Expand update: ${widget.update.title}',
             button: true,
             child: InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
+              onTap: () {
+                final willExpand = !_expanded;
+                setState(() => _expanded = willExpand);
+                if (willExpand && !_commentsLoaded) _loadComments();
+              },
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -239,6 +269,7 @@ class _PortalUpdateCardState extends ConsumerState<PortalUpdateCard>
               isSubmitting: _isSubmitting,
               submitError: _submitError,
               onSubmit: _submitComment,
+              isLoadingComments: _isLoadingComments,
             ),
             const SizedBox(height: 8),
           ],
@@ -256,6 +287,7 @@ class _CommentSection extends StatelessWidget {
     required this.isSubmitting,
     required this.submitError,
     required this.onSubmit,
+    required this.isLoadingComments,
   });
 
   final List<PortalComment> comments;
@@ -264,6 +296,7 @@ class _CommentSection extends StatelessWidget {
   final bool isSubmitting;
   final String? submitError;
   final VoidCallback onSubmit;
+  final bool isLoadingComments;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +314,12 @@ class _CommentSection extends StatelessWidget {
                 ?.copyWith(color: theme.colorScheme.outline),
           ),
         ),
-        if (comments.isNotEmpty)
+        if (isLoadingComments)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (comments.isNotEmpty)
           ...comments.map((c) => _CommentTile(comment: c)),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),

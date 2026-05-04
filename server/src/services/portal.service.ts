@@ -347,3 +347,43 @@ export async function createPortalComment(
 
   return savedComment;
 }
+
+export async function listPortalComments(
+  shareToken: string,
+  updateId: string,
+): Promise<PortalComment[]> {
+  const projectId = await resolveProjectId(shareToken);
+
+  const { data: updateRow, error: updateError } = await supabaseAdmin
+    .from('updates')
+    .select('id')
+    .eq('id', updateId)
+    .eq('project_id', projectId)
+    .eq('status', 'published')
+    .single<{ id: string }>();
+
+  if (updateError) {
+    if (updateError.code === 'PGRST116') {
+      throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
+    }
+    console.error('[portal.service] listPortalComments update lookup DB error:', updateError);
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
+  }
+
+  if (!updateRow) {
+    throw new AppError('Update not found', 404, ErrorCodes.NOT_FOUND);
+  }
+
+  const { data: comments, error: commentsError } = await supabaseAdmin
+    .from('comments')
+    .select('id, update_id, parent_id, author_type, author_name, body, created_at, updated_at')
+    .eq('update_id', updateId)
+    .order('created_at', { ascending: true });
+
+  if (commentsError) {
+    console.error('[portal.service] listPortalComments comments DB error:', commentsError);
+    throw new AppError('Database error', 500, ErrorCodes.DB_ERROR);
+  }
+
+  return (comments ?? []) as PortalComment[];
+}
