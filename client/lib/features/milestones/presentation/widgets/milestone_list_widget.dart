@@ -150,10 +150,17 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: TextButton.icon(
-        onPressed: () => setState(() => _expanded = true),
-        icon: const Icon(Icons.add, size: 18),
-        label: const Text('Add milestone'),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () => setState(() => _expanded = true),
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Add milestone'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            side: const BorderSide(color: Color(0xFF3F3F46)),
+          ),
+        ),
       ),
     );
   }
