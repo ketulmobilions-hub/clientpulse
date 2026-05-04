@@ -184,13 +184,14 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
           ),
           const SizedBox(width: 8),
           StatusPill(status: m.status),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.delete_outline, size: 18),
             visualDensity: VisualDensity.compact,
             tooltip: 'Delete',
             onPressed: _delete,
           ),
+          const SizedBox(width: 8),
         ],
       ),
     );
