@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/models/update.dart';
+import 'package:clientpulse/shared/utils/file_utils.dart';
 import 'package:clientpulse/shared/providers/storage_service_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
@@ -49,13 +50,6 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
     super.dispose();
   }
 
-  String _formatFileSize(int? bytes) {
-    if (bytes == null) return '';
-    if (bytes < 1024) return '${bytes}B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
-  }
-
   Future<void> _pickFiles() async {
     if (_isPicking || _selectedFiles.length >= 3) return;
     setState(() => _isPicking = true);
@@ -95,6 +89,27 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
     }
   }
 
+  Future<void> _confirmAndSubmit() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Post update?'),
+        content: const Text('Your client will receive an email notification.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Post'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await _submit();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -129,6 +144,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             title: _titleController.text.trim(),
             body: _bodyController.text.trim(),
             category: _selectedCategory,
+            status: 'published',
           );
 
       if (_selectedFiles.isNotEmpty) {
@@ -180,6 +196,12 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
         }
       }
 
+      // Refresh list so server-computed attachment_count is reflected.
+      // Non-fatal: count will catch up on next list load if this fails.
+      try {
+        await ref.read(updateNotifierProvider(widget.projectId).notifier).load();
+      } catch (_) {}
+
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
@@ -214,7 +236,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
         title: const Text('New Update'),
         actions: [
           TextButton(
-            onPressed: _submitting ? null : _submit,
+            onPressed: _submitting ? null : _confirmAndSubmit,
             child: _submitting
                 ? const SizedBox(
                     width: 16,
@@ -352,7 +374,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
                         file.name,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(_formatFileSize(file.size)),
+                      subtitle: Text(formatFileSize(file.size)),
                       trailing: _submitting
                           ? null
                           : IconButton(
