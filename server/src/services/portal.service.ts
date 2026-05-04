@@ -315,8 +315,7 @@ export async function createPortalComment(
         .from('users')
         .select('email')
         .eq('workspace_id', project.workspace_id)
-        .in('role', ['admin', 'member'])
-        .is('deleted_at', null);
+        .in('role', ['admin', 'member']);
 
       if (membersFetchError) {
         console.error('[portal.service] createPortalComment email: members fetch error', membersFetchError);
@@ -327,7 +326,8 @@ export async function createPortalComment(
       const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
       const dashboardUrl = `${baseUrl}/dashboard/projects/${projectId}/updates/${updateId}`;
 
-      await Promise.allSettled(
+      console.log('[portal.service] Sending comment notification to:', members.map((m) => m.email));
+      const emailResults = await Promise.allSettled(
         members.map((m) =>
           sendClientCommentNotificationEmail(
             m.email,
@@ -339,6 +339,7 @@ export async function createPortalComment(
           ),
         ),
       );
+      console.log('[portal.service] Email results:', emailResults.map((r) => r.status));
     } catch (err) {
       console.error('[portal.service] createPortalComment email notification error:', err);
     }
