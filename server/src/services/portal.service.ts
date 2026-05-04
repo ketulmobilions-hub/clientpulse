@@ -324,7 +324,7 @@ export async function createPortalComment(
       if (!members?.length) return;
 
       const baseUrl = env.frontendBaseUrl.replace(/\/$/, '');
-      const dashboardUrl = `${baseUrl}/dashboard/projects/${projectId}/updates/${updateId}`;
+      const dashboardUrl = `${baseUrl}/projects/${projectId}`;
 
       console.log('[portal.service] Sending comment notification to:', members.map((m) => m.email));
       const emailResults = await Promise.allSettled(
