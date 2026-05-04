@@ -42,18 +42,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _nameCtrl.text.trim(),
             _workspaceCtrl.text.trim(),
           );
-      // Router auto-redirects to /dashboard on auth state change.
     } on AuthServiceException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), behavior: SnackBarBehavior.floating),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } on StateError catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), behavior: SnackBarBehavior.floating),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     }
   }
@@ -62,170 +59,194 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isLoading = ref.watch(authNotifierProvider).isLoading;
+    final surface = theme.colorScheme.surface;
+
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
-              ),
-              color: Colors.grey.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: AutofillGroup(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'ClientPulse',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Create your workspace',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        TextFormField(
-                          key: const Key('name_field'),
-                          controller: _nameCtrl,
-                          textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.name],
-                          decoration: const InputDecoration(labelText: 'Full Name'),
-                          validator: (v) {
-                            final val = v?.trim() ?? '';
-                            if (val.isEmpty) return 'Name is required';
-                            if (val.length > 100) return 'Name must be under 100 characters';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('workspace_field'),
-                          controller: _workspaceCtrl,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                              labelText: 'Agency / Workspace Name'),
-                          validator: (v) {
-                            final val = v?.trim() ?? '';
-                            if (val.isEmpty) return 'Workspace name is required';
-                            if (val.length > 100) {
-                              return 'Workspace name must be under 100 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('email_field'),
-                          controller: _emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.email],
-                          decoration: const InputDecoration(labelText: 'Email'),
-                          validator: _validateEmail,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('password_field'),
-                          controller: _passwordCtrl,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.newPassword],
-                          // Move focus to confirm field on submit — explicit FocusNode
-                          // is needed on Flutter Web (browser doesn't handle tab for canvas).
-                          onFieldSubmitted: (_) =>
-                              FocusScope.of(context).requestFocus(_confirmFocusNode),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.indigo.shade50, surface],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(36),
+                  child: AutofillGroup(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscurePassword = !_obscurePassword),
-                              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 30),
                             ),
                           ),
-                          validator: (v) {
-                            final val = v ?? '';
-                            if (val.isEmpty) return 'Password is required';
-                            if (val.length < 8) return 'Password must be at least 8 characters';
-                            if (val.length > 128) {
-                              return 'Password must be under 128 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('confirm_password_field'),
-                          controller: _confirmPasswordCtrl,
-                          focusNode: _confirmFocusNode,
-                          obscureText: _obscureConfirm,
-                          textInputAction: TextInputAction.done,
-                          autofillHints: const [AutofillHints.newPassword],
-                          onFieldSubmitted: (_) => _submit(),
-                          decoration: InputDecoration(
-                            labelText: 'Confirm Password',
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirm
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              onPressed: () =>
-                                  setState(() => _obscureConfirm = !_obscureConfirm),
-                              tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+                          const SizedBox(height: 20),
+                          Text(
+                            'ClientPulse',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          validator: (v) {
-                            // Empty confirm is caught explicitly so the field shows its own
-                            // error rather than inheriting the password field's empty state.
-                            if (v == null || v.isEmpty) return 'Please confirm your password';
-                            // Reads _passwordCtrl.text directly — validator stays correct as
-                            // long as the password field uses _passwordCtrl as its controller.
-                            if (v != _passwordCtrl.text) return 'Passwords do not match';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        FilledButton(
-                          key: const Key('register_button'),
-                          onPressed: isLoading ? null : _submit,
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Create Account'),
-                        ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          key: const Key('login_link'),
-                          onPressed: () => context.go('/login'),
-                          child: const Text('Already have an account? Sign in'),
-                        ),
-                      ],
+                          const SizedBox(height: 6),
+                          Text(
+                            'Create your workspace',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          TextFormField(
+                            key: const Key('name_field'),
+                            controller: _nameCtrl,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.name],
+                            decoration: const InputDecoration(labelText: 'Full Name'),
+                            validator: (v) {
+                              final val = v?.trim() ?? '';
+                              if (val.isEmpty) return 'Name is required';
+                              if (val.length > 100) return 'Name must be under 100 characters';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const Key('workspace_field'),
+                            controller: _workspaceCtrl,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                                labelText: 'Agency / Workspace Name'),
+                            validator: (v) {
+                              final val = v?.trim() ?? '';
+                              if (val.isEmpty) return 'Workspace name is required';
+                              if (val.length > 100) {
+                                return 'Workspace name must be under 100 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const Key('email_field'),
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: const InputDecoration(labelText: 'Email'),
+                            validator: _validateEmail,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const Key('password_field'),
+                            controller: _passwordCtrl,
+                            obscureText: _obscurePassword,
+                            textInputAction: TextInputAction.next,
+                            autofillHints: const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) =>
+                                FocusScope.of(context).requestFocus(_confirmFocusNode),
+                            decoration: InputDecoration(
+                              labelText: 'Password',
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _obscurePassword = !_obscurePassword),
+                                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                              ),
+                            ),
+                            validator: (v) {
+                              final val = v ?? '';
+                              if (val.isEmpty) return 'Password is required';
+                              if (val.length < 8) return 'Password must be at least 8 characters';
+                              if (val.length > 128) {
+                                return 'Password must be under 128 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            key: const Key('confirm_password_field'),
+                            controller: _confirmPasswordCtrl,
+                            focusNode: _confirmFocusNode,
+                            obscureText: _obscureConfirm,
+                            textInputAction: TextInputAction.done,
+                            autofillHints: const [AutofillHints.newPassword],
+                            onFieldSubmitted: (_) => _submit(),
+                            decoration: InputDecoration(
+                              labelText: 'Confirm Password',
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirm
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _obscureConfirm = !_obscureConfirm),
+                                tooltip: _obscureConfirm ? 'Show password' : 'Hide password',
+                              ),
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Please confirm your password';
+                              if (v != _passwordCtrl.text) return 'Passwords do not match';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          FilledButton(
+                            key: const Key('register_button'),
+                            onPressed: isLoading ? null : _submit,
+                            child: isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Create Account'),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            key: const Key('login_link'),
+                            onPressed: () => context.go('/login'),
+                            child: const Text('Already have an account? Sign in'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

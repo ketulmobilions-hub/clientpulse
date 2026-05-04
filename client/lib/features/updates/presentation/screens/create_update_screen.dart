@@ -235,30 +235,41 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       appBar: AppBar(
         title: const Text('New Update'),
         actions: [
-          TextButton(
-            onPressed: _submitting ? null : _confirmAndSubmit,
-            child: _submitting
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Post'),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton(
+              onPressed: _submitting ? null : _confirmAndSubmit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(72, 36),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Post'),
+            ),
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              children: [
             // Title
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: 'Title',
                 hintText: 'What would you like to share?',
-                border: OutlineInputBorder(),
               ),
               maxLength: 200,
               textInputAction: TextInputAction.next,
@@ -290,7 +301,6 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
                 controller: _bodyController,
                 decoration: const InputDecoration(
                   hintText: 'Markdown supported…',
-                  border: OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
                 minLines: 5,
@@ -304,10 +314,11 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             else
               Container(
                 constraints: const BoxConstraints(minHeight: 120),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(4),
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: _bodyController.text.trim().isEmpty
                     ? Text(
@@ -397,6 +408,8 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             // Keyboard clearance
             const SizedBox(height: 80),
           ],
+        ),
+          ),
         ),
       ),
     );

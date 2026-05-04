@@ -155,66 +155,102 @@ class _ProjectHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final shareToken = project.shareToken;
     final shareUrl =
         shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+        color: theme.colorScheme.surface,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Text(
-                project.clientName,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey.shade700),
-              ),
-              const SizedBox(width: 8),
-              StatusBadge(status: project.status),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  shareUrl ?? 'No share link',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade500,
-                        fontFamily: 'monospace',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.person_outline_rounded,
+                        size: 13, color: Colors.grey.shade500),
+                    const SizedBox(width: 5),
+                    Text(
+                      project.clientName,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
                       ),
-                  overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 10),
+                    StatusBadge(status: project.status),
+                  ],
+                ),
+                if (shareUrl != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.link_rounded, size: 12, color: Colors.grey.shade400),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          shareUrl,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade400,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (shareUrl != null)
+            Tooltip(
+              message: 'Copy client link',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: shareUrl));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                      ..clearSnackBars()
+                      ..showSnackBar(
+                        const SnackBar(content: Text('Link copied')),
+                      );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.copy_outlined, size: 13, color: Colors.grey.shade600),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Copy link',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              if (shareUrl != null)
-                IconButton(
-                  icon: const Icon(Icons.copy_outlined, size: 18),
-                  tooltip: 'Copy link',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: shareUrl));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                        ..clearSnackBars()
-                        ..showSnackBar(
-                          const SnackBar(content: Text('Link copied')),
-                        );
-                    }
-                  },
-                ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -254,14 +290,15 @@ class _UpdatesTab extends ConsumerWidget {
           );
         }
         return RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(updateNotifierProvider(projectId));
-            await ref.read(updateNotifierProvider(projectId).future);
-          },
+          onRefresh: () =>
+              ref.read(updateNotifierProvider(projectId).notifier).load(),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: updates.length,
-            itemBuilder: (_, i) => UpdateCard(update: updates[i]),
+            itemBuilder: (_, i) => UpdateCard(
+                  key: ValueKey(updates[i].id),
+                  update: updates[i],
+                ),
           ),
         );
       },

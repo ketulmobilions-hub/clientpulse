@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
@@ -36,22 +37,75 @@ class MilestoneListWidget extends ConsumerWidget {
                     icon: Icons.flag_outlined,
                     message: 'No milestones yet',
                   )
-                : ReorderableListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: milestones.length,
-                    onReorder: (oldIndex, newIndex) => ref
-                        .read(milestoneNotifierProvider(projectId).notifier)
-                        .reorder(oldIndex, newIndex),
-                    itemBuilder: (_, i) => MilestoneTile(
-                      key: ValueKey(milestones[i].id),
-                      milestone: milestones[i],
-                      projectId: projectId,
-                    ),
+                : Column(
+                    children: [
+                      _MilestoneProgressHeader(milestones: milestones),
+                      Expanded(
+                        child: ReorderableListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: milestones.length,
+                          onReorder: (oldIndex, newIndex) => ref
+                              .read(milestoneNotifierProvider(projectId).notifier)
+                              .reorder(oldIndex, newIndex),
+                          itemBuilder: (_, i) => MilestoneTile(
+                            key: ValueKey(milestones[i].id),
+                            milestone: milestones[i],
+                            projectId: projectId,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
           ),
         ),
-        if (milestonesAsync.hasValue) _AddMilestoneButton(projectId: projectId),
+        // Show add button only when data is loaded and not in a stale-error state.
+        if (milestonesAsync.hasValue && !milestonesAsync.hasError)
+          _AddMilestoneButton(projectId: projectId),
       ],
+    );
+  }
+}
+
+class _MilestoneProgressHeader extends StatelessWidget {
+  const _MilestoneProgressHeader({required this.milestones});
+
+  final List<Milestone> milestones;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = milestones.length;
+    final completed = milestones.where((m) => m.completed).length;
+    final pct = total == 0 ? 0 : (completed / total * 100).round();
+    final progress = total == 0 ? 0.0 : completed / total;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Milestones', style: theme.textTheme.titleSmall),
+              Text(
+                '$completed of $total • $pct%',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 }
@@ -99,7 +153,9 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text('$e')));
+          ..showSnackBar(
+            const SnackBar(content: Text('Failed to add milestone. Try again.')),
+          );
         _ctrl.text = title;
         setState(() => _expanded = true);
       }
@@ -121,9 +177,7 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
                 decoration: const InputDecoration(
                   hintText: 'Milestone title',
                   isDense: true,
-                  border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
