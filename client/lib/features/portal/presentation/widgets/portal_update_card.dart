@@ -9,8 +9,8 @@ import '../../../../../shared/models/portal_update.dart';
 import '../../../../../shared/models/update.dart';
 import '../../../../../shared/providers/portal_service_provider.dart';
 import '../../../../../shared/services/portal_service.dart';
-import 'open_url_stub.dart'
-    if (dart.library.html) 'open_url_web.dart';
+import 'package:clientpulse/shared/utils/open_url_stub.dart'
+    if (dart.library.html) 'package:clientpulse/shared/utils/open_url_web.dart';
 
 const _kAuthorNameKey = 'portal_author_name';
 
