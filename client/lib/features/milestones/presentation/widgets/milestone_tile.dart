@@ -216,14 +216,16 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                     onTap: _delete,
                     child: const Padding(
                       padding: EdgeInsets.all(6),
-                      child: Icon(Icons.delete_outline, size: 15, color: _kMuted),
+                      child:
+                          Icon(Icons.delete_outline, size: 20, color: _kMuted),
                     ),
                   ),
                   ReorderableDragStartListener(
                     index: widget.index,
                     child: const Padding(
                       padding: EdgeInsets.all(6),
-                      child: Icon(Icons.drag_indicator, size: 18, color: Color(0xFFA1A1AA)),
+                      child:
+                          Icon(Icons.drag_indicator, size: 20, color: _kMuted),
                     ),
                   ),
                 ],
