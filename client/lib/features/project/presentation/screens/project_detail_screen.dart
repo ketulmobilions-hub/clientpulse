@@ -206,8 +206,10 @@ class _ProjectPageHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 project.name,
@@ -239,70 +241,64 @@ class _ProjectPageHeader extends StatelessWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              InkWell(
-                onTap: () => context.pop(),
-                borderRadius: BorderRadius.circular(8),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.arrow_back, size: 20, color: Color(0xFFA1A1AA)),
+          Expanded(
+            child: Row(
+              children: [
+                const Spacer(),
+                InkWell(
+                  onTap: () => context.pushNamed(
+                    RouteNames.editProject,
+                    pathParameters: {'id': project.id},
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.edit_outlined,
+                        size: 18, color: Color(0xFFA1A1AA)),
+                  ),
                 ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: () => context.pushNamed(
-                  RouteNames.editProject,
-                  pathParameters: {'id': project.id},
-                ),
-                borderRadius: BorderRadius.circular(8),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.edit_outlined,
-                      size: 18, color: Color(0xFFA1A1AA)),
-                ),
-              ),
-              if (shareUrl != null) ...[
+                if (shareUrl != null) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: shareUrl));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context)
+                          ..clearSnackBars()
+                          ..showSnackBar(
+                              const SnackBar(content: Text('Link copied')));
+                      }
+                    },
+                    icon: const Icon(Icons.link_rounded, size: 15),
+                    label: const Text('Share'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 34),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      textStyle: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500),
+                      side: const BorderSide(color: _kCardBorder),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: shareUrl));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                        ..clearSnackBars()
-                        ..showSnackBar(
-                            const SnackBar(content: Text('Link copied')));
-                    }
-                  },
-                  icon: const Icon(Icons.link_rounded, size: 15),
-                  label: const Text('Share'),
-                  style: OutlinedButton.styleFrom(
+                FilledButton.icon(
+                  onPressed: () => context.pushNamed(
+                    RouteNames.createUpdate,
+                    pathParameters: {'id': projectId},
+                  ),
+                  icon: const Icon(Icons.add, size: 15),
+                  label: const Text('New Update'),
+                  style: FilledButton.styleFrom(
                     minimumSize: const Size(0, 34),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500),
-                    side: const BorderSide(color: _kCardBorder),
+                        fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: () => context.pushNamed(
-                  RouteNames.createUpdate,
-                  pathParameters: {'id': projectId},
-                ),
-                icon: const Icon(Icons.add, size: 15),
-                label: const Text('New Update'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 34),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  textStyle: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
