@@ -39,6 +39,7 @@ class MilestoneListWidget extends ConsumerWidget {
               final firstIncompleteIdx = milestones.indexWhere((m) => !m.completed);
               return ReorderableListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8),
+                buildDefaultDragHandles: false,
                 itemCount: milestones.length,
                 onReorder: (oldIndex, newIndex) => ref
                     .read(milestoneNotifierProvider(projectId).notifier)
@@ -49,6 +50,7 @@ class MilestoneListWidget extends ConsumerWidget {
                   projectId: projectId,
                   displayIndex: i + 1,
                   isCurrentMilestone: i == firstIncompleteIdx,
+                  index: i,
                 ),
               );
             },

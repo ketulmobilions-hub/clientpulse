@@ -16,12 +16,14 @@ class MilestoneTile extends ConsumerStatefulWidget {
     required this.projectId,
     required this.displayIndex,
     required this.isCurrentMilestone,
+    required this.index,
   });
 
   final Milestone milestone;
   final String projectId;
   final int displayIndex;
   final bool isCurrentMilestone;
+  final int index;
 
   @override
   ConsumerState<MilestoneTile> createState() => _MilestoneTileState();
@@ -61,7 +63,8 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
 
   void _startEditing() {
     setState(() => _editing = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _focusNode.requestFocus());
   }
 
   void _commitTitle() {
@@ -99,6 +102,19 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
     ref
         .read(milestoneNotifierProvider(widget.projectId).notifier)
         .updateDueDate(widget.milestone.id, dueDate: formatted)
+        .catchError((e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text('$e')));
+      }
+    });
+  }
+
+  void _toggleComplete() {
+    ref
+        .read(milestoneNotifierProvider(widget.projectId).notifier)
+        .toggleComplete(widget.milestone.id)
         .catchError((e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -151,10 +167,13 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _MilestoneBadge(
-                    displayIndex: widget.displayIndex,
-                    completed: m.completed,
-                    isCurrent: widget.isCurrentMilestone,
+                  GestureDetector(
+                    onTap: _toggleComplete,
+                    child: _MilestoneBadge(
+                      displayIndex: widget.displayIndex,
+                      completed: m.completed,
+                      isCurrent: widget.isCurrentMilestone,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -165,7 +184,8 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                             autofocus: true,
                             decoration: const InputDecoration(
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
                             ),
                             onSubmitted: (_) => _commitTitle(),
                             textInputAction: TextInputAction.done,
@@ -175,7 +195,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                             child: Text(
                               m.title,
                               style: m.completed
-                                  ? TextStyle(
+                                  ? const TextStyle(
                                       decoration: TextDecoration.lineThrough,
                                       color: _kMuted,
                                     )
@@ -184,28 +204,27 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                           ),
                   ),
                   const SizedBox(width: 8),
-                  if (m.dueDate != null)
-                    GestureDetector(
-                      onTap: _pickDueDate,
-                      child: Text(
-                        _formatDate(m.dueDate!),
-                        style: const TextStyle(fontSize: 12, color: _kMuted),
-                      ),
-                    )
-                  else
-                    GestureDetector(
-                      onTap: _pickDueDate,
-                      child: const Text(
-                        'Add date',
-                        style: TextStyle(fontSize: 12, color: _kMuted),
-                      ),
+                  GestureDetector(
+                    onTap: _pickDueDate,
+                    child: Text(
+                      m.dueDate != null ? _formatDate(m.dueDate!) : 'Add date',
+                      style: const TextStyle(fontSize: 12, color: _kMuted),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    color: _kMuted,
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Delete',
-                    onPressed: _delete,
+                  ),
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    onTap: _delete,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.delete_outline, size: 15, color: _kMuted),
+                    ),
+                  ),
+                  ReorderableDragStartListener(
+                    index: widget.index,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(Icons.drag_handle_rounded, size: 16, color: _kMuted),
+                    ),
                   ),
                 ],
               ),
@@ -229,8 +248,20 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
   String _formatDate(String dueDate) {
     final dt = DateTime.tryParse(dueDate);
     if (dt == null) return dueDate;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${months[dt.month - 1]} ${dt.day}';
   }
 }
@@ -248,9 +279,7 @@ class _MilestoneBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = completed
-        ? _kGreen
-        : (isCurrent ? _kAmber : _kCardBorder);
+    final color = completed ? _kGreen : (isCurrent ? _kAmber : _kCardBorder);
 
     return Container(
       width: 32,
