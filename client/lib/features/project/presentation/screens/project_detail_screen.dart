@@ -117,6 +117,7 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 16),
             _ProjectPageHeader(
               project: project,
               projectId: widget.projectId,
@@ -206,45 +207,46 @@ class _ProjectPageHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                project.name,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  StatusBadge(status: project.status),
-                  const SizedBox(width: 10),
-                  const Text('·', style: TextStyle(color: _kMuted)),
-                  const SizedBox(width: 10),
-                  Text(
-                    project.clientName,
-                    style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                  ),
-                  if (updateCount > 0) ...[
-                    const SizedBox(width: 10),
-                    const Text('·', style: TextStyle(color: _kMuted)),
-                    const SizedBox(width: 10),
-                    Text(
-                      '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                      style:
-                          theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Spacer(),
+                Text(
+                  project.name,
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    StatusBadge(status: project.status),
+                    Text('·', style: const TextStyle(color: _kMuted)),
+                    Text(
+                      project.clientName,
+                      style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+                    ),
+                    if (updateCount > 0) ...[
+                      const Text('·', style: TextStyle(color: _kMuted)),
+                      Text(
+                        '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                        style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
                 InkWell(
                   onTap: () => context.pushNamed(
                     RouteNames.editProject,
@@ -297,8 +299,7 @@ class _ProjectPageHeader extends StatelessWidget {
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ],
       ),
