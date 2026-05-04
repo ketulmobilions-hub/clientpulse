@@ -74,7 +74,8 @@ class _ProjectDetailContent extends ConsumerStatefulWidget {
   final String projectId;
 
   @override
-  ConsumerState<_ProjectDetailContent> createState() => _ProjectDetailContentState();
+  ConsumerState<_ProjectDetailContent> createState() =>
+      _ProjectDetailContentState();
 }
 
 class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
@@ -96,15 +97,20 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
   @override
   Widget build(BuildContext context) {
     final project = widget.project;
-    final milestones = ref.watch(milestoneNotifierProvider(widget.projectId)).valueOrNull ?? [];
-    final updates = ref.watch(updateNotifierProvider(widget.projectId)).valueOrNull ?? [];
+    final milestones =
+        ref.watch(milestoneNotifierProvider(widget.projectId)).valueOrNull ??
+            [];
+    final updates =
+        ref.watch(updateNotifierProvider(widget.projectId)).valueOrNull ?? [];
 
     final totalMilestones = milestones.length;
     final completedMilestones = milestones.where((m) => m.completed).length;
-    final progressPct = totalMilestones > 0 ? completedMilestones / totalMilestones : 0.0;
+    final progressPct =
+        totalMilestones > 0 ? completedMilestones / totalMilestones : 0.0;
     final nextMilestone = milestones.where((m) => !m.completed).firstOrNull;
     final totalComments = updates.fold(0, (s, u) => s + (u.commentCount ?? 0));
-    final totalAttachments = updates.fold(0, (s, u) => s + (u.attachmentCount ?? 0));
+    final totalAttachments =
+        updates.fold(0, (s, u) => s + (u.attachmentCount ?? 0));
 
     return Scaffold(
       body: SafeArea(
@@ -166,7 +172,8 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
         labelColor: Colors.white,
         unselectedLabelColor: _kMuted,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        unselectedLabelStyle:
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
         tabs: const [
           Tab(text: 'Updates'),
           Tab(text: 'Milestones'),
@@ -192,13 +199,46 @@ class _ProjectPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final shareToken = project.shareToken;
-    final shareUrl = shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
+    final shareUrl =
+        shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Column(
+            children: [
+              Text(
+                project.name,
+                style: theme.textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  StatusBadge(status: project.status),
+                  const SizedBox(width: 10),
+                  const Text('·', style: TextStyle(color: _kMuted)),
+                  const SizedBox(width: 10),
+                  Text(
+                    project.clientName,
+                    style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+                  ),
+                  if (updateCount > 0) ...[
+                    const SizedBox(width: 10),
+                    const Text('·', style: TextStyle(color: _kMuted)),
+                    const SizedBox(width: 10),
+                    Text(
+                      '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                      style:
+                          theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
           Row(
             children: [
               const Spacer(),
@@ -210,7 +250,8 @@ class _ProjectPageHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.edit_outlined, size: 18, color: Color(0xFFA1A1AA)),
+                  child: Icon(Icons.edit_outlined,
+                      size: 18, color: Color(0xFFA1A1AA)),
                 ),
               ),
               if (shareUrl != null) ...[
@@ -221,15 +262,18 @@ class _ProjectPageHeader extends StatelessWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context)
                         ..clearSnackBars()
-                        ..showSnackBar(const SnackBar(content: Text('Link copied')));
+                        ..showSnackBar(
+                            const SnackBar(content: Text('Link copied')));
                     }
                   },
                   icon: const Icon(Icons.link_rounded, size: 15),
                   label: const Text('Share'),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 34),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500),
                     side: const BorderSide(color: _kCardBorder),
                   ),
                 ),
@@ -244,37 +288,12 @@ class _ProjectPageHeader extends StatelessWidget {
                 label: const Text('New Update'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 34),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  textStyle: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            project.name,
-            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              StatusBadge(status: project.status),
-              const SizedBox(width: 10),
-              const Text('·', style: TextStyle(color: _kMuted)),
-              const SizedBox(width: 10),
-              Text(
-                project.clientName,
-                style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-              ),
-              if (updateCount > 0) ...[
-                const SizedBox(width: 10),
-                const Text('·', style: TextStyle(color: _kMuted)),
-                const SizedBox(width: 10),
-                Text(
-                  '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                ),
-              ],
             ],
           ),
         ],
@@ -355,7 +374,8 @@ class _StatCard extends StatelessWidget {
 }
 
 class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({required this.pct, required this.completed, required this.total});
+  const _ProgressCard(
+      {required this.pct, required this.completed, required this.total});
 
   final double pct;
   final int completed;
@@ -370,7 +390,11 @@ class _ProgressCard extends StatelessWidget {
         children: [
           const Text(
             'OVERALL PROGRESS',
-            style: TextStyle(fontSize: 9, letterSpacing: 0.8, color: _kMuted, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: _kMuted,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           Row(
@@ -390,7 +414,8 @@ class _ProgressCard extends StatelessWidget {
                     ),
                     Text(
                       '${(pct * 100).round()}%',
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -402,7 +427,8 @@ class _ProgressCard extends StatelessWidget {
                   children: [
                     Text(
                       '$completed / $total',
-                      style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const Text(
                       'milestones',
@@ -439,12 +465,17 @@ class _UpdatesStatCard extends StatelessWidget {
         children: [
           const Text(
             'TOTAL UPDATES',
-            style: TextStyle(fontSize: 9, letterSpacing: 0.8, color: _kMuted, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: _kMuted,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             '$count',
-            style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.displaySmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 2),
           Text(
@@ -473,7 +504,11 @@ class _NextMilestoneCard extends StatelessWidget {
         children: [
           const Text(
             'NEXT MILESTONE',
-            style: TextStyle(fontSize: 9, letterSpacing: 0.8, color: _kMuted, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: _kMuted,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           if (milestone == null)
@@ -487,7 +522,8 @@ class _NextMilestoneCard extends StatelessWidget {
           else ...[
             Text(
               milestone!.title,
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -507,8 +543,20 @@ class _NextMilestoneCard extends StatelessWidget {
   String _formatDueDate(String dueDate) {
     final dt = DateTime.tryParse(dueDate);
     if (dt == null) return dueDate;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     final dateStr = '${months[dt.month - 1]} ${dt.day}';
     final days = dt.difference(DateTime.now()).inDays;
     if (days < 0) return '$dateStr · ${-days}d overdue';
@@ -590,9 +638,8 @@ class _StepNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = milestone.completed;
-    final color = isCompleted
-        ? _kGreen
-        : (isCurrentMilestone ? _kAmber : _kCardBorder);
+    final color =
+        isCompleted ? _kGreen : (isCurrentMilestone ? _kAmber : _kCardBorder);
 
     return Container(
       width: 36,
@@ -621,9 +668,8 @@ class _StepLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = leftCompleted
-        ? _kGreen
-        : (isLeftCurrent ? _kAmber : _kCardBorder);
+    final color =
+        leftCompleted ? _kGreen : (isLeftCurrent ? _kAmber : _kCardBorder);
     return Container(width: 56, height: 2, color: color);
   }
 }
@@ -645,7 +691,8 @@ class _UpdatesTab extends ConsumerWidget {
       ),
       error: (e, _) => ErrorStateWidget(
         message: 'Failed to load updates',
-        onRetry: () => ref.read(updateNotifierProvider(projectId).notifier).load(),
+        onRetry: () =>
+            ref.read(updateNotifierProvider(projectId).notifier).load(),
       ),
       data: (updates) {
         if (updates.isEmpty) {
@@ -660,7 +707,8 @@ class _UpdatesTab extends ConsumerWidget {
           );
         }
         return RefreshIndicator(
-          onRefresh: () => ref.read(updateNotifierProvider(projectId).notifier).load(),
+          onRefresh: () =>
+              ref.read(updateNotifierProvider(projectId).notifier).load(),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: updates.length,
@@ -702,7 +750,8 @@ class _SettingsTab extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Project settings',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             const Text(
