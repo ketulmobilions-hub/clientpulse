@@ -203,105 +203,136 @@ class _ProjectPageHeader extends StatelessWidget {
     final shareUrl =
         shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
 
+    final editButton = InkWell(
+      onTap: () => context.pushNamed(
+        RouteNames.editProject,
+        pathParameters: {'id': project.id},
+      ),
+      borderRadius: BorderRadius.circular(8),
+      child: const Padding(
+        padding: EdgeInsets.all(4),
+        child: Icon(Icons.edit_outlined, size: 18, color: Color(0xFFA1A1AA)),
+      ),
+    );
+
+    final portalButton = shareUrl != null
+        ? OutlinedButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: shareUrl));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(const SnackBar(content: Text('Link copied')));
+              }
+            },
+            icon: const Icon(Icons.link_rounded, size: 15),
+            label: const Text('Client Portal Link'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 34),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              side: const BorderSide(color: _kCardBorder),
+            ),
+          )
+        : null;
+
+    final newUpdateButton = FilledButton.icon(
+      onPressed: () => context.pushNamed(
+        RouteNames.createUpdate,
+        pathParameters: {'id': projectId},
+      ),
+      icon: const Icon(Icons.add, size: 15),
+      label: const Text('New Update'),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 34),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+    );
+
+    final titleMeta = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          project.name,
+          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            StatusBadge(status: project.status),
+            const Text('·', style: TextStyle(color: _kMuted)),
+            Text(project.clientName,
+                style: theme.textTheme.bodySmall?.copyWith(color: _kMuted)),
+            if (updateCount > 0) ...[
+              const Text('·', style: TextStyle(color: _kMuted)),
+              Text(
+                '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+
+    final actionButtons = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (portalButton != null) ...[portalButton, const SizedBox(width: 8)],
+        newUpdateButton,
+      ],
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth <= 375) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  project.name,
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
-                    StatusBadge(status: project.status),
-                    Text('·', style: const TextStyle(color: _kMuted)),
-                    Text(
-                      project.clientName,
-                      style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                    ),
-                    if (updateCount > 0) ...[
-                      const Text('·', style: TextStyle(color: _kMuted)),
-                      Text(
-                        '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                      ),
+                    Expanded(child: titleMeta),
+                    const SizedBox(width: 8),
+                    editButton,
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (portalButton != null) ...[
+                      Expanded(child: portalButton),
+                      const SizedBox(width: 8),
                     ],
+                    Expanded(child: newUpdateButton),
                   ],
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                InkWell(
-                  onTap: () => context.pushNamed(
-                    RouteNames.editProject,
-                    pathParameters: {'id': project.id},
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.edit_outlined,
-                        size: 18, color: Color(0xFFA1A1AA)),
-                  ),
-                ),
-                if (shareUrl != null) ...[
+              Expanded(child: titleMeta),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  editButton,
                   const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: shareUrl));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                          ..clearSnackBars()
-                          ..showSnackBar(
-                              const SnackBar(content: Text('Link copied')));
-                      }
-                    },
-                    icon: const Icon(Icons.link_rounded, size: 15),
-                    label: const Text('Client Portal Link'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      textStyle: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500),
-                      side: const BorderSide(color: _kCardBorder),
-                    ),
-                  ),
+                  actionButtons,
                 ],
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: () => context.pushNamed(
-                    RouteNames.createUpdate,
-                    pathParameters: {'id': projectId},
-                  ),
-                  icon: const Icon(Icons.add, size: 15),
-                  label: const Text('New Update'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 34),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
+              ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
