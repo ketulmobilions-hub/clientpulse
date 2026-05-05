@@ -230,7 +230,8 @@ class _ProjectPageHeader extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 34),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               side: const BorderSide(color: _kCardBorder),
             ),
           )
@@ -255,7 +256,8 @@ class _ProjectPageHeader extends StatelessWidget {
       children: [
         Text(
           project.name,
-          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.headlineSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
           overflow: TextOverflow.ellipsis,
           maxLines: 2,
         ),
@@ -379,9 +381,16 @@ class _StatsRow extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                progressCard,
-                const SizedBox(height: 10),
-                updatesCard,
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: progressCard),
+                      const SizedBox(width: 10),
+                      Expanded(child: updatesCard),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 10),
                 milestoneCard,
               ],
