@@ -559,41 +559,47 @@ class _NextMilestoneCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return _StatCard(
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'NEXT MILESTONE',
-            style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          if (milestone == null)
-            Text(
-              'All done!',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: _kGreen,
-              ),
-            )
-          else ...[
-            Text(
-              milestone!.title,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'NEXT MILESTONE',
+                  style: TextStyle(
+                      fontSize: 9,
+                      letterSpacing: 0.8,
+                      color: _kMuted,
+                      fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                if (milestone == null)
+                  Text(
+                    'All done!',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _kGreen,
+                    ),
+                  )
+                else
+                  Text(
+                    milestone!.title,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
-            if (milestone!.dueDate != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                _formatDueDate(milestone!.dueDate!),
-                style: const TextStyle(fontSize: 11, color: _kMuted),
-              ),
-            ],
+          ),
+          if (milestone?.dueDate != null) ...[
+            const SizedBox(width: 12),
+            Text(
+              _formatDueDate(milestone!.dueDate!),
+              style: const TextStyle(fontSize: 11, color: _kMuted),
+            ),
           ],
         ],
       ),
