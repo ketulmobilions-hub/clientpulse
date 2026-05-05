@@ -135,7 +135,13 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
               ),
             ),
             const SizedBox(width: 8),
-            FilledButton(onPressed: _submit, child: const Text('Add')),
+            FilledButton(
+              onPressed: _submit,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 40),
+              ),
+              child: const Text('Add'),
+            ),
             const SizedBox(width: 4),
             TextButton(
               onPressed: () {
