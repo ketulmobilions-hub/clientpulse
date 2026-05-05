@@ -15,10 +15,12 @@ class CreateEditProjectScreen extends ConsumerStatefulWidget {
   bool get isEdit => projectId != null;
 
   @override
-  ConsumerState<CreateEditProjectScreen> createState() => _CreateEditProjectScreenState();
+  ConsumerState<CreateEditProjectScreen> createState() =>
+      _CreateEditProjectScreenState();
 }
 
-class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScreen> {
+class _CreateEditProjectScreenState
+    extends ConsumerState<CreateEditProjectScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _clientNameCtrl = TextEditingController();
@@ -57,8 +59,9 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
   Future<void> _loadProject() async {
     setState(() => _loadingProject = true);
     try {
-      final project =
-          await ref.read(projectNotifierProvider.notifier).getProject(widget.projectId!);
+      final project = await ref
+          .read(projectNotifierProvider.notifier)
+          .getProject(widget.projectId!);
       if (!mounted) return;
       _nameCtrl.text = project.name;
       _clientNameCtrl.text = project.clientName;
@@ -139,7 +142,8 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               name: _nameCtrl.text.trim(),
               clientName: _clientNameCtrl.text.trim(),
               clientEmail: _clientEmailCtrl.text.trim(),
-              description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
               clearDescription: _descCtrl.text.trim().isEmpty,
               status: _status,
               startDate: _startDate,
@@ -156,7 +160,8 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               name: _nameCtrl.text.trim(),
               clientName: _clientNameCtrl.text.trim(),
               clientEmail: _clientEmailCtrl.text.trim(),
-              description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
               startDate: _startDate,
               expectedEndDate: _expectedEndDate,
             );
@@ -228,7 +233,10 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                   Expanded(
                     child: SelectableText(
                       portalUrl,
-                      style: const TextStyle(fontSize: 13),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -276,7 +284,8 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
           ? const Center(child: CircularProgressIndicator())
           : Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: DecoratedBox(
@@ -299,118 +308,121 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                    TextFormField(
-                      controller: _nameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Project Name *',
-                
-                      ),
-                      textInputAction: TextInputAction.next,
-                      enabled: !disabled,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _clientNameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Client Name *',
-                
-                      ),
-                      textInputAction: TextInputAction.next,
-                      enabled: !disabled,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _clientEmailCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Client Email *',
-                
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      enabled: !disabled,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Required';
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v.trim())) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                
-                      ),
-                      maxLines: 3,
-                      enabled: !disabled,
-                    ),
-                    if (isEdit) ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<ProjectStatus>(
-                        value: _status,
-                        decoration: const InputDecoration(
-                          labelText: 'Status *',
-                  
-                        ),
-                        items: ProjectStatus.values
-                            .map((s) => DropdownMenuItem(
-                                  value: s,
-                                  child: Text(_statusLabel(s)),
-                                ))
-                            .toList(),
-                        onChanged: disabled ? null : (v) => setState(() => _status = v!),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    _DatePickerField(
-                      label: 'Start Date',
-                      value: _startDate,
-                      enabled: !disabled,
-                      onTap: () => _pickDate(isStart: true),
-                      onClear: () => setState(() {
-                        _startDate = null;
-                        _startDateCleared = true;
-                      }),
-                    ),
-                    const SizedBox(height: 16),
-                    _DatePickerField(
-                      label: 'Expected End Date',
-                      value: _expectedEndDate,
-                      enabled: !disabled,
-                      onTap: () => _pickDate(isStart: false),
-                      onClear: () => setState(() {
-                        _expectedEndDate = null;
-                        _expectedEndDateCleared = true;
-                      }),
-                    ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: disabled ? null : _submit,
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                            TextFormField(
+                              controller: _nameCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Project Name *',
                               ),
-                            )
-                          : Text(isEdit ? 'Save Changes' : 'Create Project'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                              textInputAction: TextInputAction.next,
+                              enabled: !disabled,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Required'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _clientNameCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Client Name *',
+                              ),
+                              textInputAction: TextInputAction.next,
+                              enabled: !disabled,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Required'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _clientEmailCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Client Email *',
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              enabled: !disabled,
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Required';
+                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$')
+                                    .hasMatch(v.trim())) {
+                                  return 'Enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _descCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Description',
+                              ),
+                              maxLines: 3,
+                              enabled: !disabled,
+                            ),
+                            if (isEdit) ...[
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<ProjectStatus>(
+                                value: _status,
+                                decoration: const InputDecoration(
+                                  labelText: 'Status *',
+                                ),
+                                items: ProjectStatus.values
+                                    .map((s) => DropdownMenuItem(
+                                          value: s,
+                                          child: Text(_statusLabel(s)),
+                                        ))
+                                    .toList(),
+                                onChanged: disabled
+                                    ? null
+                                    : (v) => setState(() => _status = v!),
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _DatePickerField(
+                              label: 'Start Date',
+                              value: _startDate,
+                              enabled: !disabled,
+                              onTap: () => _pickDate(isStart: true),
+                              onClear: () => setState(() {
+                                _startDate = null;
+                                _startDateCleared = true;
+                              }),
+                            ),
+                            const SizedBox(height: 16),
+                            _DatePickerField(
+                              label: 'Expected End Date',
+                              value: _expectedEndDate,
+                              enabled: !disabled,
+                              onTap: () => _pickDate(isStart: false),
+                              onClear: () => setState(() {
+                                _expectedEndDate = null;
+                                _expectedEndDateCleared = true;
+                              }),
+                            ),
+                            const SizedBox(height: 20),
+                            FilledButton(
+                              onPressed: disabled ? null : _submit,
+                              child: _submitting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(isEdit
+                                      ? 'Save Changes'
+                                      : 'Create Project'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
+            ),
     );
   }
 
@@ -464,8 +476,18 @@ class _DatePickerField extends StatelessWidget {
 
   String _format(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
