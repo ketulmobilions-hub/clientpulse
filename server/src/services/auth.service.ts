@@ -29,9 +29,10 @@ export async function registerUser(
   });
 
   if (authError || !authData.user) {
+    console.error('[AUTH] createUser failed:', authError?.status, authError?.message, authError);
     const isClientError = authError != null && (authError.status ?? 500) < 500;
     throw new AppError(
-      'Registration failed',
+      authError?.message ?? 'Registration failed',
       isClientError ? 400 : 500,
       isClientError ? ErrorCodes.REGISTRATION_ERROR : ErrorCodes.DB_ERROR,
     );
