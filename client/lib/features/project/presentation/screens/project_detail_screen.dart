@@ -295,7 +295,7 @@ class _ProjectPageHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth <= 375) {
+          if (constraints.maxWidth <= 700) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -377,7 +377,7 @@ class _StatsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth <= 375) {
+          if (constraints.maxWidth <= 700) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

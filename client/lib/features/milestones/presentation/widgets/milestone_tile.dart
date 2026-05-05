@@ -167,15 +167,23 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  GestureDetector(
-                    onTap: _toggleComplete,
-                    child: _MilestoneBadge(
-                      displayIndex: widget.displayIndex,
-                      completed: m.completed,
-                      isCurrent: widget.isCurrentMilestone,
+                  _MilestoneBadge(
+                    displayIndex: widget.displayIndex,
+                    completed: m.completed,
+                    isCurrent: widget.isCurrentMilestone,
+                  ),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Checkbox(
+                      value: m.completed,
+                      onChanged: (_) => _toggleComplete(),
+                      activeColor: _kGreen,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: _editing
                         ? TextField(

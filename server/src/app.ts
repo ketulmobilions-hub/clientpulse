@@ -18,7 +18,7 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 app.use(cors({
-  origin: env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
+  origin: env.nodeEnv === 'development' ? "*" : env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
   credentials: true,
 }));
 
