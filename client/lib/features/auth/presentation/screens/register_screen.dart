@@ -27,6 +27,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirm = true;
   int _step = 0;
   String? _errorMessage;
+  bool _errorIsEmailExists = false;
 
   @override
   void initState() {
@@ -63,7 +64,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (_errorMessage == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _errorMessage == null) return;
-      setState(() => _errorMessage = null);
+      setState(() {
+        _errorMessage = null;
+        _errorIsEmailExists = false;
+      });
     });
   }
 
@@ -107,9 +111,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _workspaceCtrl.text.trim(),
           );
     } on AuthServiceException catch (e) {
-      if (mounted) setState(() => _errorMessage = e.message);
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _errorIsEmailExists = e.isEmailAlreadyExists;
+        });
+      }
     } on StateError catch (e) {
-      if (mounted) setState(() => _errorMessage = e.message);
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _errorIsEmailExists = false;
+        });
+      }
     }
   }
 
@@ -258,24 +272,52 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                           .withOpacity(0.3),
                                     ),
                                   ),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(
-                                        Icons.error_outline_rounded,
-                                        size: 18,
-                                        color: theme.colorScheme.error,
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline_rounded,
+                                            size: 18,
+                                            color: theme.colorScheme.error,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              _errorMessage!,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                color: theme.colorScheme
+                                                    .onErrorContainer,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                            color: theme
-                                                .colorScheme.onErrorContainer,
+                                      if (_errorIsEmailExists)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 28, top: 4),
+                                          child: TextButton(
+                                            key: const Key(
+                                                'sign_in_instead_button'),
+                                            style: TextButton.styleFrom(
+                                              padding: EdgeInsets.zero,
+                                              minimumSize: const Size(0, 32),
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            onPressed: isLoading
+                                                ? null
+                                                : () => context.go(
+                                                    '/login?email=${Uri.encodeQueryComponent(_emailCtrl.text.trim())}'),
+                                            child: const Text(
+                                                'Sign in instead'),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),

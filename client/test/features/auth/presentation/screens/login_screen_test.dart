@@ -309,4 +309,127 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+
+  group('LoginScreen — prefillEmail', () {
+    Widget wrapWithPrefill(_FakeAuthNotifier notifier, String? prefill) {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/login',
+            builder: (_, __) => LoginScreen(prefillEmail: prefill),
+          ),
+          GoRoute(path: '/register', builder: (_, __) => const Scaffold(body: Text('R'))),
+          GoRoute(path: '/dashboard', builder: (_, __) => const Scaffold(body: Text('D'))),
+        ],
+        initialLocation: '/login',
+      );
+      return ProviderScope(
+        overrides: [authNotifierProvider.overrideWith(() => notifier)],
+        child: MaterialApp.router(routerConfig: router),
+      );
+    }
+
+    testWidgets('populates email field when prefill is a valid string', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      await tester.pumpWidget(wrapWithPrefill(notifier, 'preset@example.com'));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, 'preset@example.com');
+    });
+
+    testWidgets('null prefill leaves email field empty', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      await tester.pumpWidget(wrapWithPrefill(notifier, null));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, '');
+    });
+
+    testWidgets('empty prefill leaves email field empty', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      await tester.pumpWidget(wrapWithPrefill(notifier, ''));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, '');
+    });
+
+    testWidgets('over-length prefill is rejected (DoS guard)', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      final huge = 'a' * 1000 + '@example.com';
+      await tester.pumpWidget(wrapWithPrefill(notifier, huge));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, '');
+    });
+
+    testWidgets('prefilled email remains editable', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      await tester.pumpWidget(wrapWithPrefill(notifier, 'preset@example.com'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('email_field')), 'changed@example.com');
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, 'changed@example.com');
+    });
+
+    testWidgets('/login?email= route param feeds LoginScreen prefillEmail', (tester) async {
+      final notifier = _FakeAuthNotifier();
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/login',
+            builder: (_, state) =>
+                LoginScreen(prefillEmail: state.uri.queryParameters['email']),
+          ),
+        ],
+        initialLocation: '/login?email=route%2Bparam%40example.com',
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [authNotifierProvider.overrideWith(() => notifier)],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('email_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller!.text, 'route+param@example.com');
+    });
+  });
 }

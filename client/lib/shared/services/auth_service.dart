@@ -6,10 +6,14 @@ import '../models/auth_user.dart';
 
 class AuthServiceException implements Exception {
   final String message;
-  const AuthServiceException(this.message);
+  final int? statusCode;
+  final String? errorCode;
+  const AuthServiceException(this.message, {this.statusCode, this.errorCode});
+
+  bool get isEmailAlreadyExists => errorCode == 'EMAIL_EXISTS';
 
   @override
-  String toString() => 'AuthServiceException: $message';
+  String toString() => 'AuthServiceException($statusCode/$errorCode): $message';
 }
 
 class AuthService {
@@ -37,10 +41,10 @@ class AuthService {
         data: {'email': email, 'password': password},
       );
       final body = response.data;
-      if (body == null) throw AuthServiceException('Empty response from server');
+      if (body == null) throw const AuthServiceException('Empty response from server');
       return await _handleAuthResponse(body);
     } on DioException catch (e) {
-      throw AuthServiceException(_extractError(e));
+      throw _toAuthException(e);
     }
   }
 
@@ -61,7 +65,7 @@ class AuthService {
         },
       );
     } on DioException catch (e) {
-      throw AuthServiceException(_extractError(e));
+      throw _toAuthException(e);
     }
   }
 
@@ -148,15 +152,20 @@ class AuthService {
     ]);
   }
 
-  String _extractError(DioException e) {
+  AuthServiceException _toAuthException(DioException e) {
+    final status = e.response?.statusCode;
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {
       final error = data['error'];
       if (error is Map<String, dynamic>) {
-        return error['message']?.toString() ?? 'Unknown error';
+        return AuthServiceException(
+          error['message']?.toString() ?? 'Unknown error',
+          statusCode: status,
+          errorCode: error['code']?.toString(),
+        );
       }
-      if (error is String) return error;
+      if (error is String) return AuthServiceException(error, statusCode: status);
     }
-    return e.message ?? 'Network error';
+    return AuthServiceException(e.message ?? 'Network error', statusCode: status);
   }
 }

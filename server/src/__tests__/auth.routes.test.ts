@@ -63,8 +63,18 @@ describe('POST /api/v1/auth/register', () => {
     expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
   });
 
-  it('returns 400 REGISTRATION_ERROR on duplicate email from service', async () => {
-    mockRegister.mockRejectedValue(new AppError('Registration failed', 400, ErrorCodes.REGISTRATION_ERROR));
+  it('returns 409 EMAIL_EXISTS on duplicate email from service', async () => {
+    mockRegister.mockRejectedValue(
+      new AppError('An account with this email already exists', 409, ErrorCodes.EMAIL_EXISTS),
+    );
+    const res = await request(app).post('/api/v1/auth/register').send(validBody);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe(ErrorCodes.EMAIL_EXISTS);
+    expect(res.body.error.message).toBe('An account with this email already exists');
+  });
+
+  it('returns 400 REGISTRATION_ERROR on other registration failures from service', async () => {
+    mockRegister.mockRejectedValue(new AppError('Password too weak', 400, ErrorCodes.REGISTRATION_ERROR));
     const res = await request(app).post('/api/v1/auth/register').send(validBody);
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe(ErrorCodes.REGISTRATION_ERROR);

@@ -6,7 +6,9 @@ import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.prefillEmail});
+
+  final String? prefillEmail;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -19,9 +21,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
 
+  // Mirrors the server-side / form-validator cap; guards against crafted
+  // /login?email=<huge> links pasting megabytes into the TextField.
+  static const _maxPrefillEmailLength = 254;
+
   @override
   void initState() {
     super.initState();
+    final prefill = widget.prefillEmail;
+    if (prefill != null &&
+        prefill.isNotEmpty &&
+        prefill.length <= _maxPrefillEmailLength) {
+      _emailCtrl.text = prefill;
+    }
     // Clear inline error once the user starts editing — keeps error banner aligned with intent.
     _emailCtrl.addListener(_clearError);
     _passwordCtrl.addListener(_clearError);
