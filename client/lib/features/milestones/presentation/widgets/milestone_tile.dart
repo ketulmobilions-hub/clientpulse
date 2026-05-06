@@ -29,6 +29,7 @@ class MilestoneTile extends ConsumerStatefulWidget {
 
 class _MilestoneTileState extends ConsumerState<MilestoneTile> {
   bool _editing = false;
+  bool _hovered = false;
   late TextEditingController _titleCtrl;
   final _focusNode = FocusNode();
 
@@ -96,130 +97,156 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
     );
     if (!mounted || picked == null) return;
     final formatted = picked.toIso8601String().substring(0, 10);
-    ref
-        .read(milestoneNotifierProvider(widget.projectId).notifier)
-        .updateDueDate(widget.milestone.id, dueDate: formatted)
-        .catchError((e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text('$e')));
-      }
-    });
+    try {
+      await ref
+          .read(milestoneNotifierProvider(widget.projectId).notifier)
+          .updateDueDate(widget.milestone.id, dueDate: formatted);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
-  void _delete() {
-    ref
-        .read(milestoneNotifierProvider(widget.projectId).notifier)
-        .delete(widget.milestone.id)
-        .then((_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(const SnackBar(content: Text('Milestone deleted')));
-      }
-    }).catchError((e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text('$e')));
-      }
-    });
+  Future<void> _delete() async {
+    try {
+      await ref
+          .read(milestoneNotifierProvider(widget.projectId).notifier)
+          .delete(widget.milestone.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(const SnackBar(content: Text('Milestone deleted')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('$e')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final m = widget.milestone;
-    final progressValue = m.completed ? 1.0 : 0.0;
-    final progressColor = m.completed
-        ? _kGreen
-        : (widget.isCurrentMilestone ? _kAmber : _kCardBorder);
+    final hasDate = m.dueDate != null;
+    final platform = Theme.of(context).platform;
+    final isTouchPlatform = platform == TargetPlatform.iOS ||
+        platform == TargetPlatform.android;
+    final showActions = isTouchPlatform || _hovered || _editing;
+    final borderColor = _hovered
+        ? const Color(0xFF52525B)
+        : (widget.isCurrentMilestone
+            ? _kAmber.withOpacity(0.4)
+            : _kCardBorder);
+    final bgColor = _hovered ? const Color(0xFF2A2A2E) : _kCardBg;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _kCardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _kCardBorder),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _MilestoneBadge(
-                    displayIndex: widget.displayIndex,
-                    completed: m.completed,
-                    isCurrent: widget.isCurrentMilestone,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _editing
-                        ? TextField(
-                            controller: _titleCtrl,
-                            focusNode: _focusNode,
-                            autofocus: true,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            ),
-                            onSubmitted: (_) => _commitTitle(),
-                            textInputAction: TextInputAction.done,
-                          )
-                        : GestureDetector(
-                            onTap: _startEditing,
-                            child: Text(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: borderColor),
+            boxShadow: _hovered
+                ? const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: _editing ? null : _startEditing,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _MilestoneBadge(
+                      displayIndex: widget.displayIndex,
+                      completed: m.completed,
+                      isCurrent: widget.isCurrentMilestone,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _editing
+                          ? TextField(
+                              controller: _titleCtrl,
+                              focusNode: _focusNode,
+                              autofocus: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                              ),
+                              onSubmitted: (_) => _commitTitle(),
+                              textInputAction: TextInputAction.done,
+                            )
+                          : Text(
                               m.title,
                               style: m.completed
-                                  ? TextStyle(
+                                  ? const TextStyle(
                                       decoration: TextDecoration.lineThrough,
                                       color: _kMuted,
                                     )
-                                  : null,
+                                  : const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                             ),
-                          ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (m.dueDate != null)
-                    GestureDetector(
-                      onTap: _pickDueDate,
-                      child: Text(
-                        _formatDate(m.dueDate!),
-                        style: const TextStyle(fontSize: 12, color: _kMuted),
+                    ),
+                    const SizedBox(width: 8),
+                    if (hasDate)
+                      GestureDetector(
+                        onTap: _pickDueDate,
+                        behavior: HitTestBehavior.opaque,
+                        child: Text(
+                          _formatDate(m.dueDate!),
+                          style:
+                              const TextStyle(fontSize: 12, color: _kMuted),
+                        ),
+                      )
+                    else if (showActions)
+                      GestureDetector(
+                        onTap: _pickDueDate,
+                        behavior: HitTestBehavior.opaque,
+                        child: const Text(
+                          'Add date',
+                          style: TextStyle(fontSize: 12, color: _kMuted),
+                        ),
                       ),
-                    )
-                  else
-                    GestureDetector(
-                      onTap: _pickDueDate,
-                      child: const Text(
-                        'Add date',
-                        style: TextStyle(fontSize: 12, color: _kMuted),
+                    Semantics(
+                      excludeSemantics: !showActions,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 120),
+                        opacity: showActions ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !showActions,
+                          child: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 16),
+                            color: _kMuted,
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Delete',
+                            onPressed: _delete,
+                          ),
+                        ),
                       ),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    color: _kMuted,
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Delete',
-                    onPressed: _delete,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progressValue,
-                  minHeight: 4,
-                  backgroundColor: _kCardBorder,
-                  valueColor: AlwaysStoppedAnimation(progressColor),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

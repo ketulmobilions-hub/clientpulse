@@ -9,6 +9,7 @@ import 'package:clientpulse/features/milestones/presentation/widgets/milestone_l
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/models/project.dart';
+import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
@@ -103,14 +104,13 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
     final updates =
         ref.watch(updateNotifierProvider(widget.projectId)).valueOrNull ?? [];
 
-    final totalMilestones = milestones.length;
-    final completedMilestones = milestones.where((m) => m.completed).length;
-    final progressPct =
-        totalMilestones > 0 ? completedMilestones / totalMilestones : 0.0;
     final nextMilestone = milestones.where((m) => !m.completed).firstOrNull;
-    final totalComments = updates.fold(0, (s, u) => s + (u.commentCount ?? 0));
-    final totalAttachments =
-        updates.fold(0, (s, u) => s + (u.attachmentCount ?? 0));
+    final pendingApprovals = updates
+        .where((u) =>
+            u.status == UpdateStatus.published &&
+            u.category == UpdateCategory.inputNeeded)
+        .length;
+    final lastActivityAt = _latestActivity(updates, project.updatedAt);
 
     return Scaffold(
       body: SafeArea(
@@ -121,18 +121,12 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
               project: project,
               projectId: widget.projectId,
               updateCount: updates.length,
-            ),
-            _StatsRow(
-              progressPct: progressPct,
-              completedMilestones: completedMilestones,
-              totalMilestones: totalMilestones,
-              updateCount: updates.length,
-              totalComments: totalComments,
-              totalAttachments: totalAttachments,
+              pendingApprovals: pendingApprovals,
+              lastActivityAt: lastActivityAt,
               nextMilestone: nextMilestone,
             ),
             if (milestones.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
               _MilestoneStepper(milestones: milestones),
             ],
             _buildTabBar(),
@@ -152,28 +146,45 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
     );
   }
 
+  DateTime? _latestActivity(List<Update> updates, DateTime projectUpdatedAt) {
+    DateTime latest = projectUpdatedAt;
+    for (final u in updates) {
+      final parsed = DateTime.tryParse(u.updatedAt);
+      if (parsed != null && parsed.isAfter(latest)) latest = parsed;
+    }
+    return latest;
+  }
+
   Widget _buildTabBar() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _kCardBorder),
+        color: cs.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: TabBar(
         controller: _tabs,
         indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(7),
-          color: _kCardBorder,
+          borderRadius: BorderRadius.circular(8),
+          color: cs.inverseSurface,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: Colors.white,
-        unselectedLabelColor: _kMuted,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        labelColor: cs.onInverseSurface,
+        unselectedLabelColor: cs.onSurfaceVariant,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
         unselectedLabelStyle:
-            const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         tabs: const [
           Tab(text: 'Updates'),
           Tab(text: 'Milestones'),
@@ -189,11 +200,17 @@ class _ProjectPageHeader extends StatelessWidget {
     required this.project,
     required this.projectId,
     required this.updateCount,
+    required this.pendingApprovals,
+    required this.lastActivityAt,
+    required this.nextMilestone,
   });
 
   final Project project;
   final String projectId;
   final int updateCount;
+  final int pendingApprovals;
+  final DateTime? lastActivityAt;
+  final Milestone? nextMilestone;
 
   @override
   Widget build(BuildContext context) {
@@ -202,370 +219,256 @@ class _ProjectPageHeader extends StatelessWidget {
     final shareUrl =
         shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
 
+    final cta = _resolveCta(context);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                project.name,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  StatusBadge(status: project.status),
-                  const SizedBox(width: 10),
-                  const Text('·', style: TextStyle(color: _kMuted)),
-                  const SizedBox(width: 10),
-                  Text(
-                    project.clientName,
-                    style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-                  ),
-                  if (updateCount > 0) ...[
-                    const SizedBox(width: 10),
-                    const Text('·', style: TextStyle(color: _kMuted)),
-                    const SizedBox(width: 10),
+              _ClientAvatar(name: project.clientName),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                      style:
-                          theme.textTheme.bodySmall?.copyWith(color: _kMuted),
+                      project.clientName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFFA1A1AA),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      project.name,
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 6,
+                      children: [
+                        StatusBadge(status: project.status),
+                        if (lastActivityAt != null)
+                          _MetaChip(
+                            icon: Icons.bolt_rounded,
+                            label: 'Active ${_relTime(lastActivityAt!)}',
+                          ),
+                        if (pendingApprovals > 0)
+                          _MetaChip(
+                            icon: Icons.mark_email_unread_outlined,
+                            label:
+                                '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
+                            tone: _ChipTone.warning,
+                          ),
+                        if (updateCount > 0)
+                          _MetaChip(
+                            icon: Icons.forum_outlined,
+                            label:
+                                '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                          ),
+                      ],
                     ),
                   ],
-                ],
-              ),
-            ],
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                const Spacer(),
-                InkWell(
-                  onTap: () => context.pushNamed(
-                    RouteNames.editProject,
-                    pathParameters: {'id': project.id},
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.edit_outlined,
-                        size: 18, color: Color(0xFFA1A1AA)),
-                  ),
                 ),
-                if (shareUrl != null) ...[
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: shareUrl));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                          ..clearSnackBars()
-                          ..showSnackBar(
-                              const SnackBar(content: Text('Link copied')));
-                      }
-                    },
-                    icon: const Icon(Icons.link_rounded, size: 15),
-                    label: const Text('Share'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      textStyle: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500),
-                      side: const BorderSide(color: _kCardBorder),
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: () => context.pushNamed(
-                    RouteNames.createUpdate,
-                    pathParameters: {'id': projectId},
-                  ),
-                  icon: const Icon(Icons.add, size: 15),
-                  label: const Text('New Update'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 34),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                tooltip: 'Edit',
+                onPressed: () => context.pushNamed(
+                  RouteNames.editProject,
+                  pathParameters: {'id': project.id},
+                ),
+                icon: const Icon(Icons.edit_outlined,
+                    size: 18, color: Color(0xFFA1A1AA)),
+              ),
+              if (shareUrl != null) ...[
+                const SizedBox(width: 4),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: shareUrl));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context)
+                        ..clearSnackBars()
+                        ..showSnackBar(
+                            const SnackBar(content: Text('Link copied')));
+                    }
+                  },
+                  icon: const Icon(Icons.link_rounded, size: 15),
+                  label: const Text('Share'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
+                        fontSize: 13, fontWeight: FontWeight.w500),
+                    side: const BorderSide(color: _kCardBorder),
                   ),
                 ),
               ],
-            ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: cta.onPressed,
+                icon: Icon(cta.icon, size: 16),
+                label: Text(cta.label),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 6),
+                  textStyle: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+  _CtaSpec _resolveCta(BuildContext context) {
+    void goCreate() => context.pushNamed(
+          RouteNames.createUpdate,
+          pathParameters: {'id': projectId},
+        );
+
+    if (pendingApprovals > 0) {
+      return _CtaSpec(
+        label: 'Reply to Client',
+        icon: Icons.reply_rounded,
+        onPressed: goCreate,
+      );
+    }
+    final due = nextMilestone?.dueDate;
+    if (due != null) {
+      final dt = DateTime.tryParse(due);
+      if (dt != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final dueDay = DateTime(dt.year, dt.month, dt.day);
+        if (dueDay.isBefore(today)) {
+          return _CtaSpec(
+            label: 'Post Milestone Update',
+            icon: Icons.flag_rounded,
+            onPressed: goCreate,
+          );
+        }
+      }
+    }
+    return _CtaSpec(
+      label: 'New Update',
+      icon: Icons.add,
+      onPressed: goCreate,
+    );
+  }
+
+  String _relTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 30) return '${diff.inDays}d ago';
+    final months = (diff.inDays / 30).floor();
+    if (months < 12) return '${months}mo ago';
+    return '${(months / 12).floor()}y ago';
+  }
 }
 
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({
-    required this.progressPct,
-    required this.completedMilestones,
-    required this.totalMilestones,
-    required this.updateCount,
-    required this.totalComments,
-    required this.totalAttachments,
-    required this.nextMilestone,
-  });
+class _CtaSpec {
+  const _CtaSpec(
+      {required this.label, required this.icon, required this.onPressed});
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+}
 
-  final double progressPct;
-  final int completedMilestones;
-  final int totalMilestones;
-  final int updateCount;
-  final int totalComments;
-  final int totalAttachments;
-  final Milestone? nextMilestone;
+class _ClientAvatar extends StatelessWidget {
+  const _ClientAvatar({required this.name});
+  final String name;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _ProgressCard(
-                pct: progressPct,
-                completed: completedMilestones,
-                total: totalMilestones,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _UpdatesStatCard(
-                count: updateCount,
-                comments: totalComments,
-                attachments: totalAttachments,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _NextMilestoneCard(milestone: nextMilestone),
-            ),
-          ],
+    final initials = _initials(name);
+    final hue = name.hashCode % 360;
+    final bg = HSLColor.fromAHSL(1, hue.toDouble(), 0.45, 0.32).toColor();
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kCardBorder),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+          letterSpacing: 0.4,
         ),
       ),
     );
   }
-}
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kCardBorder),
-      ),
-      child: child,
-    );
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first)
+        .toUpperCase();
   }
 }
 
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard(
-      {required this.pct, required this.completed, required this.total});
+enum _ChipTone { neutral, warning }
 
-  final double pct;
-  final int completed;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'OVERALL PROGRESS',
-            style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              SizedBox(
-                width: 52,
-                height: 52,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: pct,
-                      strokeWidth: 6,
-                      backgroundColor: _kCardBorder,
-                      valueColor: const AlwaysStoppedAnimation(_kGreen),
-                      strokeCap: StrokeCap.round,
-                    ),
-                    Text(
-                      '${(pct * 100).round()}%',
-                      style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              if (total > 0) ...[
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$completed / $total',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const Text(
-                      'milestones',
-                      style: TextStyle(fontSize: 11, color: _kMuted),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UpdatesStatCard extends StatelessWidget {
-  const _UpdatesStatCard({
-    required this.count,
-    required this.comments,
-    required this.attachments,
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    this.tone = _ChipTone.neutral,
   });
 
-  final int count;
-  final int comments;
-  final int attachments;
+  final IconData icon;
+  final String label;
+  final _ChipTone tone;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'TOTAL UPDATES',
-            style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$count',
-            style: theme.textTheme.displaySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '$comments comments · $attachments attachments',
-            style: const TextStyle(fontSize: 11, color: _kMuted),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+    final (bg, fg) = switch (tone) {
+      _ChipTone.warning => (const Color(0xFF3B2A11), const Color(0xFFFBBF24)),
+      _ChipTone.neutral => (const Color(0xFF27272A), const Color(0xFFA1A1AA)),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
       ),
-    );
-  }
-}
-
-class _NextMilestoneCard extends StatelessWidget {
-  const _NextMilestoneCard({required this.milestone});
-
-  final Milestone? milestone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'NEXT MILESTONE',
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 5),
+          Text(
+            label,
             style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          if (milestone == null)
-            Text(
-              'All done!',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: _kGreen,
-              ),
-            )
-          else ...[
-            Text(
-              milestone!.title,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
-            if (milestone!.dueDate != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                _formatDueDate(milestone!.dueDate!),
-                style: const TextStyle(fontSize: 11, color: _kMuted),
-              ),
-            ],
-          ],
+          ),
         ],
       ),
     );
-  }
-
-  String _formatDueDate(String dueDate) {
-    final dt = DateTime.tryParse(dueDate);
-    if (dt == null) return dueDate;
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    final dateStr = '${months[dt.month - 1]} ${dt.day}';
-    final days = dt.difference(DateTime.now()).inDays;
-    if (days < 0) return '$dateStr · ${-days}d overdue';
-    if (days == 0) return '$dateStr · Today';
-    return '$dateStr · ${days}d away';
   }
 }
 
