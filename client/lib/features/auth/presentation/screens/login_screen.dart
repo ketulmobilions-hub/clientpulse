@@ -16,31 +16,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear inline error once the user starts editing — keeps error banner aligned with intent.
+    _emailCtrl.addListener(_clearError);
+    _passwordCtrl.addListener(_clearError);
+  }
 
   @override
   void dispose() {
+    _emailCtrl.removeListener(_clearError);
+    _passwordCtrl.removeListener(_clearError);
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
   }
 
+  void _clearError() {
+    if (_errorMessage == null) return;
+    // Defer to post-frame: TextEditingController fires listeners synchronously, which can
+    // land mid-build (autofill, IME composition, programmatic .text=). setState during build
+    // throws an assertion; the post-frame callback skips the same-frame race.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _errorMessage == null) return;
+      setState(() => _errorMessage = null);
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    // Re-entrancy guard: Enter key on the password field can re-trigger _submit while a
+    // previous login is still awaiting. AuthNotifier.login throws StateError on overlap;
+    // bail early here so the user-facing banner reflects real auth errors, not the overlap.
+    if (ref.read(authNotifierProvider).isLoading) return;
+    // Do NOT pre-clear _errorMessage — that flashes the banner off then back on for slow
+    // logins. Input listener clears on edit; success path replaces UI entirely.
     try {
       await ref
           .read(authNotifierProvider.notifier)
           .login(_emailCtrl.text.trim(), _passwordCtrl.text);
     } on AuthServiceException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (mounted) setState(() => _errorMessage = e.message);
     } on StateError catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      if (mounted) setState(() => _errorMessage = e.message);
     }
+  }
+
+  void _handleForgotPassword() {
+    // Password reset flow not implemented yet. Honest copy only — no fake support email
+    // (Resend account not yet set up per project setup notes).
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(
+        content: Text('Password reset is coming soon.'),
+        duration: Duration(seconds: 3),
+      ));
   }
 
   @override
@@ -48,6 +81,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final isLoading = ref.watch(authNotifierProvider).isLoading;
     final surface = theme.colorScheme.surface;
+    // Trim inner card padding on very narrow viewports (e.g. foldable cover, 320px Android Chrome)
+    // so long error messages don't squeeze the banner text below readable width.
+    final viewportWidth = MediaQuery.of(context).size.width;
+    final cardPadding = viewportWidth < 360
+        ? const EdgeInsets.symmetric(horizontal: 20, vertical: 28)
+        : const EdgeInsets.all(36);
 
     return Scaffold(
       body: DecoratedBox(
@@ -55,7 +94,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.indigo.shade50, surface],
+            // Theme-aware: top stop uses primaryContainer (light tint in light mode,
+            // dark accent in dark mode); bottom anchors at the surface color.
+            colors: [
+              theme.colorScheme.primaryContainer.withOpacity(0.35),
+              surface,
+            ],
           ),
         ),
         child: Center(
@@ -67,17 +111,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: theme.shadowColor.withOpacity(0.06),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(36),
+                  padding: cardPadding,
                   child: AutofillGroup(
                     child: Form(
                       key: _formKey,
@@ -106,13 +150,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Sign in to your workspace',
+                            'Private workspace for client updates',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade500,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 28),
+                          if (_errorMessage != null) ...[
+                            // liveRegion + container: screen readers announce the new error
+                            // when it appears (sighted users see the red banner; SR users
+                            // would otherwise get nothing since focus doesn't move).
+                            Semantics(
+                              container: true,
+                              liveRegion: true,
+                              label: 'Login error: $_errorMessage',
+                              child: ExcludeSemantics(
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: theme.colorScheme.error.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline_rounded,
+                                        size: 18,
+                                        color: theme.colorScheme.error,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          _errorMessage!,
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onErrorContainer,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           TextFormField(
                             key: const Key('email_field'),
                             controller: _emailCtrl,
@@ -146,7 +231,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             validator: (v) =>
                                 (v?.isEmpty ?? true) ? 'Password is required' : null,
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              key: const Key('forgot_password_link'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: isLoading ? null : _handleForgotPassword,
+                              child: const Text('Forgot password?'),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           FilledButton(
                             key: const Key('login_button'),
                             onPressed: isLoading ? null : _submit,
@@ -159,7 +258,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       color: Colors.white,
                                     ),
                                   )
-                                : const Text('Sign In'),
+                                : const Text('Sign in to workspace'),
+                          ),
+                          const SizedBox(height: 12),
+                          // Trust signal — placed under CTA so it reinforces the action.
+                          // Wrap (not Row) so it folds onto a second line on narrow viewports.
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 5,
+                            runSpacing: 2,
+                            children: [
+                              // Decorative — screen reader announces only the trust copy below.
+                              ExcludeSemantics(
+                                child: Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 13,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                'Built for service-based agencies',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
                           TextButton(
