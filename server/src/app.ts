@@ -18,7 +18,13 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 app.use(cors({
-  origin: env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
+  // Dev reflects the request origin (browsers reject wildcard `*` paired with
+  // credentials). Test/prod use the explicit allowlist. NODE_ENV is validated
+  // in env.ts against an enum, so a typo throws at startup rather than silently
+  // enabling origin reflection in prod.
+  origin: env.nodeEnv === 'development'
+    ? true
+    : env.allowedOrigins.length > 0 ? env.allowedOrigins : false,
   credentials: true,
 }));
 

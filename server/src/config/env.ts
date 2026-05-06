@@ -52,8 +52,21 @@ function parseAllowedOrigins(): string[] {
   return raw.split(',').map((o) => o.trim()).filter(Boolean);
 }
 
+const VALID_NODE_ENVS = ['development', 'test', 'production'] as const;
+type NodeEnv = (typeof VALID_NODE_ENVS)[number];
+
+function parseNodeEnv(): NodeEnv {
+  const raw = process.env['NODE_ENV'] ?? 'development';
+  if (!VALID_NODE_ENVS.includes(raw as NodeEnv)) {
+    throw new Error(
+      `Invalid NODE_ENV value: "${raw}". Must be one of: ${VALID_NODE_ENVS.join(', ')}`,
+    );
+  }
+  return raw as NodeEnv;
+}
+
 export const env = {
-  nodeEnv: process.env['NODE_ENV'] ?? 'development',
+  nodeEnv: parseNodeEnv(),
   port: parsePort(),
   allowedOrigins: parseAllowedOrigins(),
   supabaseUrl: required('SUPABASE_URL'),

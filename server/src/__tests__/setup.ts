@@ -8,5 +8,6 @@ process.env['RESEND_FROM_EMAIL'] = 'ClientPulse <noreply@clientpulse.dev>';
 process.env['JWT_SECRET'] = 'test-jwt-secret-that-is-at-least-32-chars-long';
 process.env['COOKIE_SECRET'] = 'test-cookie-secret-that-is-at-least-32chars';
 process.env['APP_BASE_URL'] = 'http://localhost:3000';
+process.env['FRONTEND_BASE_URL'] = 'http://localhost:5000';
 process.env['ALLOWED_ORIGINS'] = 'http://localhost:5000';
 process.env['PORT'] = '3000';
