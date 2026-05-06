@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
+import 'package:clientpulse/shared/utils/validators.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -205,7 +206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textInputAction: TextInputAction.next,
                             autofillHints: const [AutofillHints.email],
                             decoration: const InputDecoration(labelText: 'Email'),
-                            validator: _validateEmail,
+                            validator: validateEmail,
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
@@ -306,14 +307,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-String? _validateEmail(String? v) {
-  final val = v?.trim() ?? '';
-  if (val.isEmpty) return 'Email is required';
-  final atIndex = val.indexOf('@');
-  if (atIndex <= 0) return 'Enter a valid email address';
-  final domain = val.substring(atIndex + 1);
-  if (domain.isEmpty || !domain.contains('.') || domain.endsWith('.')) {
-    return 'Enter a valid email address';
-  }
-  return null;
-}
