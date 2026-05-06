@@ -22,6 +22,14 @@ export interface Project {
   updated_at: string;
 }
 
+export interface ProjectListItem extends Project {
+  update_count: number;
+  comment_count: number;
+  latest_update_title: string | null;
+  // 0–100 inclusive; null when project has no milestones (progress is undefined, not zero)
+  progress_pct: number | null;
+}
+
 export const VALID_STATUSES = ['active', 'completed', 'archived'] as const;
 type ProjectStatus = (typeof VALID_STATUSES)[number];
 
@@ -44,22 +52,22 @@ async function getWorkspaceIdForUser(userId: string): Promise<string> {
   return (data[0] as { id: string }).id;
 }
 
-export async function listProjects(userId: string): Promise<Project[]> {
+export async function listProjects(userId: string): Promise<ProjectListItem[]> {
   const workspaceId = await getWorkspaceIdForUser(userId);
 
-  const { data, error } = await supabaseAdmin
-    .from('projects')
-    .select(PROJECT_COLUMNS)
-    .eq('workspace_id', workspaceId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+  // Single round-trip via Postgres RPC. Aggregation pushed to DB so we don't transfer
+  // every update + comment row to compute counts. Tie-break for latest update is deterministic
+  // (created_at DESC, id DESC) inside the RPC.
+  const { data, error } = await supabaseAdmin.rpc('list_projects_with_aggregates', {
+    p_workspace_id: workspaceId,
+  });
 
   if (error) {
-    console.error('[project.service] listProjects DB error:', error);
+    console.error('[project.service] listProjects RPC error:', error);
     throw new AppError('Failed to fetch projects', 500, ErrorCodes.DB_ERROR);
   }
 
-  return (data ?? []) as Project[];
+  return (data ?? []) as ProjectListItem[];
 }
 
 export async function getProject(projectId: string, userId: string): Promise<Project> {

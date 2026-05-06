@@ -45,7 +45,17 @@ mixin _$Project {
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'updated_at')
-  DateTime get updatedAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt =>
+      throw _privateConstructorUsedError; // Aggregate fields populated only by list endpoint; null on detail/create/update responses
+  @JsonKey(name: 'update_count')
+  int? get updateCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'comment_count')
+  int? get commentCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'latest_update_title')
+  String? get latestUpdateTitle =>
+      throw _privateConstructorUsedError; // 0–100 inclusive, or null when project has no milestones (progress is undefined, not zero)
+  @JsonKey(name: 'progress_pct')
+  int? get progressPct => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -77,7 +87,11 @@ abstract class $ProjectCopyWith<$Res> {
           toJson: _localDateToJson)
       DateTime? expectedEndDate,
       @JsonKey(name: 'created_at') DateTime createdAt,
-      @JsonKey(name: 'updated_at') DateTime updatedAt});
+      @JsonKey(name: 'updated_at') DateTime updatedAt,
+      @JsonKey(name: 'update_count') int? updateCount,
+      @JsonKey(name: 'comment_count') int? commentCount,
+      @JsonKey(name: 'latest_update_title') String? latestUpdateTitle,
+      @JsonKey(name: 'progress_pct') int? progressPct});
 }
 
 /// @nodoc
@@ -105,6 +119,10 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
     Object? expectedEndDate = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? updateCount = freezed,
+    Object? commentCount = freezed,
+    Object? latestUpdateTitle = freezed,
+    Object? progressPct = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -155,6 +173,22 @@ class _$ProjectCopyWithImpl<$Res, $Val extends Project>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      updateCount: freezed == updateCount
+          ? _value.updateCount
+          : updateCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      commentCount: freezed == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      latestUpdateTitle: freezed == latestUpdateTitle
+          ? _value.latestUpdateTitle
+          : latestUpdateTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      progressPct: freezed == progressPct
+          ? _value.progressPct
+          : progressPct // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -186,7 +220,11 @@ abstract class _$$ProjectImplCopyWith<$Res> implements $ProjectCopyWith<$Res> {
           toJson: _localDateToJson)
       DateTime? expectedEndDate,
       @JsonKey(name: 'created_at') DateTime createdAt,
-      @JsonKey(name: 'updated_at') DateTime updatedAt});
+      @JsonKey(name: 'updated_at') DateTime updatedAt,
+      @JsonKey(name: 'update_count') int? updateCount,
+      @JsonKey(name: 'comment_count') int? commentCount,
+      @JsonKey(name: 'latest_update_title') String? latestUpdateTitle,
+      @JsonKey(name: 'progress_pct') int? progressPct});
 }
 
 /// @nodoc
@@ -212,6 +250,10 @@ class __$$ProjectImplCopyWithImpl<$Res>
     Object? expectedEndDate = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? updateCount = freezed,
+    Object? commentCount = freezed,
+    Object? latestUpdateTitle = freezed,
+    Object? progressPct = freezed,
   }) {
     return _then(_$ProjectImpl(
       id: null == id
@@ -262,6 +304,22 @@ class __$$ProjectImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      updateCount: freezed == updateCount
+          ? _value.updateCount
+          : updateCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      commentCount: freezed == commentCount
+          ? _value.commentCount
+          : commentCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      latestUpdateTitle: freezed == latestUpdateTitle
+          ? _value.latestUpdateTitle
+          : latestUpdateTitle // ignore: cast_nullable_to_non_nullable
+              as String?,
+      progressPct: freezed == progressPct
+          ? _value.progressPct
+          : progressPct // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -289,7 +347,11 @@ class _$ProjectImpl implements _Project {
           toJson: _localDateToJson)
       this.expectedEndDate,
       @JsonKey(name: 'created_at') required this.createdAt,
-      @JsonKey(name: 'updated_at') required this.updatedAt});
+      @JsonKey(name: 'updated_at') required this.updatedAt,
+      @JsonKey(name: 'update_count') this.updateCount,
+      @JsonKey(name: 'comment_count') this.commentCount,
+      @JsonKey(name: 'latest_update_title') this.latestUpdateTitle,
+      @JsonKey(name: 'progress_pct') this.progressPct});
 
   factory _$ProjectImpl.fromJson(Map<String, dynamic> json) =>
       _$$ProjectImplFromJson(json);
@@ -332,10 +394,24 @@ class _$ProjectImpl implements _Project {
   @override
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
+// Aggregate fields populated only by list endpoint; null on detail/create/update responses
+  @override
+  @JsonKey(name: 'update_count')
+  final int? updateCount;
+  @override
+  @JsonKey(name: 'comment_count')
+  final int? commentCount;
+  @override
+  @JsonKey(name: 'latest_update_title')
+  final String? latestUpdateTitle;
+// 0–100 inclusive, or null when project has no milestones (progress is undefined, not zero)
+  @override
+  @JsonKey(name: 'progress_pct')
+  final int? progressPct;
 
   @override
   String toString() {
-    return 'Project(id: $id, workspaceId: $workspaceId, name: $name, description: $description, clientName: $clientName, clientEmail: $clientEmail, status: $status, shareToken: $shareToken, startDate: $startDate, expectedEndDate: $expectedEndDate, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Project(id: $id, workspaceId: $workspaceId, name: $name, description: $description, clientName: $clientName, clientEmail: $clientEmail, status: $status, shareToken: $shareToken, startDate: $startDate, expectedEndDate: $expectedEndDate, createdAt: $createdAt, updatedAt: $updatedAt, updateCount: $updateCount, commentCount: $commentCount, latestUpdateTitle: $latestUpdateTitle, progressPct: $progressPct)';
   }
 
   @override
@@ -363,7 +439,15 @@ class _$ProjectImpl implements _Project {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.updatedAt == updatedAt) &&
+            (identical(other.updateCount, updateCount) ||
+                other.updateCount == updateCount) &&
+            (identical(other.commentCount, commentCount) ||
+                other.commentCount == commentCount) &&
+            (identical(other.latestUpdateTitle, latestUpdateTitle) ||
+                other.latestUpdateTitle == latestUpdateTitle) &&
+            (identical(other.progressPct, progressPct) ||
+                other.progressPct == progressPct));
   }
 
   @JsonKey(ignore: true)
@@ -381,7 +465,11 @@ class _$ProjectImpl implements _Project {
       startDate,
       expectedEndDate,
       createdAt,
-      updatedAt);
+      updatedAt,
+      updateCount,
+      commentCount,
+      latestUpdateTitle,
+      progressPct);
 
   @JsonKey(ignore: true)
   @override
@@ -399,27 +487,30 @@ class _$ProjectImpl implements _Project {
 
 abstract class _Project implements Project {
   const factory _Project(
-          {required final String id,
-          @JsonKey(name: 'workspace_id') required final String workspaceId,
-          required final String name,
-          final String? description,
-          @JsonKey(name: 'client_name') required final String clientName,
-          @JsonKey(name: 'client_email') required final String clientEmail,
-          required final ProjectStatus status,
-          @JsonKey(name: 'share_token') final String? shareToken,
-          @JsonKey(
-              name: 'start_date',
-              fromJson: _localDateFromJson,
-              toJson: _localDateToJson)
-          final DateTime? startDate,
-          @JsonKey(
-              name: 'expected_end_date',
-              fromJson: _localDateFromJson,
-              toJson: _localDateToJson)
-          final DateTime? expectedEndDate,
-          @JsonKey(name: 'created_at') required final DateTime createdAt,
-          @JsonKey(name: 'updated_at') required final DateTime updatedAt}) =
-      _$ProjectImpl;
+      {required final String id,
+      @JsonKey(name: 'workspace_id') required final String workspaceId,
+      required final String name,
+      final String? description,
+      @JsonKey(name: 'client_name') required final String clientName,
+      @JsonKey(name: 'client_email') required final String clientEmail,
+      required final ProjectStatus status,
+      @JsonKey(name: 'share_token') final String? shareToken,
+      @JsonKey(
+          name: 'start_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      final DateTime? startDate,
+      @JsonKey(
+          name: 'expected_end_date',
+          fromJson: _localDateFromJson,
+          toJson: _localDateToJson)
+      final DateTime? expectedEndDate,
+      @JsonKey(name: 'created_at') required final DateTime createdAt,
+      @JsonKey(name: 'updated_at') required final DateTime updatedAt,
+      @JsonKey(name: 'update_count') final int? updateCount,
+      @JsonKey(name: 'comment_count') final int? commentCount,
+      @JsonKey(name: 'latest_update_title') final String? latestUpdateTitle,
+      @JsonKey(name: 'progress_pct') final int? progressPct}) = _$ProjectImpl;
 
   factory _Project.fromJson(Map<String, dynamic> json) = _$ProjectImpl.fromJson;
 
@@ -461,6 +552,18 @@ abstract class _Project implements Project {
   @override
   @JsonKey(name: 'updated_at')
   DateTime get updatedAt;
+  @override // Aggregate fields populated only by list endpoint; null on detail/create/update responses
+  @JsonKey(name: 'update_count')
+  int? get updateCount;
+  @override
+  @JsonKey(name: 'comment_count')
+  int? get commentCount;
+  @override
+  @JsonKey(name: 'latest_update_title')
+  String? get latestUpdateTitle;
+  @override // 0–100 inclusive, or null when project has no milestones (progress is undefined, not zero)
+  @JsonKey(name: 'progress_pct')
+  int? get progressPct;
   @override
   @JsonKey(ignore: true)
   _$$ProjectImplCopyWith<_$ProjectImpl> get copyWith =>

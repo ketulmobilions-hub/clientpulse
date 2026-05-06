@@ -2,7 +2,7 @@ import { ErrorCodes } from '../errors/codes';
 import { supabaseAdmin } from '../config/adminDb';
 
 jest.mock('../config/adminDb', () => ({
-  supabaseAdmin: { from: jest.fn() },
+  supabaseAdmin: { from: jest.fn(), rpc: jest.fn() },
 }));
 
 import {
@@ -11,9 +11,11 @@ import {
   createProject,
   updateProject,
   archiveProject,
+  ProjectListItem,
 } from '../services/project.service';
 
 const mockFrom = supabaseAdmin.from as jest.Mock;
+const mockRpc = supabaseAdmin.rpc as jest.Mock;
 
 const USER_ID = 'user-1';
 const WORKSPACE_ID = 'ws-1';
@@ -27,8 +29,10 @@ const PROJECT_ROW = {
   description: null,
   client_name: 'Acme',
   client_email: 'client@acme.com',
-  status: 'active',
+  status: 'active' as const,
   share_token: 'tok123',
+  start_date: null,
+  expected_end_date: null,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 };
@@ -50,15 +54,6 @@ function makeProjectSelectChain(result: { data: unknown; error: unknown }) {
   const eq2Mock = jest.fn().mockReturnValue({ is: isMock });
   const eq1Mock = jest.fn().mockReturnValue({ eq: eq2Mock });
   const selectMock = jest.fn().mockReturnValue({ eq: eq1Mock });
-  return { select: selectMock };
-}
-
-// listProjects: .select(cols).eq('workspace_id',v).is('deleted_at',null).order(...)
-function makeListChain(result: { data: unknown; error: unknown }) {
-  const orderMock = jest.fn().mockResolvedValue(result);
-  const isMock = jest.fn().mockReturnValue({ order: orderMock });
-  const eqMock = jest.fn().mockReturnValue({ is: isMock });
-  const selectMock = jest.fn().mockReturnValue({ eq: eqMock });
   return { select: selectMock };
 }
 
@@ -84,40 +79,100 @@ function makeUpdateChain(result: { data: unknown; error: unknown }) {
 beforeEach(() => jest.clearAllMocks());
 
 describe('listProjects', () => {
-  it('returns projects scoped to user workspace', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeListChain({ data: [PROJECT_ROW], error: null }));
+  // RPC returns rows already shaped as ProjectListItem (aggregates computed in SQL).
+  // The service is now a thin pass-through, so tests verify wiring + error handling
+  // rather than aggregation correctness (that lives in the SQL function).
+
+  it('passes workspace id to RPC and returns rows verbatim', async () => {
+    const ROW: ProjectListItem = {
+      ...PROJECT_ROW,
+      update_count: 5,
+      comment_count: 3,
+      latest_update_title: 'Homepage design ready',
+      progress_pct: 60,
+    };
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [ROW], error: null });
 
     const result = await listProjects(USER_ID);
-    expect(result).toEqual([PROJECT_ROW]);
+    expect(mockRpc).toHaveBeenCalledWith('list_projects_with_aggregates', {
+      p_workspace_id: WORKSPACE_ID,
+    });
+    expect(result).toEqual([ROW]);
   });
 
-  it('returns empty array when no projects', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeListChain({ data: null, error: null }));
+  it('returns empty array when RPC returns null data', async () => {
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await listProjects(USER_ID);
     expect(result).toEqual([]);
   });
 
-  it('throws NOT_FOUND 404 when user has no workspace', async () => {
+  it('returns empty array when RPC returns empty array', async () => {
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
+
+    const result = await listProjects(USER_ID);
+    expect(result).toEqual([]);
+  });
+
+  it('throws NOT_FOUND 404 when user has no workspace (RPC not called)', async () => {
     mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [], error: null }));
-    await expect(listProjects(USER_ID)).rejects.toMatchObject({ code: ErrorCodes.NOT_FOUND, statusCode: 404 });
+    await expect(listProjects(USER_ID)).rejects.toMatchObject({
+      code: ErrorCodes.NOT_FOUND,
+      statusCode: 404,
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('throws DB_ERROR 500 when workspace lookup fails', async () => {
+  it('throws DB_ERROR 500 when workspace lookup fails (RPC not called)', async () => {
     mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: null, error: new Error('db down') }));
-    await expect(listProjects(USER_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR, statusCode: 500 });
+    await expect(listProjects(USER_ID)).rejects.toMatchObject({
+      code: ErrorCodes.DB_ERROR,
+      statusCode: 500,
+    });
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('throws DB_ERROR on list query failure', async () => {
-    mockFrom
-      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
-      .mockReturnValueOnce(makeListChain({ data: null, error: new Error('db down') }));
+  it('throws DB_ERROR when RPC fails', async () => {
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: null, error: new Error('rpc broken') });
 
-    await expect(listProjects(USER_ID)).rejects.toMatchObject({ code: ErrorCodes.DB_ERROR, statusCode: 500 });
+    await expect(listProjects(USER_ID)).rejects.toMatchObject({
+      code: ErrorCodes.DB_ERROR,
+      statusCode: 500,
+    });
+  });
+
+  it('preserves NULL progress_pct from RPC (project with no milestones)', async () => {
+    const ROW: ProjectListItem = {
+      ...PROJECT_ROW,
+      update_count: 0,
+      comment_count: 0,
+      latest_update_title: null,
+      progress_pct: null,
+    };
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [ROW], error: null });
+
+    const result = await listProjects(USER_ID);
+    expect(result[0]?.progress_pct).toBeNull();
+  });
+
+  it('preserves zero progress_pct from RPC (milestones exist, none complete)', async () => {
+    const ROW: ProjectListItem = {
+      ...PROJECT_ROW,
+      update_count: 0,
+      comment_count: 0,
+      latest_update_title: null,
+      progress_pct: 0,
+    };
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [ROW], error: null });
+
+    const result = await listProjects(USER_ID);
+    expect(result[0]?.progress_pct).toBe(0);
   });
 });
 
