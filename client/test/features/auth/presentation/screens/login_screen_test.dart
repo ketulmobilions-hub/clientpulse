@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,7 @@ class _FakeAuthNotifier extends AuthNotifier {
   String? capturedEmail;
   String? capturedPassword;
   bool loginCalled = false;
+  int loginCallCount = 0;
 
   @override
   Future<AuthUser?> build() async => null;
@@ -19,6 +22,7 @@ class _FakeAuthNotifier extends AuthNotifier {
   @override
   Future<AuthUser> login(String email, String password) async {
     loginCalled = true;
+    loginCallCount += 1;
     capturedEmail = email;
     capturedPassword = password;
     if (errorToThrow != null) throw errorToThrow!;
@@ -34,7 +38,24 @@ class _FakeAuthNotifier extends AuthNotifier {
   }
 }
 
-Widget _wrap(_FakeAuthNotifier notifier) {
+/// Login that does NOT resolve until [completer] is completed by the test.
+/// Used to observe the `isLoading: true` state, which the synchronous fake skips entirely.
+class _SlowFakeAuthNotifier extends AuthNotifier {
+  final completer = Completer<AuthUser>();
+
+  @override
+  Future<AuthUser?> build() async => null;
+
+  @override
+  Future<AuthUser> login(String email, String password) async {
+    state = const AsyncLoading();
+    final user = await completer.future;
+    state = AsyncData(user);
+    return user;
+  }
+}
+
+Widget _wrap(AuthNotifier notifier) {
   final router = GoRouter(
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
@@ -160,7 +181,7 @@ void main() {
       expect(notifier.capturedPassword, 'password123');
     });
 
-    testWidgets('shows SnackBar when login throws AuthServiceException', (tester) async {
+    testWidgets('shows inline error banner when login throws AuthServiceException', (tester) async {
       notifier.errorToThrow = const AuthServiceException('Invalid credentials');
 
       await tester.pumpWidget(_wrap(notifier));
@@ -172,6 +193,120 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Invalid credentials'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+    });
+
+    testWidgets('clears inline error when user edits email field', (tester) async {
+      notifier.errorToThrow = const AuthServiceException('Invalid credentials');
+
+      await tester.pumpWidget(_wrap(notifier));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('email_field')), 'a@b.com');
+      await tester.enterText(find.byKey(const Key('password_field')), 'password123');
+      await tester.tap(find.byKey(const Key('login_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsOneWidget);
+
+      // Editing the field should dismiss the inline error.
+      // pumpAndSettle (not pump) — clear is dispatched via addPostFrameCallback,
+      // which needs an extra frame to flush the setState.
+      await tester.enterText(find.byKey(const Key('email_field')), 'b@c.com');
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsNothing);
+    });
+
+    testWidgets('forgot-password link shows honest reset-coming-soon SnackBar (no fake email)',
+        (tester) async {
+      await tester.pumpWidget(_wrap(notifier));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('forgot_password_link')));
+      await tester.pump();
+
+      expect(find.text('Password reset is coming soon.'), findsOneWidget);
+      // Honest-copy guard: the SnackBar must not point to a non-functional support email.
+      expect(find.textContaining('@'), findsNothing);
+    });
+
+    testWidgets('CTA reads "Sign in to workspace" instead of generic "Sign In"', (tester) async {
+      await tester.pumpWidget(_wrap(notifier));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign in to workspace'), findsOneWidget);
+    });
+
+    testWidgets('clears inline error when user edits PASSWORD field (mirrors email path)',
+        (tester) async {
+      notifier.errorToThrow = const AuthServiceException('Invalid credentials');
+
+      await tester.pumpWidget(_wrap(notifier));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('email_field')), 'a@b.com');
+      await tester.enterText(find.byKey(const Key('password_field')), 'password123');
+      await tester.tap(find.byKey(const Key('login_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsOneWidget);
+
+      // Editing the password should also dismiss the inline error.
+      await tester.enterText(find.byKey(const Key('password_field')), 'differentpw');
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsNothing);
+    });
+
+    testWidgets('two consecutive failed logins replace the banner (no stacking, no stuck-null)',
+        (tester) async {
+      notifier.errorToThrow = const AuthServiceException('Invalid credentials');
+
+      await tester.pumpWidget(_wrap(notifier));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('email_field')), 'a@b.com');
+      await tester.enterText(find.byKey(const Key('password_field')), 'password123');
+      await tester.tap(find.byKey(const Key('login_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Invalid credentials'), findsOneWidget);
+
+      // Second attempt with a different error message — banner must replace, not duplicate.
+      notifier.errorToThrow = const AuthServiceException('Account is locked');
+      await tester.tap(find.byKey(const Key('login_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invalid credentials'), findsNothing);
+      expect(find.text('Account is locked'), findsOneWidget);
+    });
+  });
+
+  group('LoginScreen — loading state', () {
+    testWidgets('disables login button + forgot-password link while isLoading', (tester) async {
+      final slow = _SlowFakeAuthNotifier();
+
+      await tester.pumpWidget(_wrap(slow));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('email_field')), 'a@b.com');
+      await tester.enterText(find.byKey(const Key('password_field')), 'password123');
+      await tester.tap(find.byKey(const Key('login_button')));
+      // pump (not settle) so the slow login stays pending and isLoading == true.
+      await tester.pump();
+
+      final button = tester.widget<FilledButton>(find.byKey(const Key('login_button')));
+      expect(button.onPressed, isNull, reason: 'login button must be disabled while loading');
+
+      final forgot = tester.widget<TextButton>(find.byKey(const Key('forgot_password_link')));
+      expect(forgot.onPressed, isNull,
+          reason: 'forgot-password link must be disabled while loading');
+
+      // Clean up the pending future so the test runner does not complain about leaks.
+      slow.completer.complete(const AuthUser(
+        id: 'u1',
+        email: 'a@b.com',
+        name: 'T',
+        role: 'admin',
+        workspaceId: 'ws-1',
+      ));
+      await tester.pumpAndSettle();
     });
   });
 }

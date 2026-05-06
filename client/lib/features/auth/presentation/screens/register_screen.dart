@@ -67,7 +67,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.indigo.shade50, surface],
+            // Match login screen — theme-aware tint that adapts to dark mode.
+            colors: [
+              theme.colorScheme.primaryContainer.withOpacity(0.35),
+              surface,
+            ],
           ),
         ),
         child: Center(
@@ -79,10 +83,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 decoration: BoxDecoration(
                   color: surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: theme.shadowColor.withOpacity(0.06),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
