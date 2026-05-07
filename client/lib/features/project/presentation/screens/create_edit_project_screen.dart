@@ -311,6 +311,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(isEdit ? 'Edit Project' : 'New Project'),
       ),
       body: _loadingProject
