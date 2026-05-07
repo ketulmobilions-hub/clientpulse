@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/workspace.dart';
 import 'package:clientpulse/shared/providers/workspace_provider.dart';
 import 'package:clientpulse/shared/services/workspace_service.dart';
@@ -209,7 +210,7 @@ class _SettingsBody extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.form),
           child: Form(
             key: formKey,
             child: Column(

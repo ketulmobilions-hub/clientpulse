@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/constants.dart';
 import 'package:clientpulse/core/router/route_names.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
 import 'package:clientpulse/features/milestones/presentation/widgets/milestone_list_widget.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
@@ -15,13 +19,8 @@ import 'package:clientpulse/shared/providers/project_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
+import 'package:clientpulse/shared/widgets/responsive_content.dart';
 import 'package:clientpulse/shared/widgets/shimmer_card.dart';
-
-const _kCardBg = Color(0xFF262626);
-const _kCardBorder = Color(0xFF3F3F46);
-const _kMuted = Color(0xFF71717A);
-const _kGreen = Color(0xFF22C55E);
-const _kAmber = Color(0xFFF59E0B);
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -35,11 +34,15 @@ class ProjectDetailScreen extends ConsumerWidget {
     return projectListAsync.when(
       loading: () => Scaffold(
         appBar: AppBar(),
-        body: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: 3,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, __) => const ShimmerCard(height: 120),
+        body: ResponsiveContent(
+          maxWidth: AppContentWidth.standard,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
+            itemCount: 3,
+            separatorBuilder: (_, __) =>
+                const SizedBox(height: AppSpacing.s12),
+            itemBuilder: (_, __) => const ShimmerCard(height: 120),
+          ),
         ),
       ),
       error: (_, __) => Scaffold(
@@ -114,33 +117,36 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _ProjectPageHeader(
-              project: project,
-              projectId: widget.projectId,
-              updateCount: updates.length,
-              pendingApprovals: pendingApprovals,
-              lastActivityAt: lastActivityAt,
-              nextMilestone: nextMilestone,
-            ),
-            if (milestones.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              _MilestoneStepper(milestones: milestones),
-            ],
-            _buildTabBar(),
-            Expanded(
-              child: TabBarView(
-                controller: _tabs,
-                children: [
-                  _UpdatesTab(projectId: widget.projectId),
-                  _MilestonesTab(projectId: widget.projectId),
-                  const _SettingsTab(),
-                ],
+        child: ResponsiveContent(
+          maxWidth: AppContentWidth.standard,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ProjectPageHeader(
+                project: project,
+                projectId: widget.projectId,
+                updateCount: updates.length,
+                pendingApprovals: pendingApprovals,
+                lastActivityAt: lastActivityAt,
+                nextMilestone: nextMilestone,
               ),
-            ),
-          ],
+              if (milestones.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s4),
+                _MilestoneStepper(milestones: milestones),
+              ],
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabs,
+                  children: [
+                    _UpdatesTab(projectId: widget.projectId),
+                    _MilestonesTab(projectId: widget.projectId),
+                    const _SettingsTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -156,35 +162,28 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
   }
 
   Widget _buildTabBar() {
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      padding: const EdgeInsets.all(5),
+      margin: const EdgeInsets.only(top: AppSpacing.s12, bottom: AppSpacing.s4),
+      padding: const EdgeInsets.all(AppSpacing.s4),
       decoration: BoxDecoration(
-        color: cs.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: TabBar(
         controller: _tabs,
         indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: cs.inverseSurface,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+          color: AppColors.surfaceRaised,
+          border: Border.all(color: AppColors.border),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: cs.onInverseSurface,
-        unselectedLabelColor: cs.onSurfaceVariant,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: AppColors.textMuted,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         unselectedLabelStyle:
-            const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
         tabs: const [
           Tab(text: 'Updates'),
           Tab(text: 'Milestones'),
@@ -222,111 +221,106 @@ class _ProjectPageHeader extends StatelessWidget {
     final cta = _resolveCta(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: const EdgeInsets.only(
+        top: AppSpacing.s16,
+        bottom: AppSpacing.s12,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ClientAvatar(name: project.clientName),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      project.clientName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFFA1A1AA),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      project.name,
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 10,
-                      runSpacing: 6,
-                      children: [
-                        StatusBadge(status: project.status),
-                        if (lastActivityAt != null)
-                          _MetaChip(
-                            icon: Icons.bolt_rounded,
-                            label: 'Active ${_relTime(lastActivityAt!)}',
-                          ),
-                        if (pendingApprovals > 0)
-                          _MetaChip(
-                            icon: Icons.mark_email_unread_outlined,
-                            label:
-                                '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
-                            tone: _ChipTone.warning,
-                          ),
-                        if (updateCount > 0)
-                          _MetaChip(
-                            icon: Icons.forum_outlined,
-                            label:
-                                '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                tooltip: 'Edit',
-                onPressed: () => context.pushNamed(
-                  RouteNames.editProject,
-                  pathParameters: {'id': project.id},
-                ),
-                icon: const Icon(Icons.edit_outlined,
-                    size: 18, color: Color(0xFFA1A1AA)),
-              ),
-              if (shareUrl != null) ...[
-                const SizedBox(width: 4),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: shareUrl));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                        ..clearSnackBars()
-                        ..showSnackBar(
-                            const SnackBar(content: Text('Link copied')));
-                    }
-                  },
-                  icon: const Icon(Icons.link_rounded, size: 15),
-                  label: const Text('Share'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 36),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    textStyle: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500),
-                    side: const BorderSide(color: _kCardBorder),
+          _ClientAvatar(name: project.clientName),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  project.clientName,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: AppColors.textFaint,
+                    letterSpacing: 0.2,
                   ),
                 ),
-              ],
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: cta.onPressed,
-                icon: Icon(cta.icon, size: 16),
-                label: Text(cta.label),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
-                  textStyle: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                const SizedBox(height: AppSpacing.s4),
+                Text(
+                  project.name,
+                  style: theme.textTheme.headlineSmall,
                 ),
+                const SizedBox(height: AppSpacing.s8),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s4,
+                  children: [
+                    StatusBadge(status: project.status),
+                    if (lastActivityAt != null)
+                      _MetaChip(
+                        icon: Icons.bolt_rounded,
+                        label: 'Active ${_relTime(lastActivityAt!)}',
+                      ),
+                    if (pendingApprovals > 0)
+                      _MetaChip(
+                        icon: Icons.mark_email_unread_outlined,
+                        label:
+                            '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
+                        tone: _ChipTone.warning,
+                      ),
+                    if (updateCount > 0)
+                      _MetaChip(
+                        icon: Icons.forum_outlined,
+                        label:
+                            '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s8),
+          IconButton(
+            tooltip: 'Edit',
+            onPressed: () => context.pushNamed(
+              RouteNames.editProject,
+              pathParameters: {'id': project.id},
+            ),
+            icon: const Icon(Icons.edit_outlined,
+                size: 18, color: AppColors.textFaint),
+          ),
+          if (shareUrl != null) ...[
+            const SizedBox(width: AppSpacing.s4),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: shareUrl));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                        const SnackBar(content: Text('Link copied')));
+                }
+              },
+              icon: const Icon(Icons.link_rounded, size: 15),
+              label: const Text('Share'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 36),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
+                textStyle: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w500),
               ),
-            ],
+            ),
+          ],
+          const SizedBox(width: AppSpacing.s8),
+          FilledButton.icon(
+            onPressed: cta.onPressed,
+            icon: Icon(cta.icon, size: 16),
+            label: Text(cta.label),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -403,8 +397,8 @@ class _ClientAvatar extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kCardBorder),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -445,25 +439,29 @@ class _MetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg) = switch (tone) {
       _ChipTone.warning => (const Color(0xFF3B2A11), const Color(0xFFFBBF24)),
-      _ChipTone.neutral => (const Color(0xFF27272A), const Color(0xFFA1A1AA)),
+      _ChipTone.neutral => (AppColors.surfaceRaised, AppColors.textFaint),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8,
+        vertical: AppSpacing.s4,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 12, color: fg),
-          const SizedBox(width: 5),
+          const SizedBox(width: AppSpacing.s4),
           Text(
             label,
             style: TextStyle(
               color: fg,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
             ),
           ),
         ],
@@ -484,12 +482,16 @@ class _MilestoneStepper extends StatelessWidget {
     final firstIncompleteIdx = milestones.indexWhere((m) => !m.completed);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s12,
+        AppSpacing.s16,
+        AppSpacing.s12,
+      ),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kCardBorder),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,14 +499,18 @@ class _MilestoneStepper extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Milestones', style: theme.textTheme.titleSmall),
+              Text(
+                'Milestones',
+                style: theme.textTheme.titleMedium,
+              ),
               Text(
                 '$completedCount of ${milestones.length} phases',
-                style: const TextStyle(fontSize: 12, color: _kMuted),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textMuted),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -545,22 +551,23 @@ class _StepNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = milestone.completed;
-    final color =
-        isCompleted ? _kGreen : (isCurrentMilestone ? _kAmber : _kCardBorder);
+    final color = isCompleted
+        ? AppColors.success
+        : (isCurrentMilestone ? AppColors.categoryAmber : AppColors.border);
 
     return Container(
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       alignment: Alignment.center,
       child: isCompleted
-          ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
           : Text(
               '${index + 1}',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isCurrentMilestone ? Colors.white : _kMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isCurrentMilestone ? Colors.white : AppColors.textMuted,
               ),
             ),
     );
@@ -575,9 +582,10 @@ class _StepLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        leftCompleted ? _kGreen : (isLeftCurrent ? _kAmber : _kCardBorder);
-    return Container(width: 56, height: 2, color: color);
+    final color = leftCompleted
+        ? AppColors.success
+        : (isLeftCurrent ? AppColors.categoryAmber : AppColors.border);
+    return Container(width: 48, height: 2, color: color);
   }
 }
 
@@ -591,9 +599,9 @@ class _UpdatesTab extends ConsumerWidget {
     final updatesAsync = ref.watch(updateNotifierProvider(projectId));
     return updatesAsync.when(
       loading: () => ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
         itemCount: 3,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
         itemBuilder: (_, __) => const ShimmerCard(height: 120),
       ),
       error: (e, _) => ErrorStateWidget(
@@ -617,7 +625,7 @@ class _UpdatesTab extends ConsumerWidget {
           onRefresh: () =>
               ref.read(updateNotifierProvider(projectId).notifier).load(),
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
             itemCount: updates.length,
             itemBuilder: (_, i) => UpdateCard(
               key: ValueKey(updates[i].id),
@@ -649,21 +657,19 @@ class _SettingsTab extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.s32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.settings_outlined, size: 48, color: _kMuted),
-            const SizedBox(height: 12),
+            const Icon(Icons.settings_outlined,
+                size: 48, color: AppColors.textMuted),
+            const SizedBox(height: AppSpacing.s12),
+            Text('Project settings', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.s4),
             Text(
-              'Project settings',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            const Text(
               'Manage team, permissions, and notifications',
-              style: TextStyle(fontSize: 13, color: _kMuted),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
           ],

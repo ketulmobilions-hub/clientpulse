@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/radii.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../milestones/presentation/widgets/status_pill.dart';
 
@@ -42,41 +45,54 @@ class _PortalMilestoneSectionState extends State<PortalMilestoneSection> {
         ? milestones.sublist(0, _threshold)
         : milestones;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Milestones', style: theme.textTheme.titleSmall),
-            Text(
-              '${progress.completed} of ${progress.total} • $progressPct%',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.outline),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            // Use raw float so bar fills accurately; label uses rounded int for readability.
-            value: (progress.percent / 100).clamp(0.0, 1.0),
-            minHeight: 8,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s16,
+        AppSpacing.s12,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Milestones', style: theme.textTheme.titleMedium),
+              Text(
+                '${progress.completed} of ${progress.total} • $progressPct%',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textMuted),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        ...displayed.map((m) => _MilestoneRow(milestone: m)),
-        if (shouldCollapse)
-          TextButton(
-            onPressed: () => setState(() => _expanded = !_expanded),
-            child: Text(
-              _expanded
-                  ? 'Show less'
-                  : 'Show all ${milestones.length} milestones',
+          const SizedBox(height: AppSpacing.s12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.xs),
+            child: LinearProgressIndicator(
+              value: (progress.percent / 100).clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: AppColors.surfaceMuted,
             ),
           ),
-      ],
+          const SizedBox(height: AppSpacing.s12),
+          ...displayed.map((m) => _MilestoneRow(milestone: m)),
+          if (shouldCollapse)
+            TextButton(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              child: Text(
+                _expanded
+                    ? 'Show less'
+                    : 'Show all ${milestones.length} milestones',
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -99,21 +115,21 @@ class _MilestoneRow extends StatelessWidget {
       label: semanticLabel,
       excludeSemantics: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
         child: Row(
           children: [
             Expanded(
               child: Text(milestone.title, style: theme.textTheme.bodyMedium),
             ),
             if (formattedDate != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.s8),
               Text(
                 formattedDate,
                 style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.outline),
+                    ?.copyWith(color: AppColors.textMuted),
               ),
             ],
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.s8),
             StatusPill(status: status),
           ],
         ),

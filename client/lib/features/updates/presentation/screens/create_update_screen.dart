@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/utils/file_utils.dart';
@@ -451,7 +452,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.narrow),
           child: Form(
             key: _formKey,
             child: ListView(

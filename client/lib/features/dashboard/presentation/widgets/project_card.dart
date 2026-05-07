@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import 'status_badge.dart';
 
@@ -21,7 +23,8 @@ class ProjectCard extends StatelessWidget {
           pathParameters: {'id': project.id},
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s16, vertical: AppSpacing.s12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -32,25 +35,24 @@ class ProjectCard extends StatelessWidget {
                     child: Text(
                       project.name,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   StatusBadge(status: project.status),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s8),
               _MetaRow(project: project),
               if (project.latestUpdateTitle != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s8),
                 Text(
                   'Last update: "${project.latestUpdateTitle}"',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppColors.textMuted,
                     fontStyle: FontStyle.italic,
                   ),
                   maxLines: 1,
@@ -58,15 +60,15 @@ class ProjectCard extends StatelessWidget {
                 ),
               ],
               if (project.progressPct != null) ...[
-                const SizedBox(height: 10),
-                _ProgressBar(percent: project.progressPct!, archived: isArchived),
+                const SizedBox(height: AppSpacing.s12),
+                _ProgressBar(
+                    percent: project.progressPct!, archived: isArchived),
               ],
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.s8),
               Text(
                 'Updated ${_formatDate(project.updatedAt)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontSize: 11,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppColors.textFaint,
                 ),
               ),
             ],
@@ -129,10 +131,10 @@ class _MetaRow extends StatelessWidget {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.person_outline_rounded, size: 13, color: theme.colorScheme.outline),
-          const SizedBox(width: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 200),
+          const Icon(Icons.person_outline_rounded,
+              size: 13, color: AppColors.textFaint),
+          const SizedBox(width: AppSpacing.s4),
+          Flexible(
             child: Text(
               project.clientName,
               style: style,

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 
 class StatusPill extends StatelessWidget {
@@ -8,21 +12,35 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (status) {
-      MilestoneStatus.upcoming => (Colors.blue.shade100, Colors.blue.shade800),
-      MilestoneStatus.delayed => (Colors.red.shade100, Colors.red.shade800),
-      MilestoneStatus.completed =>
-        (Colors.green.shade100, Colors.green.shade800),
+    final (base, fg) = switch (status) {
+      MilestoneStatus.upcoming => (
+          AppColors.categoryBlue,
+          const Color(0xFF60A5FA),
+        ),
+      MilestoneStatus.delayed => (
+          AppColors.categoryRed,
+          const Color(0xFFF87171),
+        ),
+      MilestoneStatus.completed => (
+          AppColors.categoryEmerald,
+          const Color(0xFF34D399),
+        ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s8, vertical: 3),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
+        color: base.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: Text(
         status.displayLabel,
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

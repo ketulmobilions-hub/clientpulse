@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/breakpoints.dart';
+import '../../../../core/theme/content_widths.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/services/project_service.dart';
@@ -317,26 +320,29 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
       body: _loadingProject
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s24, vertical: AppSpacing.s32),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1080),
+                  constraints: const BoxConstraints(
+                      maxWidth: AppContentWidth.standard),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isWide = constraints.maxWidth >= 900;
+                      final isWide =
+                          constraints.maxWidth >= AppBreakpoints.tablet;
                       return isWide
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(flex: 4, child: contextPanel),
-                                const SizedBox(width: 32),
+                                const SizedBox(width: AppSpacing.s32),
                                 Expanded(flex: 6, child: formCard),
                               ],
                             )
                           : Column(
                               children: [
                                 contextPanel,
-                                const SizedBox(height: 24),
+                                const SizedBox(height: AppSpacing.s24),
                                 formCard,
                               ],
                             );
