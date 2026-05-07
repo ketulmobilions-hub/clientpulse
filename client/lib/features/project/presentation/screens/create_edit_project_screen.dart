@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
@@ -19,6 +20,8 @@ class CreateEditProjectScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScreen> {
+  static final _emailRegExp = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _clientNameCtrl = TextEditingController();
@@ -115,6 +118,12 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
     });
   }
 
+  String? _validateEmail(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Required';
+    if (!_emailRegExp.hasMatch(v.trim())) return 'Enter a valid email';
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -208,58 +217,61 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Project Created'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Share this link with your client:'),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SelectableText(
-                      portalUrl,
-                      style: const TextStyle(fontSize: 13),
+      builder: (dialogCtx) {
+        final dialogTheme = Theme.of(dialogCtx);
+        return AlertDialog(
+          title: const Text('Project Created'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Share this link with your client:'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: dialogTheme.colorScheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: dialogTheme.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SelectableText(
+                        portalUrl,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.copy, size: 18),
-                    tooltip: 'Copy link',
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: portalUrl));
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Link copied'),
-                          behavior: SnackBarBehavior.floating,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 18),
+                      tooltip: 'Copy link',
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: portalUrl));
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Link copied'),
+                            behavior: SnackBarBehavior.floating,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                context.go('/dashboard');
+              },
+              child: const Text('Done'),
             ),
           ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              context.go('/dashboard');
-            },
-            child: const Text('Done'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -269,7 +281,32 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
     final disabled = _submitting || _loadingProject;
 
     final contextPanel = _ContextPanel(isEdit: isEdit);
-    final formCard = _buildFormCard(context, isEdit, disabled);
+    final formCard = _FormCard(
+      formKey: _formKey,
+      isEdit: isEdit,
+      disabled: disabled,
+      submitting: _submitting,
+      nameCtrl: _nameCtrl,
+      clientNameCtrl: _clientNameCtrl,
+      clientEmailCtrl: _clientEmailCtrl,
+      descCtrl: _descCtrl,
+      status: _status,
+      startDate: _startDate,
+      expectedEndDate: _expectedEndDate,
+      emailValidator: _validateEmail,
+      onStatusChanged: (v) => setState(() => _status = v),
+      onPickStart: () => _pickDate(isStart: true),
+      onPickEnd: () => _pickDate(isStart: false),
+      onClearStart: () => setState(() {
+        _startDate = null;
+        _startDateCleared = true;
+      }),
+      onClearEnd: () => setState(() {
+        _expectedEndDate = null;
+        _expectedEndDateCleared = true;
+      }),
+      onSubmit: _submit,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -308,8 +345,57 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
             ),
     );
   }
+}
 
-  Widget _buildFormCard(BuildContext context, bool isEdit, bool disabled) {
+String _statusLabel(ProjectStatus s) => switch (s) {
+      ProjectStatus.active => 'Active',
+      ProjectStatus.completed => 'Completed',
+      ProjectStatus.archived => 'Archived',
+    };
+
+class _FormCard extends StatelessWidget {
+  const _FormCard({
+    required this.formKey,
+    required this.isEdit,
+    required this.disabled,
+    required this.submitting,
+    required this.nameCtrl,
+    required this.clientNameCtrl,
+    required this.clientEmailCtrl,
+    required this.descCtrl,
+    required this.status,
+    required this.startDate,
+    required this.expectedEndDate,
+    required this.emailValidator,
+    required this.onStatusChanged,
+    required this.onPickStart,
+    required this.onPickEnd,
+    required this.onClearStart,
+    required this.onClearEnd,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final bool isEdit;
+  final bool disabled;
+  final bool submitting;
+  final TextEditingController nameCtrl;
+  final TextEditingController clientNameCtrl;
+  final TextEditingController clientEmailCtrl;
+  final TextEditingController descCtrl;
+  final ProjectStatus status;
+  final DateTime? startDate;
+  final DateTime? expectedEndDate;
+  final FormFieldValidator<String> emailValidator;
+  final ValueChanged<ProjectStatus> onStatusChanged;
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+  final VoidCallback onClearStart;
+  final VoidCallback onClearEnd;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return DecoratedBox(
@@ -336,15 +422,16 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const _SectionHeader(label: 'Basic Info'),
               _LabeledField(
                 label: 'Project Name',
                 required: true,
                 child: TextFormField(
-                  controller: _nameCtrl,
+                  controller: nameCtrl,
                   decoration: const InputDecoration(
                     hintText: 'e.g. Acme Website Redesign',
                   ),
@@ -354,12 +441,12 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _LabeledField(
                 label: 'Client Name',
                 required: true,
                 child: TextFormField(
-                  controller: _clientNameCtrl,
+                  controller: clientNameCtrl,
                   decoration: const InputDecoration(
                     hintText: 'Full name or company',
                   ),
@@ -369,33 +456,27 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _LabeledField(
                 label: 'Client Email',
                 required: true,
                 child: TextFormField(
-                  controller: _clientEmailCtrl,
+                  controller: clientEmailCtrl,
                   decoration: const InputDecoration(
                     hintText: 'name@company.com',
                   ),
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   enabled: !disabled,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Required';
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(v.trim())) {
-                      return 'Enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: emailValidator,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _LabeledField(
                 label: 'Description',
                 helper: 'Brief summary your client will see',
                 child: TextFormField(
-                  controller: _descCtrl,
+                  controller: descCtrl,
                   decoration: const InputDecoration(
                     hintText: 'What is this project about?',
                   ),
@@ -403,78 +484,81 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
                   enabled: !disabled,
                 ),
               ),
-              if (isEdit) ...[
-                const SizedBox(height: 20),
-                _LabeledField(
-                  label: 'Status',
-                  required: true,
-                  child: DropdownButtonFormField<ProjectStatus>(
-                    value: _status,
-                    items: ProjectStatus.values
-                        .map((s) => DropdownMenuItem(
-                              value: s,
-                              child: Text(_statusLabel(s)),
-                            ))
-                        .toList(),
-                    onChanged:
-                        disabled ? null : (v) => setState(() => _status = v!),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              const _SectionHeader(label: 'Timeline'),
               _LabeledField(
                 label: 'Start Date',
                 child: _DatePickerField(
                   placeholder: 'Select start date',
-                  value: _startDate,
+                  value: startDate,
                   enabled: !disabled,
-                  onTap: () => _pickDate(isStart: true),
-                  onClear: () => setState(() {
-                    _startDate = null;
-                    _startDateCleared = true;
-                  }),
+                  onTap: onPickStart,
+                  onClear: onClearStart,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _LabeledField(
                 label: 'Expected End Date',
                 child: _DatePickerField(
                   placeholder: 'Select end date',
-                  value: _expectedEndDate,
+                  value: expectedEndDate,
                   enabled: !disabled,
-                  onTap: () => _pickDate(isStart: false),
-                  onClear: () => setState(() {
-                    _expectedEndDate = null;
-                    _expectedEndDateCleared = true;
-                  }),
+                  onTap: onPickEnd,
+                  onClear: onClearEnd,
                 ),
               ),
+              if (isEdit) ...[
+                const SizedBox(height: 16),
+                const _SectionHeader(label: 'Status'),
+                DropdownButtonFormField<ProjectStatus>(
+                  value: status,
+                  items: ProjectStatus.values
+                      .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(_statusLabel(s)),
+                          ))
+                      .toList(),
+                  onChanged: disabled
+                      ? null
+                      : (v) {
+                          if (v != null) onStatusChanged(v);
+                        },
+                ),
+              ],
               const SizedBox(height: 28),
-              FilledButton(
-                onPressed: disabled ? null : _submit,
-                child: _submitting
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      )
-                    : Text(isEdit ? 'Save Changes' : 'Create Project'),
-              ),
+              isEdit
+                  ? FilledButton.tonal(
+                      onPressed: disabled ? null : onSubmit,
+                      child: submitting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            )
+                          : const Text('Save Changes'),
+                    )
+                  : FilledButton(
+                      onPressed: disabled ? null : onSubmit,
+                      child: submitting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.onPrimary,
+                              ),
+                            )
+                          : const Text('Create Project'),
+                    ),
             ],
           ),
         ),
       ),
     );
   }
-
-  String _statusLabel(ProjectStatus s) => switch (s) {
-        ProjectStatus.active => 'Active',
-        ProjectStatus.completed => 'Completed',
-        ProjectStatus.archived => 'Archived',
-      };
 }
 
 class _ContextPanel extends StatelessWidget {
@@ -577,6 +661,45 @@ class _ContextBullet {
   final String text;
 }
 
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              label.toUpperCase(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ExcludeSemantics(
+              child: Container(
+                height: 1,
+                color: theme.colorScheme.outlineVariant.withOpacity(0.6),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LabeledField extends StatelessWidget {
   const _LabeledField({
     required this.label,
@@ -638,6 +761,10 @@ class _DatePickerField extends StatelessWidget {
     required this.onClear,
   });
 
+  // Pin to en_US — `intl` ships en_US data built-in, other locales require
+  // `initializeDateFormatting()` at app startup which isn't wired yet.
+  static final _formatter = DateFormat.yMMMd('en_US');
+
   final String placeholder;
   final DateTime? value;
   final bool enabled;
@@ -648,44 +775,48 @@ class _DatePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasValue = value != null;
-    final display = hasValue ? _format(value!) : placeholder;
+    final display = hasValue ? _formatter.format(value!) : placeholder;
     final mutedColor = theme.colorScheme.onSurfaceVariant;
+    final disabledColor = theme.colorScheme.onSurface.withOpacity(0.38);
+    final iconColor = !enabled
+        ? disabledColor
+        : (hasValue ? theme.colorScheme.primary : mutedColor);
+    final textColor = !enabled
+        ? disabledColor
+        : (hasValue ? theme.colorScheme.onSurface : mutedColor);
     final semanticLabel = hasValue
         ? '$display selected, double tap to change date'
         : '$placeholder, double tap to choose a date';
 
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: semanticLabel,
-      explicitChildNodes: true,
-      child: InkWell(
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: semanticLabel,
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(10),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            prefixIcon: ExcludeSemantics(
-              child: Icon(
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(10),
+          excludeFromSemantics: true,
+          child: InputDecorator(
+            decoration: InputDecoration(
+              prefixIcon: Icon(
                 Icons.calendar_today_outlined,
                 size: 18,
-                color: hasValue ? theme.colorScheme.primary : mutedColor,
+                color: iconColor,
               ),
+              suffixIcon: hasValue
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      tooltip: 'Clear',
+                      onPressed: enabled ? onClear : null,
+                    )
+                  : Icon(Icons.expand_more, size: 20, color: iconColor),
             ),
-            suffixIcon: hasValue
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    tooltip: 'Clear',
-                    onPressed: enabled ? onClear : null,
-                  )
-                : ExcludeSemantics(
-                    child: Icon(Icons.expand_more, size: 20, color: mutedColor),
-                  ),
-          ),
-          child: ExcludeSemantics(
             child: Text(
               display,
               style: TextStyle(
-                color: hasValue ? theme.colorScheme.onSurface : mutedColor,
+                color: textColor,
                 fontWeight: hasValue ? FontWeight.w500 : FontWeight.w400,
               ),
             ),
@@ -693,13 +824,5 @@ class _DatePickerField extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _format(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 }
