@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/features/auth/presentation/screens/register_screen.dart';
 import 'package:clientpulse/shared/models/auth_user.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
@@ -53,9 +54,21 @@ class _FakeAuthNotifier extends AuthNotifier {
 Widget _wrap(_FakeAuthNotifier notifier) {
   final router = GoRouter(
     routes: [
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const Scaffold(body: Text('Login'))),
-      GoRoute(path: '/dashboard', builder: (_, __) => const Scaffold(body: Text('Dashboard'))),
+      GoRoute(
+        path: '/register',
+        name: RouteNames.register,
+        builder: (_, __) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        name: RouteNames.login,
+        builder: (_, __) => const Scaffold(body: Text('Login')),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        name: RouteNames.dashboard,
+        builder: (_, __) => const Scaffold(body: Text('Dashboard')),
+      ),
     ],
     initialLocation: '/register',
   );

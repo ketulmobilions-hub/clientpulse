@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
@@ -302,7 +303,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 16),
                           TextButton(
                             key: const Key('register_link'),
-                            onPressed: () => context.go('/register'),
+                            onPressed: () => context.goNamed(RouteNames.register),
                             child: const Text("Don't have an account? Register"),
                           ),
                         ],

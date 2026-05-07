@@ -152,7 +152,7 @@ GoRouter router(RouterRef ref) {
           children: [
             const Text('Page not found'),
             TextButton(
-              onPressed: () => context.go('/dashboard'),
+              onPressed: () => context.goNamed(RouteNames.dashboard),
               child: const Text('Go home'),
             ),
           ],
