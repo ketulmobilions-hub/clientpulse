@@ -34,6 +34,7 @@ class MilestoneListWidget extends ConsumerWidget {
         return ReorderableListView.builder(
           padding: const EdgeInsets.only(top: 8, bottom: 16),
           itemCount: milestones.length,
+          buildDefaultDragHandles: false,
           onReorder: (oldIndex, newIndex) => ref
               .read(milestoneNotifierProvider(projectId).notifier)
               .reorder(oldIndex, newIndex),
@@ -49,8 +50,8 @@ class MilestoneListWidget extends ConsumerWidget {
             key: ValueKey(milestones[i].id),
             milestone: milestones[i],
             projectId: projectId,
-            displayIndex: i + 1,
             isCurrentMilestone: i == firstIncompleteIdx,
+            dragIndex: i,
           ),
         );
       },

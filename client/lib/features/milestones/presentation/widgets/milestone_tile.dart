@@ -14,14 +14,14 @@ class MilestoneTile extends ConsumerStatefulWidget {
     super.key,
     required this.milestone,
     required this.projectId,
-    required this.displayIndex,
     required this.isCurrentMilestone,
+    required this.dragIndex,
   });
 
   final Milestone milestone;
   final String projectId;
-  final int displayIndex;
   final bool isCurrentMilestone;
+  final int dragIndex;
 
   @override
   ConsumerState<MilestoneTile> createState() => _MilestoneTileState();
@@ -109,6 +109,19 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
     }
   }
 
+  Future<void> _toggleComplete() async {
+    try {
+      await ref
+          .read(milestoneNotifierProvider(widget.projectId).notifier)
+          .toggleComplete(widget.milestone.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('$e')));
+    }
+  }
+
   Future<void> _delete() async {
     try {
       await ref
@@ -173,10 +186,10 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _MilestoneBadge(
-                      displayIndex: widget.displayIndex,
+                    _MilestoneCheckbox(
                       completed: m.completed,
                       isCurrent: widget.isCurrentMilestone,
+                      onTap: _toggleComplete,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -243,6 +256,21 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                         ),
                       ),
                     ),
+                    ReorderableDragStartListener(
+                      index: widget.dragIndex,
+                      child: const MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Tooltip(
+                          message: 'Drag to reorder',
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 8),
+                            child: Icon(Icons.drag_indicator,
+                                size: 18, color: _kMuted),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -262,41 +290,82 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
   }
 }
 
-class _MilestoneBadge extends StatelessWidget {
-  const _MilestoneBadge({
-    required this.displayIndex,
+class _MilestoneCheckbox extends StatefulWidget {
+  const _MilestoneCheckbox({
     required this.completed,
     required this.isCurrent,
+    required this.onTap,
   });
 
-  final int displayIndex;
   final bool completed;
   final bool isCurrent;
+  final VoidCallback onTap;
+
+  @override
+  State<_MilestoneCheckbox> createState() => _MilestoneCheckboxState();
+}
+
+class _MilestoneCheckboxState extends State<_MilestoneCheckbox> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final color = completed
-        ? _kGreen
-        : (isCurrent ? _kAmber : _kCardBorder);
+    final completed = widget.completed;
+    final accent = widget.isCurrent ? _kAmber : _kMuted;
 
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      alignment: Alignment.center,
-      child: completed
-          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-          : Text(
-              '$displayIndex',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isCurrent ? Colors.white : _kMuted,
+    final Color fill;
+    final Color borderColor;
+    if (completed) {
+      fill = _hovered ? const Color(0xFF16A34A) : _kGreen;
+      borderColor = fill;
+    } else {
+      fill = _hovered ? const Color(0xFF2F2F33) : Colors.transparent;
+      borderColor = _hovered ? accent : _kCardBorder;
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Tooltip(
+          message: completed ? 'Mark incomplete' : 'Mark complete',
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: borderColor,
+                width: _hovered || completed ? 2.0 : 1.8,
               ),
             ),
+            alignment: Alignment.center,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 120),
+              child: completed
+                  ? const Icon(
+                      Icons.check_rounded,
+                      key: ValueKey('done'),
+                      size: 16,
+                      color: Colors.white,
+                    )
+                  : (_hovered
+                      ? Icon(
+                          Icons.check_rounded,
+                          key: const ValueKey('hover'),
+                          size: 14,
+                          color: accent,
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty'))),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
