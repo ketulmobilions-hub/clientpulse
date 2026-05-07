@@ -61,6 +61,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Projects'),
         actions: [
+          FilledButton.icon(
+            onPressed: () => context.goNamed(RouteNames.createProject),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text('New Project'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              textStyle:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 16),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign out',
@@ -70,11 +82,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           const SizedBox(width: 4),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.goNamed(RouteNames.createProject),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New Project'),
       ),
       body: projectsAsync.when(
         loading: () => ListView.separated(
@@ -104,24 +111,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: 'Search projects or clients',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    suffixIcon: _query.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _query = '');
-                            },
-                          ),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.5,
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        hintText: 'Search projects or clients',
+                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.close_rounded, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                              ),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -141,19 +156,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _FilterChip(
                       label: 'Active',
                       selected: _filter == _StatusFilter.active,
-                      onTap: () => setState(() => _filter = _StatusFilter.active),
+                      onTap: () =>
+                          setState(() => _filter = _StatusFilter.active),
                     ),
                     const SizedBox(width: 8),
                     _FilterChip(
                       label: 'Completed',
                       selected: _filter == _StatusFilter.completed,
-                      onTap: () => setState(() => _filter = _StatusFilter.completed),
+                      onTap: () =>
+                          setState(() => _filter = _StatusFilter.completed),
                     ),
                     const SizedBox(width: 8),
                     _FilterChip(
                       label: 'Archived',
                       selected: _filter == _StatusFilter.archived,
-                      onTap: () => setState(() => _filter = _StatusFilter.archived),
+                      onTap: () =>
+                          setState(() => _filter = _StatusFilter.archived),
                     ),
                   ],
                 ),
@@ -182,7 +200,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                         itemCount: filtered.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => ProjectCard(project: filtered[i]),
+                        itemBuilder: (_, i) =>
+                            ProjectCard(project: filtered[i]),
                       ),
               ),
             ],
@@ -208,11 +227,19 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ChoiceChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: selected ? theme.colorScheme.onPrimary : Colors.black,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
       selected: selected,
       onSelected: (_) => onTap(),
       labelStyle: TextStyle(
-        color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+        color: selected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurface,
         fontWeight: FontWeight.w500,
       ),
       selectedColor: theme.colorScheme.primary,
