@@ -438,7 +438,10 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (tone) {
-      _ChipTone.warning => (const Color(0xFF3B2A11), const Color(0xFFFBBF24)),
+      _ChipTone.warning => (
+          AppColors.categoryAmber.withOpacity(0.18),
+          AppColors.categoryAmberFg,
+        ),
       _ChipTone.neutral => (AppColors.surfaceRaised, AppColors.textFaint),
     };
     return Container(

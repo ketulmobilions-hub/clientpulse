@@ -168,7 +168,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
       onEnter: (_) => _hovered.value = true,
       onExit: (_) => _hovered.value = false,
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -234,7 +234,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: dialogTheme.colorScheme.surfaceVariant,
+                  color: dialogTheme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: dialogTheme.colorScheme.outlineVariant),
                 ),
@@ -409,7 +409,7 @@ class _FormCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: isDark
-            ? theme.colorScheme.surfaceVariant
+            ? theme.colorScheme.surface
             : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(

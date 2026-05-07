@@ -15,15 +15,15 @@ class StatusPill extends StatelessWidget {
     final (base, fg) = switch (status) {
       MilestoneStatus.upcoming => (
           AppColors.categoryBlue,
-          const Color(0xFF60A5FA),
+          AppColors.categoryBlueFg,
         ),
       MilestoneStatus.delayed => (
           AppColors.categoryRed,
-          const Color(0xFFF87171),
+          AppColors.categoryRedFg,
         ),
       MilestoneStatus.completed => (
           AppColors.categoryEmerald,
-          const Color(0xFF34D399),
+          AppColors.categoryEmeraldFg,
         ),
     };
     return Container(

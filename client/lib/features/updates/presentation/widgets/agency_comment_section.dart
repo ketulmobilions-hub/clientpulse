@@ -32,7 +32,13 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
   }
 
   void _clearSubmitError() {
-    if (_submitError != null) setState(() => _submitError = null);
+    if (_submitError == null) return;
+    // Defer setState to next frame: controller listeners can fire during
+    // build (autofill, programmatic text set) which would assert otherwise.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_submitError != null) setState(() => _submitError = null);
+    });
   }
 
   @override

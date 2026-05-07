@@ -60,9 +60,9 @@ class _AuthorBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base =
-        isClient ? AppColors.categoryEmerald : AppColors.categoryBlue;
-    final fg = isClient ? const Color(0xFF34D399) : const Color(0xFF60A5FA);
+    final (base, fg) = isClient
+        ? (AppColors.categoryEmerald, AppColors.categoryEmeraldFg)
+        : (AppColors.categoryBlue, AppColors.categoryBlueFg);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s8, vertical: 2),
       decoration: BoxDecoration(

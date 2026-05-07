@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clientpulse/core/theme/app_colors.dart';
 import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/workspace.dart';
 import 'package:clientpulse/shared/providers/workspace_provider.dart';
@@ -241,7 +242,7 @@ class _SettingsBody extends StatelessWidget {
                           Text(
                             'PNG, JPG, GIF or WebP · max 2 MB',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -326,7 +327,7 @@ class _LogoPreview extends StatelessWidget {
       return CircleAvatar(
         radius: 40,
         backgroundImage: NetworkImage(logoUrl!),
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: AppColors.surfaceRaised,
         onBackgroundImageError: (_, __) {},
       );
     }

@@ -101,11 +101,12 @@ class AppTheme {
         brightness: Brightness.dark,
       ).copyWith(
         surface: AppColors.surface,
-        surfaceVariant: AppColors.surface,
-        background: AppColors.bg,
         error: AppColors.danger,
+        onPrimary: Colors.white,
         onSurface: AppColors.textPrimary,
         onSurfaceVariant: AppColors.textFaint,
+        outline: AppColors.border,
+        outlineVariant: AppColors.borderSubtle,
       ),
       scaffoldBackgroundColor: AppColors.bg,
       textTheme: _textTheme,
@@ -220,9 +221,6 @@ class AppTheme {
         labelColor: AppColors.textPrimary,
         unselectedLabelColor: AppColors.textMuted,
         dividerColor: Colors.transparent,
-        indicator: UnderlineTabIndicator(
-          borderSide: BorderSide(width: 2, color: AppColors.primary),
-        ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         shape: RoundedRectangleBorder(

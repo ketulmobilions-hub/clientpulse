@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/radii.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import 'status_badge.dart';
@@ -31,22 +32,25 @@ class ProjectCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      project.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        letterSpacing: -0.1,
+                  Row(
+                    children: [
+                      Text(
+                        project.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          letterSpacing: -0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      _MetaRow(project: project),
+                    ],
                   ),
+                  Spacer(),
                   const SizedBox(width: AppSpacing.s12),
                   StatusBadge(status: project.status),
                 ],
               ),
               const SizedBox(height: AppSpacing.s8),
-              _MetaRow(project: project),
               if (project.latestUpdateTitle != null) ...[
                 const SizedBox(height: AppSpacing.s8),
                 Text(
@@ -87,10 +91,26 @@ class ProjectCard extends StatelessWidget {
         opacity: 0.65,
         child: ColorFiltered(
           colorFilter: const ColorFilter.matrix(<double>[
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0,      0,      0,      1, 0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
           ]),
           child: card,
         ),
@@ -188,29 +208,28 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fill = archived ? theme.colorScheme.outline : theme.colorScheme.primary;
+    final fill = archived ? AppColors.textMuted : AppColors.success;
     final clamped = percent.clamp(0, 100);
 
     return Row(
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppRadii.xs),
             child: LinearProgressIndicator(
               value: clamped / 100,
               minHeight: 6,
-              backgroundColor: theme.colorScheme.surfaceVariant,
+              backgroundColor: AppColors.surfaceMuted,
               valueColor: AlwaysStoppedAnimation<Color>(fill),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.s8),
         Text(
           '$clamped%',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w600,
-            fontSize: 11,
           ),
         ),
       ],

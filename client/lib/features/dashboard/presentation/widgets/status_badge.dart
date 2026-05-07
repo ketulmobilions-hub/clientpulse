@@ -15,12 +15,12 @@ class StatusBadge extends StatelessWidget {
     final (bg, fg, label) = switch (status) {
       ProjectStatus.active => (
           AppColors.categoryEmerald.withOpacity(0.18),
-          const Color(0xFF34D399),
+          AppColors.categoryEmeraldFg,
           'Active'
         ),
       ProjectStatus.completed => (
           AppColors.categoryBlue.withOpacity(0.18),
-          const Color(0xFF60A5FA),
+          AppColors.categoryBlueFg,
           'Completed'
         ),
       ProjectStatus.archived => (

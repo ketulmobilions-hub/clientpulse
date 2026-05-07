@@ -33,7 +33,12 @@ class PortalScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(portalOverviewProvider(token));
 
     return overviewAsync.when(
-      loading: () => const Scaffold(body: _PortalLoadingScreen()),
+      loading: () => Scaffold(
+        appBar: const PortalBrandingHeader(
+          workspace: PortalWorkspace(name: 'Portal', slug: ''),
+        ),
+        body: const _PortalLoadingScreen(),
+      ),
       error: (e, _) {
         final isTokenError = e is PortalException && e.isInvalidToken;
         return _PortalErrorScreen(
@@ -227,11 +232,11 @@ class _StatusBadge extends StatelessWidget {
     final (bg, fg) = switch (status) {
       PortalProjectStatus.active => (
           AppColors.categoryEmerald.withOpacity(0.18),
-          const Color(0xFF34D399),
+          AppColors.categoryEmeraldFg,
         ),
       PortalProjectStatus.completed => (
           AppColors.categoryBlue.withOpacity(0.18),
-          const Color(0xFF60A5FA),
+          AppColors.categoryBlueFg,
         ),
       PortalProjectStatus.archived ||
       PortalProjectStatus.unknown =>

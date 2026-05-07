@@ -78,6 +78,8 @@ class _PortalMilestoneSectionState extends State<PortalMilestoneSection> {
               value: (progress.percent / 100).clamp(0.0, 1.0),
               minHeight: 6,
               backgroundColor: AppColors.surfaceMuted,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.success),
             ),
           ),
           const SizedBox(height: AppSpacing.s12),
