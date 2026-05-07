@@ -3,12 +3,24 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
+  static const _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _NoTransitionsBuilder(),
+      TargetPlatform.iOS: _NoTransitionsBuilder(),
+      TargetPlatform.linux: _NoTransitionsBuilder(),
+      TargetPlatform.macOS: _NoTransitionsBuilder(),
+      TargetPlatform.windows: _NoTransitionsBuilder(),
+      TargetPlatform.fuchsia: _NoTransitionsBuilder(),
+    },
+  );
+
   static ThemeData light() {
     const seedColor = Colors.indigo;
 
     return ThemeData(
       colorSchemeSeed: seedColor,
       useMaterial3: true,
+      pageTransitionsTheme: _pageTransitionsTheme,
       scaffoldBackgroundColor: const Color(0xFFF8F9FC),
       cardTheme: CardTheme(
         color: Colors.white,
@@ -157,6 +169,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: _pageTransitionsTheme,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryGreen,
         brightness: Brightness.dark,
@@ -299,4 +312,18 @@ class AppTheme {
       ),
     );
   }
+}
+
+class _NoTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) =>
+      child;
 }
