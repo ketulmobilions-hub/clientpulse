@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:clientpulse/core/router/route_names.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
@@ -159,7 +160,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _goToLogin() async {
     if (_hasUnsavedInput && !await _confirmDiscard()) return;
     if (!mounted) return;
-    context.go('/login');
+    context.goNamed(RouteNames.login);
   }
 
   @override
@@ -312,8 +313,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                             ),
                                             onPressed: isLoading
                                                 ? null
-                                                : () => context.go(
-                                                    '/login?email=${Uri.encodeQueryComponent(_emailCtrl.text.trim())}'),
+                                                : () => context.goNamed(
+                                                    RouteNames.login,
+                                                    queryParameters: {
+                                                      'email': _emailCtrl.text
+                                                          .trim(),
+                                                    },
+                                                  ),
                                             child: const Text(
                                                 'Sign in instead'),
                                           ),

@@ -163,6 +163,35 @@ void main() {
 
       expect(currentPath(container), '/p/mytoken');
     });
+
+    testWidgets('unknown path renders error page; Go home navigates to /dashboard',
+        (tester) async {
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      // Bounded pump: DashboardScreen kicks off async loads that never settle
+      // in test (no real backend), so pumpAndSettle would time out.
+      await tester.pump();
+      await tester.pump();
+
+      router.go('/this-route-does-not-exist');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Page not found'), findsOneWidget);
+      expect(find.text('Go home'), findsOneWidget);
+
+      await tester.tap(find.text('Go home'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(currentPath(container), '/dashboard');
+    });
   });
 
   group('loading state', () {

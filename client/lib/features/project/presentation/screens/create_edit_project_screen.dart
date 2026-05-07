@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/services/project_service.dart';
@@ -205,13 +206,13 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.go('/dashboard');
+      context.goNamed(RouteNames.dashboard);
       return;
     }
 
     final portalUrl = '${AppConstants.appBaseUrl}/p/$shareToken';
     // Capture ScaffoldMessengerState before the dialog opens — the outer context
-    // may be deactivated by context.go() before the copy snackbar fires.
+    // may be deactivated by context.goNamed() before the copy snackbar fires.
     final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
@@ -265,7 +266,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogCtx).pop();
-                context.go('/dashboard');
+                context.goNamed(RouteNames.dashboard);
               },
               child: const Text('Done'),
             ),
