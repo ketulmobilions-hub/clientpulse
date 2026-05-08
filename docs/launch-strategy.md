@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-A staged, four-phase launch from sprint demo day to T+90, run by a single founder with zero ad budget. Pre-launch (now → 2026-05-11) locks in 3–5 design partners and a real eat-our-own-dogfood project. Soft launch (T-0 → T+7) opens to ~50 LinkedIn-warmed agencies on a 3-month free trial. Public launch on **2026-05-25 (T+14)** stacks Product Hunt + IndieHackers + community drops on the same day. Post-launch (T+30 → T+90) converts beta to paid and activates the "Powered by ClientPulse" growth loop.
+A staged, four-phase launch from sprint demo day to T+90, run by a single founder with zero ad budget. Pre-launch (now → 2026-05-18) locks in 3–5 design partners and a real eat-our-own-dogfood project. Soft launch (T-0 → T+7) opens to ~50 LinkedIn-warmed agencies on a 3-month free trial. Public launch on **2026-06-01 (T+14)** stacks Product Hunt + IndieHackers + community drops on the same day. Post-launch (T+30 → T+90) converts beta to paid and activates the "Powered by ClientPulse" growth loop.
 
 This document is the operational playbook. Strategy and pricing live in [`business-brief.md`](./business-brief.md).
 
@@ -10,7 +10,7 @@ This document is the operational playbook. Strategy and pricing live in [`busine
 
 ## 1. Goals & Success Metrics
 
-The launch is a success if, by **2026-08-09 (T+90)**, ClientPulse has:
+The launch is a success if, by **2026-08-16 (T+90)**, ClientPulse has:
 
 | Metric | Definition | T+7 target | T+30 target | T+90 target |
 |--------|-----------|-----------|------------|------------|
@@ -27,23 +27,23 @@ Activation, not sign-up, is the headline number. A workspace that never posts an
 
 ## 2. Phased Timeline
 
-### Phase 0 — Pre-launch (T-6 → T-0, **now → 2026-05-11**)
+### Phase 0 — Pre-launch (T-6 → T-0, **now → 2026-05-18**)
 
 Goal: ship the product, line up day-one social proof, eliminate launch-day surprises.
 
 | Day | Owner action | Deliverable |
 |-----|-------------|-------------|
-| T-6 (today, 2026-05-05) | Finalise feature freeze list | Issue #41 closed in `dev` |
+| T-6 (today, 2026-05-12) | Finalise feature freeze list | Issue #41 closed in `dev` |
 | T-5 → T-3 | Onboard 3–5 design partners from existing agency network | Each has a workspace + 1 live project + ≥3 real updates |
 | T-4 | Build single-page landing site (re-use Flutter Web build, route `/`) | Hero pulled from `project_brief.md` lines 11–19; waitlist email capture |
 | T-3 | Record 60-second demo video — agency POV → portal POV → comment loop | MP4 in `docs/assets/`, also embedded on landing |
 | T-2 | Write demo-day pitch script (see §6) and rehearse 3× | Script in `docs/demo-script.md` (separate doc) |
 | T-1 | Production deploy + smoke test (use `SMOKE_TEST.md`) | Green check on Render + Firebase |
-| T-0 (2026-05-11) | Demo day → judge presentation → soft launch goes live same evening | Recorded talk + signed-off business brief |
+| T-0 (2026-05-18) | Demo day → judge presentation → soft launch goes live same evening | Recorded talk + signed-off business brief |
 
 Exit criteria for Phase 0: prod URL live, 3+ design-partner workspaces with real data, demo video shot, no P0 bugs in last 24h.
 
-### Phase 1 — Soft launch / private beta (T-0 → T+7, **2026-05-11 → 2026-05-18**)
+### Phase 1 — Soft launch / private beta (T-0 → T+7, **2026-05-18 → 2026-05-25**)
 
 Goal: 10 activated workspaces, 3 testimonials, all P0/P1 bugs surfaced and fixed before the public spotlight.
 
@@ -55,11 +55,11 @@ Goal: 10 activated workspaces, 3 testimonials, all P0/P1 bugs surfaced and fixed
 
 Exit criteria for Phase 1: 10 activated workspaces, ≥3 quotable testimonials, zero open P0 bugs, public-launch assets ready (see Phase 2 checklist).
 
-### Phase 2 — Public launch (T+14, **Monday 2026-05-25 IST → Tuesday 2026-05-26 PT, coordinated**)
+### Phase 2 — Public launch (T+14, **Monday 2026-06-01 IST → Tuesday 2026-06-02 PT, coordinated**)
 
 Goal: top-5 Product Hunt finish in the day's "Productivity" or "SaaS" category, 500+ landing-page visitors, 100+ sign-ups in 24 hours.
 
-Choose **Tuesday 2026-05-26, 12:01 AM PT** as Product Hunt go-live (highest historical engagement window). All other channels coordinated to that timestamp.
+Choose **Tuesday 2026-06-02, 12:01 AM PT** as Product Hunt go-live (highest historical engagement window). All other channels coordinated to that timestamp.
 
 **Launch-day stack (rank-ordered by effort/reward):**
 
@@ -99,7 +99,7 @@ Rollback plan:
 - [ ] If sign-up surge breaks Supabase free tier: auto-throttle sign-ups via feature flag; show waitlist instead of error.
 - [ ] If a P0 bug ships: pin a transparent "we're fixing X — ETA Y" comment on every active thread within 30 min. Do not delete the threads.
 
-### Phase 3 — Post-launch / scale (T+30 → T+90, **2026-06-10 → 2026-08-09**)
+### Phase 3 — Post-launch / scale (T+30 → T+90, **2026-06-17 → 2026-08-16**)
 
 Goal: convert beta to paid, prove retention, activate the product-led loop.
 

@@ -1,6 +1,6 @@
 # ClientPulse — Demo-Day Pitch Script
 
-**Date:** 2026-05-11 (T-0)
+**Date:** 2026-05-18 (T-0)
 **Runtime:** 4 minutes pitch + 1 minute Q&A buffer
 **Audience:** Internal "Zero to Product" sprint judges + observing leadership
 **Goal:** judges leave thinking *"we should sell this on Monday."*
@@ -160,7 +160,7 @@ For anything else, see [`launch-faq.md`](./launch-faq.md).
 
 ## Practice schedule
 
-- T-3 (2026-05-08): full dry run, timed, recorded on phone. Watch back. Identify pacing issues.
-- T-2 (2026-05-09): second dry run with one trusted reviewer (peer or family member who's never seen it). Note where their attention drifts.
-- T-1 (2026-05-10): final run-through, no audience, just to internalise the rhythm. Don't change anything after this.
+- T-3 (2026-05-15): full dry run, timed, recorded on phone. Watch back. Identify pacing issues.
+- T-2 (2026-05-16): second dry run with one trusted reviewer (peer or family member who's never seen it). Note where their attention drifts.
+- T-1 (2026-05-17): final run-through, no audience, just to internalise the rhythm. Don't change anything after this.
 - T-0 morning: don't rehearse the morning of. Trust the work.

@@ -1,6 +1,6 @@
 # ClientPulse — LinkedIn DM Target List Playbook
 
-How to build, qualify, and work the 50-prospect list for soft-launch outreach (Phase 1: 2026-05-11 → 2026-05-18).
+How to build, qualify, and work the 50-prospect list for soft-launch outreach (Phase 1: 2026-05-18 → 2026-05-25).
 
 This is a **playbook**, not a static list. Real names go into a separate spreadsheet (`linkedin-outreach.xlsx` — local only, never committed) so personal data isn't tracked in git.
 
@@ -92,9 +92,9 @@ Local spreadsheet `linkedin-outreach.xlsx`. Never commit.
 | `mutual` | Rahul K | Shared connection if any |
 | `personalisation_hook` | Posted 3 days ago about losing a retainer to bad comms | One specific reason this DM isn't generic |
 | `status` | not-sent / connect-sent / accepted / dm-sent / replied / call-booked / activated / passed | State machine |
-| `connect_sent_at` | 2026-05-12 | Date |
-| `dm_sent_at` | 2026-05-14 | Date |
-| `reply_at` | 2026-05-15 | If replied |
+| `connect_sent_at` | 2026-05-19 | Date |
+| `dm_sent_at` | 2026-05-21 | Date |
+| `reply_at` | 2026-05-22 | If replied |
 | `outcome` | activated / not-fit / no-reply / circle-back-T+30 | Final state |
 | `notes` | wants Slack integration first | Free text |
 
@@ -158,14 +158,14 @@ If still no reply 7 days after follow-up: mark `status = no-reply`, `outcome = c
 
 | Day | Action | Volume |
 |-----|--------|--------|
-| 2026-05-11 (T-0) | Send 10 connection requests | 10 |
-| 2026-05-12 | Send 10 + DM accepted from yesterday | 10 + 3–5 DMs |
-| 2026-05-13 | Send 10 + DM accepted | 10 + 3–5 DMs |
-| 2026-05-14 | Send 10 + DM accepted + 1st follow-ups | 10 + 5 DMs + 2 nudges |
-| 2026-05-15 | Send 10 + DM + follow-ups | 10 + 5 + 3 |
-| 2026-05-16 (Sat) | Reply triage only | — |
-| 2026-05-17 (Sun) | Reply triage + book Mon calls | — |
-| 2026-05-18 (T+7) | Final follow-ups; tally outcomes | nudges only |
+| 2026-05-18 (T-0) | Send 10 connection requests | 10 |
+| 2026-05-19 | Send 10 + DM accepted from yesterday | 10 + 3–5 DMs |
+| 2026-05-20 | Send 10 + DM accepted | 10 + 3–5 DMs |
+| 2026-05-21 | Send 10 + DM accepted + 1st follow-ups | 10 + 5 DMs + 2 nudges |
+| 2026-05-22 | Send 10 + DM + follow-ups | 10 + 5 + 3 |
+| 2026-05-23 (Sat) | Reply triage only | — |
+| 2026-05-24 (Sun) | Reply triage + book Mon calls | — |
+| 2026-05-25 (T+7) | Final follow-ups; tally outcomes | nudges only |
 
 **Hard caps** (LinkedIn limits — exceeding triggers restrictions):
 

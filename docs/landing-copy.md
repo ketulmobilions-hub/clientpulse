@@ -1,6 +1,6 @@
 # ClientPulse — Landing Page Copy
 
-Single-page landing site copy. Implementation: Flutter Web route `/` (or static Cloudflare Pages site if speed > consistency wins). Required live by **2026-05-07 (T-4)**.
+Single-page landing site copy. Implementation: Flutter Web route `/` (or static Cloudflare Pages site if speed > consistency wins). Required live by **2026-05-14 (T-4)**.
 
 Three hero variants for A/B testing. Default to **Variant A** at launch; switch by T+30 to whichever wins.
 
@@ -194,7 +194,7 @@ Placeholder until first design partner is quotable. By T+14, replace with:
 
 ## Waitlist form (pre-launch, replaces "Start free" until T-0)
 
-Until 2026-05-11, the primary CTA captures email instead of provisioning a workspace.
+Until 2026-05-18, the primary CTA captures email instead of provisioning a workspace.
 
 > Want early access?
 >

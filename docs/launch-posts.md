@@ -1,6 +1,6 @@
 # ClientPulse — Launch Day Post Copy
 
-Pre-written, channel-tuned launch posts. All scheduled for **2026-05-26 Tuesday, 12:01 AM PT** (Product Hunt go-live), with the rest staggered to match each channel's prime engagement window.
+Pre-written, channel-tuned launch posts. All scheduled for **2026-06-02 Tuesday, 12:01 AM PT** (Product Hunt go-live), with the rest staggered to match each channel's prime engagement window.
 
 Channel-specific tone matters: Product Hunt rewards warmth, Hacker News punishes marketing voice, Reddit punishes anything that smells like a pitch, IndieHackers loves transparent metrics, LinkedIn loves narrative.
 
@@ -101,7 +101,7 @@ Edit lightly before posting — copying verbatim is fine for PH, fatal for HN/Re
 > **What I'm doing next:**
 >
 > - Soft launch this week → 50 LinkedIn-warmed agencies on a 3-month free trial (10 activations target)
-> - Public launch on Product Hunt 2026-05-26
+> - Public launch on Product Hunt 2026-06-02
 > - Will post weekly metrics here (transparent or it didn't happen)
 >
 > **What I'd love help with:** if you run an agency or know someone who does, I'd love a candid 15-minute call. 3 months free + 50% off Starter for life as a design partner. Reply or DM.

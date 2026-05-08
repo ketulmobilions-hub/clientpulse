@@ -230,8 +230,8 @@ Alert thresholds: configure email at 80% utilisation on each. Supabase dashboard
 | Resend | Transactional email | Founder personal |
 | Cloudflare | DNS, WAF | Founder personal |
 | GitHub | Source + CI | `ketulmobilions-hub` |
-| Better Stack / UpStatus | Status page | TBD by T-1 (2026-05-10) |
-| Sentry | Error monitoring | TBD by T-1 (2026-05-10) |
+| Better Stack / UpStatus | Status page | TBD by T-1 (2026-05-17) |
+| Sentry | Error monitoring | TBD by T-1 (2026-05-17) |
 
 Recovery passwords + 2FA backup codes: stored in 1Password vault `clientpulse-prod`. Founder is the only holder. Single-founder bus factor — accept and document.
 

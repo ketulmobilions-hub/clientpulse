@@ -194,18 +194,18 @@ Sustained weekly cadence starting T+14 (post public launch). One owner. Batch-pr
 
 | Week of (Mon) | Long-form blog (Tue) | LinkedIn (Mon, Thu) | Twitter/X thread (Wed) | Community post (Fri) |
 |--------------|---------------------|--------------------|-----------------------|---------------------|
-| 2026-05-25 | Topic #1 (status update template) | Launch recap + ask for feedback | Behind the launch: 14-day build log | IndieHackers milestone |
-| 2026-06-01 | Topic #5 (alternative to WhatsApp) | Design-partner story #1 | "What I learned shipping in 14 days" | r/agency thread on client comms |
-| 2026-06-08 | Topic #2 (clients ignore updates) | India agency landscape post | Mobile-first portal demo (video) | Headstart Slack post |
-| 2026-06-15 | Topic #11 (magic-link auth) | Founder lessons | One real client portal anonymised | r/SaaS metrics transparency post |
-| 2026-06-22 | Topic #3 (Notion vs Basecamp vs ClientPulse) | Pricing rationale | Pricing decisions thread | Twitter/X #BuildInPublic |
-| 2026-06-29 | Topic #8 (5 update categories) | First paid customer story | Activation lessons | IndieHackers monthly metrics |
-| 2026-07-06 | Topic #4 (milestone tracking) | Agency case study #1 (full) | Behind a feature: file uploads | NASSCOM 10K post |
-| 2026-07-13 | Topic #6 (portal teardowns) | Hot take: "Most client portals are bad" | Teardown thread | r/agency teardown |
-| 2026-07-20 | Topic #7 (India pricing reality) | India market reflections | Pricing in INR vs USD | Headstart deep-dive |
-| 2026-07-27 | Topic #9 (case study) | Customer hero story | Customer quote highlights | IndieHackers update |
-| 2026-08-03 | Topic #10 (white-label) | Agency tier launch | Building white-label | Founder Discord drops |
-| 2026-08-10 (T+90 wrap) | Topic #12 (90-day post-mortem) | Public retrospective | Metrics: what worked | All channels — what shipped |
+| 2026-06-01 | Topic #1 (status update template) | Launch recap + ask for feedback | Behind the launch: 14-day build log | IndieHackers milestone |
+| 2026-06-08 | Topic #5 (alternative to WhatsApp) | Design-partner story #1 | "What I learned shipping in 14 days" | r/agency thread on client comms |
+| 2026-06-15 | Topic #2 (clients ignore updates) | India agency landscape post | Mobile-first portal demo (video) | Headstart Slack post |
+| 2026-06-22 | Topic #11 (magic-link auth) | Founder lessons | One real client portal anonymised | r/SaaS metrics transparency post |
+| 2026-06-29 | Topic #3 (Notion vs Basecamp vs ClientPulse) | Pricing rationale | Pricing decisions thread | Twitter/X #BuildInPublic |
+| 2026-07-06 | Topic #8 (5 update categories) | First paid customer story | Activation lessons | IndieHackers monthly metrics |
+| 2026-07-13 | Topic #4 (milestone tracking) | Agency case study #1 (full) | Behind a feature: file uploads | NASSCOM 10K post |
+| 2026-07-20 | Topic #6 (portal teardowns) | Hot take: "Most client portals are bad" | Teardown thread | r/agency teardown |
+| 2026-07-27 | Topic #7 (India pricing reality) | India market reflections | Pricing in INR vs USD | Headstart deep-dive |
+| 2026-08-03 | Topic #9 (case study) | Customer hero story | Customer quote highlights | IndieHackers update |
+| 2026-08-10 | Topic #10 (white-label) | Agency tier launch | Building white-label | Founder Discord drops |
+| 2026-08-17 (T+90 wrap) | Topic #12 (90-day post-mortem) | Public retrospective | Metrics: what worked | All channels — what shipped |
 
 Each week: 4 hours total of marketing labour. Discipline > volume.
 

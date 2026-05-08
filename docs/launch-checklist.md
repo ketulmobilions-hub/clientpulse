@@ -2,13 +2,13 @@
 
 Single timeline-ordered checklist consolidating every action item across all strategy and operations docs. Print this. Tick boxes as you go. If something is unchecked at its deadline, escalate (delay launch, drop scope, or reassign).
 
-**Today:** 2026-05-05 (T-6).
-**Sprint demo + soft launch:** 2026-05-11 (T-0).
-**Public launch:** 2026-05-26 PT (T+14).
+**Today:** 2026-05-12 (T-6).
+**Sprint demo + soft launch:** 2026-05-18 (T-0).
+**Public launch:** 2026-06-02 PT (T+14).
 
 ---
 
-## T-6 → T-4 (2026-05-05 → 2026-05-07)
+## T-6 → T-4 (2026-05-12 → 2026-05-14)
 
 ### Foundation
 - [ ] All sprint feature work merged to `dev`. Issue #41 closed.
@@ -32,14 +32,14 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ### Landing page
 - [ ] Domain `clientpulse.dev` active and pointed at frontend.
-- [ ] Landing page live by 2026-05-07 EOD using copy from [`landing-copy.md`](./landing-copy.md).
+- [ ] Landing page live by 2026-05-14 EOD using copy from [`landing-copy.md`](./landing-copy.md).
 - [ ] Hero Variant A live by default.
 - [ ] Waitlist form wired to Supabase `waitlist` table.
 - [ ] All hero CTAs land on a working page (`/register` for "Start free", `/p/demo123` for "See a live portal").
 
 ---
 
-## T-3 → T-2 (2026-05-08 → 2026-05-09)
+## T-3 → T-2 (2026-05-15 → 2026-05-16)
 
 ### Comms readiness
 - [ ] [`launch-faq.md`](./launch-faq.md) reviewed; 6 most-likely PH/HN questions confirmed prepared.
@@ -64,7 +64,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T-1 (2026-05-10)
+## T-1 (2026-05-17)
 
 ### Production hardening
 - [ ] Status page live at `status.clientpulse.dev` (Better Stack or UpStatus).
@@ -84,7 +84,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T-0 — Demo day & soft launch (2026-05-11)
+## T-0 — Demo day & soft launch (2026-05-18)
 
 ### Morning (before demo)
 - [ ] Laptop charged. External monitor cable in bag.
@@ -105,7 +105,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T+1 → T+7 — Soft launch / private beta (2026-05-12 → 2026-05-18)
+## T+1 → T+7 — Soft launch / private beta (2026-05-19 → 2026-05-25)
 
 ### Daily
 - [ ] Send 10 LinkedIn connection requests (Mon–Fri).
@@ -122,21 +122,21 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ### Public launch prep
 - [ ] BetaList submission filed (slow drip — submit by T+7 to be live by T+14).
-- [ ] Product Hunt hunter confirmed; listing scheduled for 2026-05-26 12:01 AM PT.
+- [ ] Product Hunt hunter confirmed; listing scheduled for 2026-06-02 12:01 AM PT.
 - [ ] OG image (`/og.png`) created and tested in PH preview.
 - [ ] Demo video re-cut if any beta feedback warrants it.
 
 ---
 
-## T+13 (2026-05-24, day before public launch)
+## T+13 (2026-05-31, day before public launch)
 
 ### Final readiness
 - [ ] All [`launch-posts.md`](./launch-posts.md) drafts copied into the relevant scheduling tools (PH listing draft, Buffer / Typefully for X, draft Reddit posts in saved drafts).
-- [ ] HN "Show HN" planned for 2026-05-26 7:00 AM PT (peak engagement).
+- [ ] HN "Show HN" planned for 2026-06-02 7:00 AM PT (peak engagement).
 - [ ] [`launch-faq.md`](./launch-faq.md) re-read in full.
-- [ ] Calendar cleared for 2026-05-26 (no meetings, no commitments).
+- [ ] Calendar cleared for 2026-06-02 (no meetings, no commitments).
 - [ ] Auto-responder enabled: "On launch day — replies within 6 hours."
-- [ ] Founder available for 12 continuous hours starting 2026-05-26 12:01 AM PT.
+- [ ] Founder available for 12 continuous hours starting 2026-06-02 12:01 AM PT.
 
 ### Last-minute infra
 - [ ] Render service capacity headroom confirmed.
@@ -146,7 +146,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T+14 — Public launch day (2026-05-26 PT / 2026-05-25 IST late evening)
+## T+14 — Public launch day (2026-06-02 PT / 2026-06-01 IST late evening)
 
 ### Hour zero (12:01 AM PT / 12:31 PM IST)
 - [ ] Product Hunt listing goes live.
@@ -176,7 +176,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T+15 → T+30 (2026-05-27 → 2026-06-10)
+## T+15 → T+30 (2026-06-03 → 2026-06-17)
 
 ### Convert beta → paid
 - [ ] Schedule day-7 follow-ups with everyone activated post-launch.
@@ -194,7 +194,7 @@ Single timeline-ordered checklist consolidating every action item across all str
 
 ---
 
-## T+30 → T+90 (2026-06-10 → 2026-08-09)
+## T+30 → T+90 (2026-06-17 → 2026-08-16)
 
 ### Roadmap delivery
 - [ ] Custom domain mapping shipped (target 2026-07-15) per [`roadmap.md`](./roadmap.md).
