@@ -13,11 +13,12 @@ import 'package:clientpulse/features/settings/presentation/screens/settings_scre
 import 'package:clientpulse/features/portal/presentation/screens/portal_screen.dart';
 import 'package:clientpulse/features/updates/presentation/screens/create_update_screen.dart';
 import 'package:clientpulse/features/updates/presentation/screens/update_detail_screen.dart';
+import 'package:clientpulse/features/landing/presentation/screens/landing_screen.dart';
 
 part 'app_router.g.dart';
 
 // KEEP IN SYNC with GoRoute path definitions below.
-const _publicPaths = ['/login', '/register'];
+const _publicPaths = ['/', '/login', '/register'];
 
 // Paths under this prefix bypass the top-level auth guard entirely.
 // Token validation is handled at the route level via GoRoute.redirect.
@@ -64,12 +65,12 @@ GoRouter router(RouterRef ref) {
       // Once resolved, redirect away from loading screen.
       // Direct navigation to /loading (e.g. bookmarked URL) is also handled here.
       if (path == '/loading') {
-        return isAuthenticated ? '/dashboard' : '/login';
+        return isAuthenticated ? '/dashboard' : '/';
       }
 
       final isPublic = _publicPaths.contains(path);
 
-      if (!isAuthenticated && !isPublic) return '/login';
+      if (!isAuthenticated && !isPublic) return '/';
       if (isAuthenticated && isPublic) return '/dashboard';
       return null;
     },
@@ -80,6 +81,10 @@ GoRouter router(RouterRef ref) {
         builder: (_, __) => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
+      ),
+      GoRoute(
+        path: '/',
+        builder: (_, __) => const LandingScreen(),
       ),
       GoRoute(
         path: RouteNames.login,
