@@ -9,6 +9,7 @@ import { updateAttachmentRouter, attachmentRouter } from './attachment.routes';
 import { projectMilestoneRouter, milestoneRouter } from './milestone.routes';
 import { portalRouter } from './portal.routes';
 import commentRouter from './comment.routes';
+import waitlistRouter from './waitlist.routes';
 
 const router = Router();
 
@@ -31,5 +32,7 @@ router.use('/projects/:projectId/milestones', projectMilestoneRouter);
 router.use('/milestones', milestoneRouter);
 
 router.use('/portal', portalRouter);
+
+router.use('/waitlist', waitlistRouter);
 
 export default router;

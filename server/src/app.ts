@@ -75,6 +75,15 @@ app.use('/api/v1/storage', rateLimit({
   message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many upload requests, please try again later.' } },
 }));
 
+// Waitlist limiter — public unauthenticated endpoint, prevent email-spam abuse
+app.use('/api/v1/waitlist', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many submissions, please try again later.' } },
+}));
+
 app.use(requestId);
 app.use(express.json({ limit: '10kb' }));
 
