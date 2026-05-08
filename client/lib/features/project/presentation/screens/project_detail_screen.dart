@@ -280,10 +280,12 @@ class _ProjectPageHeader extends StatelessWidget {
             tooltip: 'Edit',
             onPressed: () {
               // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
-              // the edit screen's save handler relies on this call having
-              // pushed a real browser history entry so it can `history.back()`
-              // over it. `extra: true` flags the navigation as in-app so the
-              // edit screen can distinguish it from a deep-link entry.
+              // the receiving screen's submit handler walks the browser
+              // cursor back over this entry via `history.back()`, which
+              // requires a real browser history entry to have been pushed.
+              // `extra: true` flags the navigation as in-app so the screen
+              // can distinguish it from a deep-link entry (where `history.back()`
+              // would leave the app entirely).
               context.goNamed(
                 RouteNames.editProject,
                 pathParameters: {'id': project.id},
