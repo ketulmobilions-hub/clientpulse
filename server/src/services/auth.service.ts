@@ -29,12 +29,27 @@ export async function registerUser(
   });
 
   if (authError || !authData.user) {
-    console.error('[AUTH] createUser failed:', authError?.status, authError?.message, authError);
+    const code = authError?.code;
+    const rawMessage = typeof authError?.message === 'string' ? authError.message : '';
+    const dupByCode = code === 'email_exists' || code === 'user_already_exists';
+    // Message-based fallback: covers self-hosted/proxy variants that strip `code`.
+    // Matches "already registered", "already been registered", "already exists", etc.
+    const dupByMessage =
+      !code && /already/i.test(rawMessage) && /(registered|exists)/i.test(rawMessage);
+    if (dupByCode || dupByMessage) {
+      throw new AppError(
+        'An account with this email already exists',
+        409,
+        ErrorCodes.EMAIL_EXISTS,
+      );
+    }
     const isClientError = authError != null && (authError.status ?? 500) < 500;
     throw new AppError(
-      authError?.message ?? 'Registration failed',
+      isClientError ? rawMessage || 'Registration failed' : 'Registration failed',
       isClientError ? 400 : 500,
-      isClientError ? ErrorCodes.REGISTRATION_ERROR : ErrorCodes.DB_ERROR,
+      // 5xx here is upstream auth/network, not DB — INTERNAL_ERROR keeps DB_ERROR
+      // as a query-level signal so dashboards/triage point at the right system.
+      isClientError ? ErrorCodes.REGISTRATION_ERROR : ErrorCodes.INTERNAL_ERROR,
     );
   }
 

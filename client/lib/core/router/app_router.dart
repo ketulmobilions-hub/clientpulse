@@ -38,8 +38,24 @@ GoRouter router(RouterRef ref) {
 
       final authAsync = ref.read(isAuthenticatedProvider);
 
-      // Auth not yet resolved — hold on loading screen; don't guess.
-      if (authAsync.isLoading || authAsync.hasError) {
+      // AsyncLoading mid-submit on a public auth path is expected — AuthNotifier
+      // flips state during register/login. Keeping the user on /login or /register
+      // lets the submit's catch run setState on the live State (otherwise mounted
+      // is false, _errorMessage never updates, banner never renders). Only safe
+      // when the user is NOT yet authenticated; an authed user landing on /login
+      // mid-AsyncLoading must still bounce to /dashboard via the normal redirect.
+      if (authAsync.isLoading) {
+        final lastValue = authAsync.valueOrNull;
+        final wasUnauthenticated = lastValue == null || lastValue == false;
+        if (wasUnauthenticated && _publicPaths.contains(path)) return null;
+        return path == '/loading' ? null : '/loading';
+      }
+
+      // hasError fires only when isAuthenticatedProvider's build() failed (auth
+      // service init crash) — AuthNotifier's login/register catch resets to
+      // AsyncData(null), it does not produce AsyncError. Holding on /loading
+      // surfaces the failure rather than booting the user into a broken UI.
+      if (authAsync.hasError) {
         return path == '/loading' ? null : '/loading';
       }
 
@@ -66,58 +82,61 @@ GoRouter router(RouterRef ref) {
         ),
       ),
       GoRoute(
-        path: '/login',
+        path: RouteNames.login,
         name: RouteNames.login,
-        builder: (_, __) => const LoginScreen(),
+        builder: (_, state) =>
+            LoginScreen(prefillEmail: state.uri.queryParameters['email']),
       ),
       GoRoute(
-        path: '/register',
+        path: RouteNames.register,
         name: RouteNames.register,
         builder: (_, __) => const RegisterScreen(),
       ),
       GoRoute(
-        path: '/dashboard',
-        name: RouteNames.dashboard,
-        builder: (_, __) => const DashboardScreen(),
-      ),
-      // /projects/new must be listed BEFORE /projects/:id to prevent
-      // GoRouter from matching "new" as an :id path parameter.
-      GoRoute(
-        path: '/projects/new',
-        name: RouteNames.createProject,
-        builder: (_, __) => const CreateEditProjectScreen(),
-      ),
-      GoRoute(
-        path: '/projects/:id',
-        name: RouteNames.projectDetail,
-        builder: (_, state) => ProjectDetailScreen(
-          projectId: state.pathParameters['id']!,
-        ),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            name: RouteNames.editProject,
-            builder: (_, state) => CreateEditProjectScreen(
-              projectId: state.pathParameters['id'],
+          path: RouteNames.dashboard,
+          name: RouteNames.dashboard,
+          builder: (_, __) => const DashboardScreen(),
+          routes: [
+            GoRoute(
+              path: RouteNames.createProject,
+              name: RouteNames.createProject,
+              builder: (_, state) => CreateEditProjectScreen(
+                cameFromInApp: state.extra == true,
+              ),
             ),
-          ),
-          GoRoute(
-            path: 'updates/new',
-            name: RouteNames.createUpdate,
-            builder: (_, state) => CreateUpdateScreen(
-              projectId: state.pathParameters['id']!,
+            GoRoute(
+              path: RouteNames.projectDetail,
+              name: RouteNames.projectDetail,
+              builder: (_, state) => ProjectDetailScreen(
+                projectId: state.pathParameters['id']!,
+              ),
+              routes: [
+                GoRoute(
+                  path: RouteNames.editProject,
+                  name: RouteNames.editProject,
+                  builder: (_, state) => CreateEditProjectScreen(
+                    projectId: state.pathParameters['id'],
+                    cameFromInApp: state.extra == true,
+                  ),
+                ),
+                GoRoute(
+                  path: 'updates/new',
+                  name: RouteNames.createUpdate,
+                  builder: (_, state) => CreateUpdateScreen(
+                    projectId: state.pathParameters['id']!,
+                  ),
+                ),
+                GoRoute(
+                  path: RouteNames.updateDetailPath,
+                  name: RouteNames.updateDetailName,
+                  builder: (_, state) => UpdateDetailScreen(
+                    projectId: state.pathParameters['id']!,
+                    updateId: state.pathParameters['updateId']!,
+                  ),
+                ),
+              ],
             ),
-          ),
-          GoRoute(
-            path: 'updates/:updateId',
-            name: RouteNames.updateDetail,
-            builder: (_, state) => UpdateDetailScreen(
-              projectId: state.pathParameters['id']!,
-              updateId: state.pathParameters['updateId']!,
-            ),
-          ),
-        ],
-      ),
+          ]),
       GoRoute(
         path: '/settings',
         name: RouteNames.settings,
@@ -144,7 +163,7 @@ GoRouter router(RouterRef ref) {
           children: [
             const Text('Page not found'),
             TextButton(
-              onPressed: () => context.go('/dashboard'),
+              onPressed: () => context.goNamed(RouteNames.dashboard),
               child: const Text('Go home'),
             ),
           ],

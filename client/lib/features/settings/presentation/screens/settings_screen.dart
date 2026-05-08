@@ -2,9 +2,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/workspace.dart';
 import 'package:clientpulse/shared/providers/workspace_provider.dart';
 import 'package:clientpulse/shared/services/workspace_service.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 
 const _kMaxLogoBytes = 2 * 1024 * 1024; // 2 MB
 
@@ -143,7 +147,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final workspaceAsync = ref.watch(workspaceNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workspace Settings')),
+      appBar: const AppHeader(pageTitle: 'Workspace Settings'),
       body: workspaceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -152,9 +156,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Text('Failed to load workspace: $e'),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.read(workspaceNotifierProvider.notifier).load(),
-                child: const Text('Retry'),
+              AppButton(
+                label: 'Retry',
+                size: AppButtonSize.lg,
+                onPressed: () =>
+                    ref.read(workspaceNotifierProvider.notifier).load(),
               ),
             ],
           ),
@@ -209,7 +215,7 @@ class _SettingsBody extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.form),
           child: Form(
             key: formKey,
             child: Column(
@@ -231,16 +237,18 @@ class _SettingsBody extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           else
-                            OutlinedButton.icon(
+                            AppButton(
+                              label: 'Change Logo',
+                              variant: AppButtonVariant.secondary,
+                              size: AppButtonSize.lg,
+                              icon: Icons.upload_outlined,
                               onPressed: onUploadLogo,
-                              icon: const Icon(Icons.upload_outlined, size: 18),
-                              label: const Text('Change Logo'),
                             ),
                           const SizedBox(height: 6),
                           Text(
                             'PNG, JPG, GIF or WebP · max 2 MB',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -267,16 +275,12 @@ class _SettingsBody extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                FilledButton(
+                AppButton(
                   key: const Key('save_button'),
-                  onPressed: (isSaving || isUploading) ? null : onSave,
-                  child: isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Save Changes'),
+                  label: 'Save Changes',
+                  size: AppButtonSize.lg,
+                  loading: isSaving,
+                  onPressed: isUploading ? null : onSave,
                 ),
               ],
             ),
@@ -325,7 +329,7 @@ class _LogoPreview extends StatelessWidget {
       return CircleAvatar(
         radius: 40,
         backgroundImage: NetworkImage(logoUrl!),
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: AppColors.surfaceRaised,
         onBackgroundImageError: (_, __) {},
       );
     }

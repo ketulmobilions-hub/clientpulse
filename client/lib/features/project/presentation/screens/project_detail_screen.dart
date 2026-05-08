@@ -4,23 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/constants.dart';
 import 'package:clientpulse/core/router/route_names.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
 import 'package:clientpulse/features/milestones/presentation/widgets/milestone_list_widget.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
+import 'package:clientpulse/features/updates/presentation/widgets/update_header.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/models/project.dart';
+import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
+import 'package:clientpulse/shared/widgets/responsive_content.dart';
 import 'package:clientpulse/shared/widgets/shimmer_card.dart';
-
-const _kCardBg = Color(0xFF262626);
-const _kCardBorder = Color(0xFF3F3F46);
-const _kMuted = Color(0xFF71717A);
-const _kGreen = Color(0xFF22C55E);
-const _kAmber = Color(0xFFF59E0B);
 
 class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
@@ -33,16 +37,19 @@ class ProjectDetailScreen extends ConsumerWidget {
 
     return projectListAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(),
-        body: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: 3,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, __) => const ShimmerCard(height: 120),
+        appBar: const AppHeader(),
+        body: ResponsiveContent(
+          maxWidth: AppContentWidth.standard,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
+            itemCount: 3,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+            itemBuilder: (_, __) => const ShimmerCard(height: 120),
+          ),
         ),
       ),
       error: (_, __) => Scaffold(
-        appBar: AppBar(),
+        appBar: const AppHeader(),
         body: ErrorStateWidget(
           message: 'Failed to load project',
           onRetry: () => ref.read(projectNotifierProvider.notifier).load(),
@@ -52,7 +59,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         final project = list.where((p) => p.id == projectId).firstOrNull;
         if (project == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Project not found')),
+            appBar: const AppHeader(pageTitle: 'Project not found'),
             body: EmptyStateWidget(
               icon: Icons.search_off_rounded,
               message: 'Project not found',
@@ -103,75 +110,81 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
     final updates =
         ref.watch(updateNotifierProvider(widget.projectId)).valueOrNull ?? [];
 
-    final totalMilestones = milestones.length;
-    final completedMilestones = milestones.where((m) => m.completed).length;
-    final progressPct =
-        totalMilestones > 0 ? completedMilestones / totalMilestones : 0.0;
     final nextMilestone = milestones.where((m) => !m.completed).firstOrNull;
-    final totalComments = updates.fold(0, (s, u) => s + (u.commentCount ?? 0));
-    final totalAttachments =
-        updates.fold(0, (s, u) => s + (u.attachmentCount ?? 0));
+    final pendingApprovals = updates
+        .where((u) =>
+            u.status == UpdateStatus.published &&
+            u.category == UpdateCategory.inputNeeded)
+        .length;
+    final lastActivityAt = _latestActivity(updates, project.updatedAt);
 
     return Scaffold(
+      appBar: const AppHeader(),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
-            _ProjectPageHeader(
-              project: project,
-              projectId: widget.projectId,
-              updateCount: updates.length,
-            ),
-            _StatsRow(
-              progressPct: progressPct,
-              completedMilestones: completedMilestones,
-              totalMilestones: totalMilestones,
-              updateCount: updates.length,
-              totalComments: totalComments,
-              totalAttachments: totalAttachments,
-              nextMilestone: nextMilestone,
-            ),
-            if (milestones.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _MilestoneStepper(milestones: milestones),
-            ],
-            _buildTabBar(),
-            Expanded(
-              child: TabBarView(
-                controller: _tabs,
-                children: [
-                  _UpdatesTab(projectId: widget.projectId),
-                  _MilestonesTab(projectId: widget.projectId),
-                  const _SettingsTab(),
-                ],
+        child: ResponsiveContent(
+          maxWidth: AppContentWidth.standard,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ProjectPageHeader(
+                project: project,
+                projectId: widget.projectId,
+                updateCount: updates.length,
+                pendingApprovals: pendingApprovals,
+                lastActivityAt: lastActivityAt,
+                nextMilestone: nextMilestone,
               ),
-            ),
-          ],
+              if (milestones.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s4),
+                _MilestoneStepper(milestones: milestones),
+              ],
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabs,
+                  children: [
+                    _UpdatesTab(projectId: widget.projectId),
+                    _MilestonesTab(projectId: widget.projectId),
+                    const _SettingsTab(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  DateTime? _latestActivity(List<Update> updates, DateTime projectUpdatedAt) {
+    DateTime latest = projectUpdatedAt;
+    for (final u in updates) {
+      final parsed = DateTime.tryParse(u.updatedAt);
+      if (parsed != null && parsed.isAfter(latest)) latest = parsed;
+    }
+    return latest;
+  }
+
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.only(top: AppSpacing.s12, bottom: AppSpacing.s4),
+      padding: const EdgeInsets.all(AppSpacing.s4),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _kCardBorder),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: TabBar(
         controller: _tabs,
         indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(7),
-          color: _kCardBorder,
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+          color: AppColors.surfaceRaised,
+          border: Border.all(color: AppColors.border),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
-        labelColor: Colors.white,
-        unselectedLabelColor: _kMuted,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: AppColors.textMuted,
         labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         unselectedLabelStyle:
             const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
@@ -190,11 +203,17 @@ class _ProjectPageHeader extends StatelessWidget {
     required this.project,
     required this.projectId,
     required this.updateCount,
+    required this.pendingApprovals,
+    required this.lastActivityAt,
+    required this.nextMilestone,
   });
 
   final Project project;
   final String projectId;
   final int updateCount;
+  final int pendingApprovals;
+  final DateTime? lastActivityAt;
+  final Milestone? nextMilestone;
 
   @override
   Widget build(BuildContext context) {
@@ -203,431 +222,245 @@ class _ProjectPageHeader extends StatelessWidget {
     final shareUrl =
         shareToken != null ? '${AppConstants.appBaseUrl}/p/$shareToken' : null;
 
-    final editButton = InkWell(
-      onTap: () => context.pushNamed(
-        RouteNames.editProject,
-        pathParameters: {'id': project.id},
-      ),
-      borderRadius: BorderRadius.circular(8),
-      child: const Padding(
-        padding: EdgeInsets.all(4),
-        child: Icon(Icons.edit_outlined, size: 18, color: Color(0xFFA1A1AA)),
-      ),
-    );
-
-    final portalButton = shareUrl != null
-        ? OutlinedButton.icon(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: shareUrl));
-              if (context.mounted) {
-                ScaffoldMessenger.of(context)
-                  ..clearSnackBars()
-                  ..showSnackBar(const SnackBar(content: Text('Link copied')));
-              }
-            },
-            icon: const Icon(Icons.link_rounded, size: 15),
-            label: const Text('Client Portal Link'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 34),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              side: const BorderSide(color: _kCardBorder),
-            ),
-          )
-        : null;
-
-    final newUpdateButton = FilledButton.icon(
-      onPressed: () => context.pushNamed(
-        RouteNames.createUpdate,
-        pathParameters: {'id': projectId},
-      ),
-      icon: const Icon(Icons.add, size: 15),
-      label: const Text('New Update'),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 34),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-      ),
-    );
-
-    final titleMeta = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          project.name,
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-        ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            StatusBadge(status: project.status),
-            const Text('·', style: TextStyle(color: _kMuted)),
-            Text(project.clientName,
-                style: theme.textTheme.bodySmall?.copyWith(color: _kMuted)),
-            if (updateCount > 0) ...[
-              const Text('·', style: TextStyle(color: _kMuted)),
-              Text(
-                '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                style: theme.textTheme.bodySmall?.copyWith(color: _kMuted),
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-
-    final actionButtons = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (portalButton != null) ...[portalButton, const SizedBox(width: 8)],
-        newUpdateButton,
-      ],
-    );
+    final cta = _resolveCta(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth <= 700) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: titleMeta),
-                    const SizedBox(width: 8),
-                    editButton,
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    if (portalButton != null) ...[
-                      Expanded(child: portalButton),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(child: newUpdateButton),
-                  ],
-                ),
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: titleMeta),
-              const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  editButton,
-                  const SizedBox(width: 8),
-                  actionButtons,
-                ],
-              ),
-            ],
-          );
-        },
+      padding: const EdgeInsets.only(
+        top: AppSpacing.s16,
+        bottom: AppSpacing.s12,
       ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({
-    required this.progressPct,
-    required this.completedMilestones,
-    required this.totalMilestones,
-    required this.updateCount,
-    required this.totalComments,
-    required this.totalAttachments,
-    required this.nextMilestone,
-  });
-
-  final double progressPct;
-  final int completedMilestones;
-  final int totalMilestones;
-  final int updateCount;
-  final int totalComments;
-  final int totalAttachments;
-  final Milestone? nextMilestone;
-
-  @override
-  Widget build(BuildContext context) {
-    final progressCard = _ProgressCard(
-      pct: progressPct,
-      completed: completedMilestones,
-      total: totalMilestones,
-    );
-    final updatesCard = _UpdatesStatCard(
-      count: updateCount,
-      comments: totalComments,
-      attachments: totalAttachments,
-    );
-    final milestoneCard = _NextMilestoneCard(milestone: nextMilestone);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth <= 700) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(child: progressCard),
-                      const SizedBox(width: 10),
-                      Expanded(child: updatesCard),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                milestoneCard,
-              ],
-            );
-          }
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: progressCard),
-                const SizedBox(width: 10),
-                Expanded(child: updatesCard),
-                const SizedBox(width: 10),
-                Expanded(child: milestoneCard),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kCardBorder),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard(
-      {required this.pct, required this.completed, required this.total});
-
-  final double pct;
-  final int completed;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'OVERALL PROGRESS',
-            style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              SizedBox(
-                width: 52,
-                height: 52,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: pct,
-                      strokeWidth: 6,
-                      backgroundColor: _kCardBorder,
-                      valueColor: const AlwaysStoppedAnimation(_kGreen),
-                      strokeCap: StrokeCap.round,
-                    ),
-                    Text(
-                      '${(pct * 100).round()}%',
-                      style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              if (total > 0) ...[
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$completed / $total',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const Text(
-                      'milestones',
-                      style: TextStyle(fontSize: 11, color: _kMuted),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UpdatesStatCard extends StatelessWidget {
-  const _UpdatesStatCard({
-    required this.count,
-    required this.comments,
-    required this.attachments,
-  });
-
-  final int count;
-  final int comments;
-  final int attachments;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'TOTAL UPDATES',
-            style: TextStyle(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: _kMuted,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$count',
-            style: theme.textTheme.displaySmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '$comments comments · $attachments attachments',
-            style: const TextStyle(fontSize: 11, color: _kMuted),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NextMilestoneCard extends StatelessWidget {
-  const _NextMilestoneCard({required this.milestone});
-
-  final Milestone? milestone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return _StatCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _ClientAvatar(name: project.clientName),
+          const SizedBox(width: AppSpacing.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'NEXT MILESTONE',
-                  style: TextStyle(
-                      fontSize: 9,
-                      letterSpacing: 0.8,
-                      color: _kMuted,
-                      fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                if (milestone == null)
-                  Text(
-                    'All done!',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _kGreen,
-                    ),
-                  )
-                else
-                  Text(
-                    milestone!.title,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  project.clientName,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: AppColors.textFaint,
+                    letterSpacing: 0.2,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.s4),
+                Text(
+                  project.name,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSpacing.s8),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s4,
+                  children: [
+                    StatusBadge(status: project.status),
+                    if (lastActivityAt != null)
+                      _MetaChip(
+                        icon: Icons.bolt_rounded,
+                        label: 'Active ${formatRelativeTime(lastActivityAt!)}',
+                      ),
+                    if (pendingApprovals > 0)
+                      _MetaChip(
+                        icon: Icons.mark_email_unread_outlined,
+                        label:
+                            '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
+                        tone: _ChipTone.warning,
+                      ),
+                    if (updateCount > 0)
+                      _MetaChip(
+                        icon: Icons.forum_outlined,
+                        label:
+                            '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
-          if (milestone?.dueDate != null) ...[
-            const SizedBox(width: 12),
-            Text(
-              _formatDueDate(milestone!.dueDate!),
-              style: const TextStyle(fontSize: 11, color: _kMuted),
+          const SizedBox(width: AppSpacing.s8),
+          AppIconButton(
+            tooltip: 'Edit',
+            icon: Icons.edit_outlined,
+            tone: AppIconButtonTone.faint,
+            onPressed: () {
+              // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
+              // the receiving screen's submit handler walks the browser
+              // cursor back over this entry via `history.back()`, which
+              // requires a real browser history entry to have been pushed.
+              // `extra: true` flags the navigation as in-app so the screen
+              // can distinguish it from a deep-link entry (where `history.back()`
+              // would leave the app entirely).
+              context.goNamed(
+                RouteNames.editProject,
+                pathParameters: {'id': project.id},
+                extra: true,
+              );
+            },
+          ),
+          if (shareUrl != null) ...[
+            const SizedBox(width: AppSpacing.s4),
+            AppButton(
+              label: 'Share',
+              variant: AppButtonVariant.secondary,
+              icon: Icons.link_rounded,
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: shareUrl));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                        const SnackBar(content: Text('Link copied')));
+                }
+              },
             ),
           ],
+          const SizedBox(width: AppSpacing.s8),
+          AppButton(
+            label: cta.label,
+            icon: cta.icon,
+            onPressed: cta.onPressed,
+          ),
         ],
       ),
     );
   }
 
-  String _formatDueDate(String dueDate) {
-    final dt = DateTime.tryParse(dueDate);
-    if (dt == null) return dueDate;
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    final dateStr = '${months[dt.month - 1]} ${dt.day}';
-    final days = dt.difference(DateTime.now()).inDays;
-    if (days < 0) return '$dateStr · ${-days}d overdue';
-    if (days == 0) return '$dateStr · Today';
-    return '$dateStr · ${days}d away';
+  _CtaSpec _resolveCta(BuildContext context) {
+    void goCreate() => context.pushNamed(
+          RouteNames.createUpdate,
+          pathParameters: {'id': projectId},
+        );
+
+    if (pendingApprovals > 0) {
+      return _CtaSpec(
+        label: 'Reply to Client',
+        icon: Icons.reply_rounded,
+        onPressed: goCreate,
+      );
+    }
+    final due = nextMilestone?.dueDate;
+    if (due != null) {
+      final dt = DateTime.tryParse(due);
+      if (dt != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final dueDay = DateTime(dt.year, dt.month, dt.day);
+        if (dueDay.isBefore(today)) {
+          return _CtaSpec(
+            label: 'Post Milestone Update',
+            icon: Icons.flag_rounded,
+            onPressed: goCreate,
+          );
+        }
+      }
+    }
+    return _CtaSpec(
+      label: 'New Update',
+      icon: Icons.add,
+      onPressed: goCreate,
+    );
+  }
+
+}
+
+class _CtaSpec {
+  const _CtaSpec(
+      {required this.label, required this.icon, required this.onPressed});
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+}
+
+class _ClientAvatar extends StatelessWidget {
+  const _ClientAvatar({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _initials(name);
+    final hue = name.hashCode % 360;
+    final bg = HSLColor.fromAHSL(1, hue.toDouble(), 0.45, 0.32).toColor();
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first)
+        .toUpperCase();
+  }
+}
+
+enum _ChipTone { neutral, warning }
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    this.tone = _ChipTone.neutral,
+  });
+
+  final IconData icon;
+  final String label;
+  final _ChipTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, fg) = switch (tone) {
+      _ChipTone.warning => (
+          AppColors.categoryAmber.withOpacity(0.18),
+          AppColors.categoryAmberFg,
+        ),
+      _ChipTone.neutral => (AppColors.surfaceRaised, AppColors.textFaint),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8,
+        vertical: AppSpacing.s4,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: AppSpacing.s4),
+          Text(
+            label,
+            style: TextStyle(
+              color: fg,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -643,12 +476,16 @@ class _MilestoneStepper extends StatelessWidget {
     final firstIncompleteIdx = milestones.indexWhere((m) => !m.completed);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.s16,
+        AppSpacing.s12,
+        AppSpacing.s16,
+        AppSpacing.s12,
+      ),
       decoration: BoxDecoration(
-        color: _kCardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kCardBorder),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,14 +493,18 @@ class _MilestoneStepper extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Milestones', style: theme.textTheme.titleSmall),
+              Text(
+                'Milestones',
+                style: theme.textTheme.titleMedium,
+              ),
               Text(
                 '$completedCount of ${milestones.length} phases',
-                style: const TextStyle(fontSize: 12, color: _kMuted),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textMuted),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -704,22 +545,23 @@ class _StepNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = milestone.completed;
-    final color =
-        isCompleted ? _kGreen : (isCurrentMilestone ? _kAmber : _kCardBorder);
+    final color = isCompleted
+        ? AppColors.success
+        : (isCurrentMilestone ? AppColors.categoryAmber : AppColors.border);
 
     return Container(
-      width: 36,
-      height: 36,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       alignment: Alignment.center,
       child: isCompleted
-          ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
           : Text(
               '${index + 1}',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isCurrentMilestone ? Colors.white : _kMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isCurrentMilestone ? Colors.white : AppColors.textMuted,
               ),
             ),
     );
@@ -734,9 +576,10 @@ class _StepLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        leftCompleted ? _kGreen : (isLeftCurrent ? _kAmber : _kCardBorder);
-    return Container(width: 56, height: 2, color: color);
+    final color = leftCompleted
+        ? AppColors.success
+        : (isLeftCurrent ? AppColors.categoryAmber : AppColors.border);
+    return Container(width: 48, height: 2, color: color);
   }
 }
 
@@ -750,9 +593,9 @@ class _UpdatesTab extends ConsumerWidget {
     final updatesAsync = ref.watch(updateNotifierProvider(projectId));
     return updatesAsync.when(
       loading: () => ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
         itemCount: 3,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
         itemBuilder: (_, __) => const ShimmerCard(height: 120),
       ),
       error: (e, _) => ErrorStateWidget(
@@ -776,7 +619,7 @@ class _UpdatesTab extends ConsumerWidget {
           onRefresh: () =>
               ref.read(updateNotifierProvider(projectId).notifier).load(),
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
             itemCount: updates.length,
             itemBuilder: (_, i) => UpdateCard(
               key: ValueKey(updates[i].id),
@@ -808,21 +651,19 @@ class _SettingsTab extends StatelessWidget {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.s32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.settings_outlined, size: 48, color: _kMuted),
-            const SizedBox(height: 12),
+            const Icon(Icons.settings_outlined,
+                size: 48, color: AppColors.textMuted),
+            const SizedBox(height: AppSpacing.s12),
+            Text('Project settings', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.s4),
             Text(
-              'Project settings',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            const Text(
               'Manage team, permissions, and notifications',
-              style: TextStyle(fontSize: 13, color: _kMuted),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
           ],

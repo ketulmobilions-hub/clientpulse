@@ -43,6 +43,9 @@ export const ErrorCodes = {
 
   // Registration
   REGISTRATION_ERROR: 'REGISTRATION_ERROR',
+  // EMAIL_EXISTS is intentionally distinct from CONFLICT so the client can
+  // drive duplicate-email-specific UX (e.g. "Sign in instead" CTA, prefill email).
+  EMAIL_EXISTS: 'EMAIL_EXISTS',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

@@ -112,26 +112,90 @@ describe('registerUser', () => {
     expect(result.workspaceId).toBe(WORKSPACE.id);
   });
 
-  it('throws REGISTRATION_ERROR (400) when Supabase returns 4xx auth error', async () => {
+  it('throws EMAIL_EXISTS (409) when Supabase reports duplicate email (email_exists)', async () => {
+    mockCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'A user with this email address has already been registered', code: 'email_exists', status: 422 },
+    });
+
+    await expect(registerUser('dup@agency.com', 'pass12345', 'Dup', 'Dup Agency')).rejects.toMatchObject({
+      code: ErrorCodes.EMAIL_EXISTS,
+      statusCode: 409,
+      message: 'An account with this email already exists',
+    });
+  });
+
+  it('throws EMAIL_EXISTS (409) when Supabase reports duplicate email (user_already_exists)', async () => {
     mockCreateUser.mockResolvedValue({
       data: { user: null },
       error: { message: 'User already exists', code: 'user_already_exists', status: 422 },
     });
 
     await expect(registerUser('dup@agency.com', 'pass12345', 'Dup', 'Dup Agency')).rejects.toMatchObject({
-      code: ErrorCodes.REGISTRATION_ERROR,
-      statusCode: 400,
+      code: ErrorCodes.EMAIL_EXISTS,
+      statusCode: 409,
     });
   });
 
-  it('throws DB_ERROR (500) when Supabase returns 5xx auth error', async () => {
+  it('throws REGISTRATION_ERROR (400) and passes through Supabase message on other 4xx auth errors', async () => {
+    mockCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Password should be at least 8 characters', code: 'weak_password', status: 422 },
+    });
+
+    await expect(registerUser('pm@agency.com', 'short', 'Pat', 'Acme')).rejects.toMatchObject({
+      code: ErrorCodes.REGISTRATION_ERROR,
+      statusCode: 400,
+      message: 'Password should be at least 8 characters',
+    });
+  });
+
+  it('throws EMAIL_EXISTS (409) via message-based fallback when code field is missing', async () => {
+    mockCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'A user with this email address has already been registered', status: 422 },
+    });
+
+    await expect(registerUser('dup@agency.com', 'pass12345', 'Dup', 'Dup Agency')).rejects.toMatchObject({
+      code: ErrorCodes.EMAIL_EXISTS,
+      statusCode: 409,
+    });
+  });
+
+  it('falls back to "Registration failed" when 4xx auth error has empty message', async () => {
+    mockCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: '', status: 422 },
+    });
+
+    await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
+      code: ErrorCodes.REGISTRATION_ERROR,
+      statusCode: 400,
+      message: 'Registration failed',
+    });
+  });
+
+  it('falls back to "Registration failed" when 4xx auth error has non-string message', async () => {
+    mockCreateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: { nested: 'object' }, status: 422 },
+    });
+
+    await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
+      code: ErrorCodes.REGISTRATION_ERROR,
+      statusCode: 400,
+      message: 'Registration failed',
+    });
+  });
+
+  it('throws INTERNAL_ERROR (500) when Supabase returns 5xx auth/network error', async () => {
     mockCreateUser.mockResolvedValue({
       data: { user: null },
       error: { message: 'Internal server error', status: 500 },
     });
 
     await expect(registerUser('pm@agency.com', 'pass12345', 'Pat', 'Acme')).rejects.toMatchObject({
-      code: ErrorCodes.DB_ERROR,
+      code: ErrorCodes.INTERNAL_ERROR,
       statusCode: 500,
     });
   });

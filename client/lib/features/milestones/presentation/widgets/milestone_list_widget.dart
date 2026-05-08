@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
-import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/shimmer_card.dart';
 import 'milestone_tile.dart';
@@ -14,66 +16,63 @@ class MilestoneListWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final milestonesAsync = ref.watch(milestoneNotifierProvider(projectId));
-    return Column(
-      children: [
-        Expanded(
-          child: milestonesAsync.when(
-            loading: () => ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: 3,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, __) => const ShimmerCard(height: 60),
-            ),
-            error: (e, _) => ErrorStateWidget(
-              message: 'Failed to load milestones',
-              onRetry: () =>
-                  ref.read(milestoneNotifierProvider(projectId).notifier).load(),
-            ),
-            data: (milestones) {
-              if (milestones.isEmpty) {
-                return const EmptyStateWidget(
-                  icon: Icons.flag_outlined,
-                  message: 'No milestones yet',
-                );
-              }
-              final firstIncompleteIdx = milestones.indexWhere((m) => !m.completed);
-              return ReorderableListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                buildDefaultDragHandles: false,
-                itemCount: milestones.length,
-                onReorder: (oldIndex, newIndex) => ref
-                    .read(milestoneNotifierProvider(projectId).notifier)
-                    .reorder(oldIndex, newIndex),
-                itemBuilder: (_, i) => MilestoneTile(
-                  key: ValueKey(milestones[i].id),
-                  milestone: milestones[i],
-                  projectId: projectId,
-                  displayIndex: i + 1,
-                  isCurrentMilestone: i == firstIncompleteIdx,
-                  index: i,
-                ),
-              );
-            },
+    return milestonesAsync.when(
+      loading: () => ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s8),
+        itemBuilder: (_, __) => const ShimmerCard(height: 60),
+      ),
+      error: (e, _) => ErrorStateWidget(
+        message: 'Failed to load milestones',
+        onRetry: () =>
+            ref.read(milestoneNotifierProvider(projectId).notifier).load(),
+      ),
+      data: (milestones) {
+        final firstIncompleteIdx =
+            milestones.indexWhere((m) => !m.completed);
+        return ReorderableListView.builder(
+          padding: const EdgeInsets.only(top: 8, bottom: 16),
+          itemCount: milestones.length,
+          buildDefaultDragHandles: false,
+          onReorder: (oldIndex, newIndex) => ref
+              .read(milestoneNotifierProvider(projectId).notifier)
+              .reorder(oldIndex, newIndex),
+          footer: _InlineAddMilestoneRow(projectId: projectId),
+          proxyDecorator: (child, index, animation) => Material(
+            color: Colors.transparent,
+            elevation: 6,
+            shadowColor: const Color(0x66000000),
+            borderRadius: BorderRadius.circular(10),
+            child: child,
           ),
-        ),
-        if (milestonesAsync.hasValue && !milestonesAsync.hasError)
-          _AddMilestoneButton(projectId: projectId),
-      ],
+          itemBuilder: (_, i) => MilestoneTile(
+            key: ValueKey(milestones[i].id),
+            milestone: milestones[i],
+            projectId: projectId,
+            isCurrentMilestone: i == firstIncompleteIdx,
+            dragIndex: i,
+          ),
+        );
+      },
     );
   }
 }
 
-class _AddMilestoneButton extends ConsumerStatefulWidget {
-  const _AddMilestoneButton({required this.projectId});
+class _InlineAddMilestoneRow extends ConsumerStatefulWidget {
+  const _InlineAddMilestoneRow({required this.projectId});
 
   final String projectId;
 
   @override
-  ConsumerState<_AddMilestoneButton> createState() => _AddMilestoneButtonState();
+  ConsumerState<_InlineAddMilestoneRow> createState() =>
+      _InlineAddMilestoneRowState();
 }
 
-class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
+class _InlineAddMilestoneRowState
+    extends ConsumerState<_InlineAddMilestoneRow> {
   bool _expanded = false;
+  bool _hovered = false;
   final _ctrl = TextEditingController();
   final _focus = FocusNode();
 
@@ -105,7 +104,8 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
           ..showSnackBar(
-            const SnackBar(content: Text('Failed to add milestone. Try again.')),
+            const SnackBar(
+                content: Text('Failed to add milestone. Try again.')),
           );
         _ctrl.text = title;
         setState(() => _expanded = true);
@@ -117,54 +117,107 @@ class _AddMilestoneButtonState extends ConsumerState<_AddMilestoneButton> {
   Widget build(BuildContext context) {
     if (_expanded) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _ctrl,
-                focusNode: _focus,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Milestone title',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s12, AppSpacing.s8, AppSpacing.s8, AppSpacing.s8),
+          child: Row(
+            children: [
+              const Icon(Icons.add_rounded, size: 18, color: AppColors.textMuted),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  focusNode: _focus,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Milestone title',
+                    isDense: true,
+                    border: InputBorder.none,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _submit(),
                 ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _submit(),
               ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton(
-              onPressed: _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 40),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 32),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                child: const Text('Add'),
               ),
-              child: const Text('Add'),
-            ),
-            const SizedBox(width: 4),
-            TextButton(
-              onPressed: () {
-                _ctrl.clear();
-                setState(() => _expanded = false);
-              },
-              child: const Text('Cancel'),
-            ),
-          ],
+              const SizedBox(width: 4),
+              TextButton(
+                onPressed: () {
+                  _ctrl.clear();
+                  setState(() => _expanded = false);
+                },
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(0, 32),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                ),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
         ),
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => setState(() => _expanded = true),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Add milestone'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            side: const BorderSide(color: Color(0xFF3F3F46)),
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            onTap: () => setState(() => _expanded = true),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _hovered ? AppColors.surfaceMuted : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(
+                  color:
+                      _hovered ? AppColors.border : AppColors.borderSubtle,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s12, vertical: AppSpacing.s12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color:
+                        _hovered ? AppColors.textFaint : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Text(
+                    'Add milestone',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: _hovered
+                          ? AppColors.textFaint
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

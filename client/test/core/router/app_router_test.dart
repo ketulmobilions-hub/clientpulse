@@ -163,6 +163,35 @@ void main() {
 
       expect(currentPath(container), '/p/mytoken');
     });
+
+    testWidgets('unknown path renders error page; Go home navigates to /dashboard',
+        (tester) async {
+      final router = container.read(routerProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      // Bounded pump: DashboardScreen kicks off async loads that never settle
+      // in test (no real backend), so pumpAndSettle would time out.
+      await tester.pump();
+      await tester.pump();
+
+      router.go('/this-route-does-not-exist');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Page not found'), findsOneWidget);
+      expect(find.text('Go home'), findsOneWidget);
+
+      await tester.tap(find.text('Go home'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(currentPath(container), '/dashboard');
+    });
   });
 
   group('loading state', () {
@@ -222,6 +251,97 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(currentPath(container), '/dashboard');
+    });
+  });
+
+  // Regression coverage: AuthNotifier flips to AsyncLoading mid-submit on
+  // /login or /register. Prior behavior unmounted the screen → catch saw
+  // mounted=false → error banner never rendered. Public-path exemption
+  // keeps the user in place so setState can fire.
+  group('public-path AsyncLoading exemption', () {
+    testWidgets('/login stays on /login while auth is loading (unauthed)', (tester) async {
+      final completer = Completer<bool>();
+      final container = ProviderContainer(
+        overrides: [
+          isAuthenticatedProvider.overrideWith((_) => completer.future),
+          authNotifierProvider.overrideWith(() => _StableAuthNotifier()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+      router.go('/login');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+
+      expect(currentPath(container), '/login');
+
+      completer.complete(false);
+      await tester.pumpAndSettle();
+      expect(currentPath(container), '/login');
+    });
+
+    testWidgets('/register stays on /register while auth is loading (unauthed)', (tester) async {
+      final completer = Completer<bool>();
+      final container = ProviderContainer(
+        overrides: [
+          isAuthenticatedProvider.overrideWith((_) => completer.future),
+          authNotifierProvider.overrideWith(() => _StableAuthNotifier()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+      router.go('/register');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+
+      expect(currentPath(container), '/register');
+
+      completer.complete(false);
+      await tester.pumpAndSettle();
+      expect(currentPath(container), '/register');
+    });
+
+    testWidgets('non-public path still redirects to /loading while auth is loading',
+        (tester) async {
+      final completer = Completer<bool>();
+      final container = ProviderContainer(
+        overrides: [
+          isAuthenticatedProvider.overrideWith((_) => completer.future),
+          authNotifierProvider.overrideWith(() => _StableAuthNotifier()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final router = container.read(routerProvider);
+      router.go('/dashboard');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+
+      expect(currentPath(container), '/loading');
+
+      completer.complete(false);
+      await tester.pumpAndSettle();
+      expect(currentPath(container), '/login');
     });
   });
 }

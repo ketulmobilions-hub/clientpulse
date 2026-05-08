@@ -2,6 +2,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/utils/file_utils.dart';
@@ -10,6 +12,9 @@ import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
 import 'package:clientpulse/shared/services/storage_service.dart';
 import 'package:clientpulse/shared/services/update_service.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 // 10 MB — matches the Supabase Storage bucket hard limit so the client-side
 // check catches oversized files before wasting bandwidth on a doomed upload.
@@ -18,22 +23,120 @@ const _kMaxFileSizeBytes = 10 * 1024 * 1024;
 // Safe document and media types only. Executable/script extensions excluded to
 // prevent using ClientPulse as a malware distribution vector.
 const _kAllowedExtensions = [
-  'pdf',
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'webp',
-  'mp4',
-  'mov',
-  'zip',
-  'csv',
-  'txt',
-  'doc',
-  'docx',
-  'xls',
-  'xlsx',
+  'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp',
+  'mp4', 'mov', 'zip', 'csv', 'txt', 'doc', 'docx', 'xls', 'xlsx',
 ];
+
+class _UpdateTemplate {
+  const _UpdateTemplate({
+    required this.label,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.category,
+  });
+
+  final String label;
+  final IconData icon;
+  final String title;
+  final String body;
+  final UpdateCategory category;
+}
+
+const _kTemplates = <_UpdateTemplate>[
+  _UpdateTemplate(
+    label: 'Weekly progress update',
+    icon: Icons.calendar_view_week_outlined,
+    category: UpdateCategory.progress,
+    title: 'Weekly progress — week of [date]',
+    body: '''### What we shipped this week
+-
+
+### In progress
+-
+
+### Up next
+-
+
+### Notes
+''',
+  ),
+  _UpdateTemplate(
+    label: 'Deliverable ready',
+    icon: Icons.inventory_2_outlined,
+    category: UpdateCategory.deliverable,
+    title: '[Deliverable name] is ready for review',
+    body: '''### What's included
+-
+
+### How to review
+1.
+
+### Next steps
+-
+''',
+  ),
+  _UpdateTemplate(
+    label: 'Blocker report',
+    icon: Icons.warning_amber_outlined,
+    category: UpdateCategory.blocker,
+    title: 'Blocker: [short summary]',
+    body: '''### What's blocked
+-
+
+### Why
+-
+
+### What we need from you
+-
+
+### Impact if unresolved
+-
+''',
+  ),
+  _UpdateTemplate(
+    label: 'Client feedback request',
+    icon: Icons.chat_bubble_outline,
+    category: UpdateCategory.inputNeeded,
+    title: 'Need your input on [topic]',
+    body: '''### Context
+-
+
+### Options we're considering
+1.
+2.
+
+### Question for you
+-
+
+_Please reply by [date]._
+''',
+  ),
+];
+
+({IconData icon, Color color}) _categoryStyle(UpdateCategory cat) =>
+    switch (cat) {
+      UpdateCategory.progress => (
+          icon: Icons.construction_outlined,
+          color: const Color(0xFFD97706), // amber-600
+        ),
+      UpdateCategory.milestone => (
+          icon: Icons.flag_outlined,
+          color: const Color(0xFF7C3AED), // violet-600
+        ),
+      UpdateCategory.deliverable => (
+          icon: Icons.inventory_2_outlined,
+          color: const Color(0xFF059669), // emerald-600
+        ),
+      UpdateCategory.blocker => (
+          icon: Icons.warning_amber_outlined,
+          color: const Color(0xFFDC2626), // red-600
+        ),
+      UpdateCategory.inputNeeded => (
+          icon: Icons.chat_bubble_outline,
+          color: const Color(0xFF2563EB), // blue-600
+        ),
+    };
 
 class CreateUpdateScreen extends ConsumerStatefulWidget {
   const CreateUpdateScreen({super.key, required this.projectId});
@@ -44,23 +147,81 @@ class CreateUpdateScreen extends ConsumerStatefulWidget {
   ConsumerState<CreateUpdateScreen> createState() => _CreateUpdateScreenState();
 }
 
-class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
+class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
+  late final TabController _tabController;
 
   UpdateCategory _selectedCategory = UpdateCategory.progress;
-  bool _previewMode = false;
   List<PlatformFile> _selectedFiles = [];
   List<double> _fileProgress = []; // 0.0–1.0 per file, populated during upload
   bool _submitting = false;
   bool _isPicking = false; // prevents concurrent picker sessions (BUG-5)
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    // Preview pane subscribes to _bodyController directly via ValueListenableBuilder,
+    // so no tab-change listener is needed here. Adding one would rebuild the entire
+    // form on every animation tick and clobber in-progress IME composition in the
+    // body TextField.
+  }
+
+  @override
   void dispose() {
+    _tabController.dispose();
     _titleController.dispose();
     _bodyController.dispose();
     super.dispose();
+  }
+
+  void _applyTemplate(_UpdateTemplate tpl) {
+    final hasContent =
+        _titleController.text.trim().isNotEmpty || _bodyController.text.trim().isNotEmpty;
+    void apply() {
+      // Set value + collapse selection at end so the cursor lands at the tail
+      // of the inserted text instead of position 0 (default for `.text =`).
+      // Using TextEditingValue also avoids the controller's "reset undo stack"
+      // behavior on direct text assignment.
+      _titleController.value = TextEditingValue(
+        text: tpl.title,
+        selection: TextSelection.collapsed(offset: tpl.title.length),
+      );
+      _bodyController.value = TextEditingValue(
+        text: tpl.body,
+        selection: TextSelection.collapsed(offset: tpl.body.length),
+      );
+      setState(() => _selectedCategory = tpl.category);
+    }
+
+    if (!hasContent) {
+      apply();
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Replace current draft?'),
+        content: const Text('Applying a template will overwrite your current title and body.'),
+        actions: [
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.tertiary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          AppButton(
+            label: 'Replace',
+            onPressed: () {
+              Navigator.pop(ctx);
+              apply();
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickFiles() async {
@@ -76,8 +237,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       );
       if (result == null || !mounted) return;
 
-      final oversized =
-          result.files.where((f) => (f.size) > _kMaxFileSizeBytes).toList();
+      final oversized = result.files.where((f) => (f.size) > _kMaxFileSizeBytes).toList();
       if (oversized.isNotEmpty) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
@@ -89,8 +249,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
           ));
       }
 
-      final safe =
-          result.files.where((f) => f.size <= _kMaxFileSizeBytes).toList();
+      final safe = result.files.where((f) => f.size <= _kMaxFileSizeBytes).toList();
       final remaining = 3 - _selectedFiles.length;
       final toAdd = safe.take(remaining).toList();
       if (toAdd.isNotEmpty) {
@@ -105,20 +264,20 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   }
 
   Future<void> _confirmAndSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Post update?'),
         content: const Text('Your client will receive an email notification.'),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.tertiary,
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'Post',
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Post'),
           ),
         ],
       ),
@@ -127,6 +286,12 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   }
 
   Future<void> _submit() async {
+    // Jump (not animate) to Write tab so any validation error is visible
+    // immediately. animateTo() takes ~200 ms; running validate() before the
+    // indicator settles makes error messages flash under a moving tab.
+    if (_tabController.index != 0) {
+      _tabController.index = 0;
+    }
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -168,8 +333,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
         try {
           for (var i = 0; i < _selectedFiles.length; i++) {
             final file = _selectedFiles[i];
-            final bytes =
-                file.bytes!; // non-null guaranteed by pre-flight above
+            final bytes = file.bytes!; // non-null guaranteed by pre-flight above
 
             final mimeType = file.extension != null
                 ? _mimeTypeForExtension(file.extension!)
@@ -200,18 +364,14 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
             try {
               await storageSvc.deleteAttachment(att.id);
             } catch (e) {
-              debugPrint(
-                  '[CreateUpdateScreen] rollback deleteAttachment(${att.id}) failed: $e');
+              debugPrint('[CreateUpdateScreen] rollback deleteAttachment(${att.id}) failed: $e');
             }
           }
           try {
             await svc.deleteUpdate(update.id);
-            ref
-                .read(updateNotifierProvider(widget.projectId).notifier)
-                .remove(update.id);
+            ref.read(updateNotifierProvider(widget.projectId).notifier).remove(update.id);
           } catch (rollbackErr) {
-            debugPrint(
-                '[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');
+            debugPrint('[CreateUpdateScreen] rollback deleteUpdate failed: $rollbackErr');
           }
           rethrow;
         }
@@ -220,17 +380,14 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       // Refresh list so server-computed attachment_count is reflected.
       // Non-fatal: count will catch up on next list load if this fails.
       try {
-        await ref
-            .read(updateNotifierProvider(widget.projectId).notifier)
-            .load();
+        await ref.read(updateNotifierProvider(widget.projectId).notifier).load();
       } catch (_) {}
 
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
         ..showSnackBar(const SnackBar(content: Text('Update posted')));
-      setState(() => _submitting =
-          false); // reset before pop in case of custom transitions
+      setState(() => _submitting = false); // reset before pop in case of custom transitions
       Navigator.of(context).pop();
     } on StorageServiceException catch (e) {
       if (!mounted) return;
@@ -256,27 +413,33 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Update'),
+      appBar: AppHeader(
+        pageTitle: 'New Update',
         actions: [
+          PopupMenuButton<_UpdateTemplate>(
+            tooltip: 'Use template',
+            enabled: !_submitting,
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onSelected: _applyTemplate,
+            itemBuilder: (ctx) => _kTemplates
+                .map((tpl) => PopupMenuItem<_UpdateTemplate>(
+                      value: tpl,
+                      child: Row(
+                        children: [
+                          Icon(tpl.icon, size: 18, color: _categoryStyle(tpl.category).color),
+                          const SizedBox(width: 12),
+                          Text(tpl.label),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton(
-              onPressed: _submitting ? null : _confirmAndSubmit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(72, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                textStyle:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              child: _submitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Post'),
+            padding: const EdgeInsets.only(right: 12, left: 4),
+            child: AppButton(
+              label: 'Post',
+              loading: _submitting,
+              onPressed: _confirmAndSubmit,
             ),
           ),
         ],
@@ -284,7 +447,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.narrow),
           child: Form(
             key: _formKey,
             child: ListView(
@@ -300,128 +463,93 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
                   maxLength: 200,
                   textInputAction: TextInputAction.next,
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty)
-                      return 'Title is required';
+                    if (v == null || v.trim().isEmpty) return 'Title is required';
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
-                // Body with preview toggle
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Content',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    TextButton(
-                      onPressed: () =>
-                          setState(() => _previewMode = !_previewMode),
-                      child: Text(_previewMode ? 'Edit' : 'Preview'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                if (!_previewMode)
-                  TextFormField(
+                // Content with Write/Preview tabs
+                Text('Content', style: Theme.of(context).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                _WritePreviewTabs(
+                  controller: _tabController,
+                  writer: TextFormField(
                     controller: _bodyController,
                     decoration: const InputDecoration(
                       hintText: 'Markdown supported…',
                       alignLabelWithHint: true,
+                      border: OutlineInputBorder(),
                     ),
-                    minLines: 5,
+                    minLines: 8,
                     maxLines: null,
                     keyboardType: TextInputType.multiline,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty)
-                        return 'Body is required';
+                      if (v == null || v.trim().isEmpty) return 'Body is required';
                       return null;
                     },
-                  )
-                else
-                  Container(
-                    constraints: const BoxConstraints(minHeight: 120),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(color: const Color(0xFF3F3F46)),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: _bodyController.text.trim().isEmpty
-                        ? const Text(
-                            'Nothing to preview',
-                            style: TextStyle(color: Color(0xFF71717A)),
-                          )
-                        : MarkdownBody(data: _bodyController.text),
                   ),
+                  preview: _PreviewPane(controller: _bodyController),
+                ),
                 const SizedBox(height: 20),
 
-                // Category chips
-                Text(
-                  'Category',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
+                // Category chips with icons + semantic colors
+                Text('Category', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  runSpacing: 4,
+                  runSpacing: 8,
                   children: UpdateCategory.values.map((cat) {
-                    return ChoiceChip(
-                      label: Text(
-                        cat.displayLabel,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                    return _CategoryChip(
+                      category: cat,
                       selected: _selectedCategory == cat,
-                      onSelected: (_) =>
-                          setState(() => _selectedCategory = cat),
+                      onTap: () => setState(() => _selectedCategory = cat),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
 
-                // Attachments
+                // Attachments — dropzone style
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text('Attachments', style: Theme.of(context).textTheme.labelLarge),
                     Text(
-                      'Attachments',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    TextButton.icon(
-                      onPressed: (_selectedFiles.length >= 3 || _isPicking)
-                          ? null
-                          : _pickFiles,
-                      icon: const Icon(Icons.attach_file, size: 18),
-                      label: const Text('Add files'),
+                      '${_selectedFiles.length}/3',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textMuted,
+                          ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                _AttachmentDropzone(
+                  enabled: !_submitting && _selectedFiles.length < 3 && !_isPicking,
+                  isFull: _selectedFiles.length >= 3,
+                  onTap: _pickFiles,
+                ),
                 if (_selectedFiles.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   ..._selectedFiles.asMap().entries.map((entry) {
                     final i = entry.key;
                     final file = entry.value;
-                    final progress = _submitting && i < _fileProgress.length
-                        ? _fileProgress[i]
-                        : null;
+                    final progress =
+                        _submitting && i < _fileProgress.length ? _fileProgress[i] : null;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.insert_drive_file_outlined,
-                              size: 20),
-                          title: Text(
-                            file.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
+                          title: Text(file.name, overflow: TextOverflow.ellipsis),
                           subtitle: Text(formatFileSize(file.size)),
                           trailing: _submitting
                               ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.close, size: 18),
+                              : AppIconButton(
+                                  icon: Icons.close,
+                                  tooltip: 'Remove attachment',
+                                  size: AppIconButtonSize.sm,
                                   onPressed: () => setState(() {
                                     _selectedFiles = List.from(_selectedFiles)
                                       ..removeAt(i);
@@ -442,6 +570,270 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen> {
                 // Keyboard clearance
                 const SizedBox(height: 80),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WritePreviewTabs extends StatelessWidget {
+  const _WritePreviewTabs({
+    required this.controller,
+    required this.writer,
+    required this.preview,
+  });
+
+  final TabController controller;
+  final Widget writer;
+  final Widget preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // AnimatedBuilder rebuilds the TabBar (and the Semantics nodes inside
+        // its `tabs` list) on every controller index change, so the selected
+        // state announcement stays in sync with the visible indicator.
+        AnimatedBuilder(
+          animation: controller,
+          builder: (ctx, _) => Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: TabBar(
+              controller: controller,
+              indicator: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: scheme.onSurface,
+              unselectedLabelColor: scheme.onSurfaceVariant,
+              labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              tabs: [
+                // Custom indicator + transparent divider can suppress the
+                // default selected announcement on some platforms; explicit
+                // Semantics ensures it lands.
+                Semantics(
+                  selected: controller.index == 0,
+                  child: const Tab(height: 32, text: 'Write'),
+                ),
+                Semantics(
+                  selected: controller.index == 1,
+                  child: const Tab(height: 32, text: 'Preview'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // IndexedStack keeps the writer mounted while previewing so form
+        // validators and controller state remain intact across tab switches.
+        AnimatedBuilder(
+          animation: controller,
+          builder: (ctx, _) => IndexedStack(
+            index: controller.index,
+            sizing: StackFit.loose,
+            children: [
+              writer,
+              preview,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewPane extends StatelessWidget {
+  const _PreviewPane({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    // Subscribe to controller so the preview updates live as the user types
+    // in Write, without requiring a parent rebuild on every keystroke.
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (ctx, value, _) {
+        final empty = value.text.trim().isEmpty;
+        return Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 180),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: empty
+              ? const Text(
+                  'Nothing to preview',
+                  style: TextStyle(color: AppColors.textMuted),
+                )
+              : MarkdownBody(data: value.text),
+        );
+      },
+    );
+  }
+}
+
+class _CategoryChip extends StatefulWidget {
+  const _CategoryChip({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final UpdateCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_CategoryChip> createState() => _CategoryChipState();
+}
+
+class _CategoryChipState extends State<_CategoryChip> {
+  @override
+  Widget build(BuildContext context) {
+    final style = _categoryStyle(widget.category);
+    final selected = widget.selected;
+    final borderColor = selected ? style.color : AppColors.border;
+    final fg = selected ? style.color : Theme.of(context).colorScheme.onSurfaceVariant;
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(20));
+
+    // Material+InkWell gives keyboard focus, ripple, and hover state for free —
+    // matching ChoiceChip's accessibility while keeping the custom look.
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: widget.category.displayLabel,
+      child: Material(
+        color: selected ? style.color.withOpacity(0.12) : Colors.transparent,
+        shape: shape.copyWith(
+          side: BorderSide(color: borderColor, width: selected ? 1.5 : 1),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: widget.onTap,
+          hoverColor: selected ? null : AppColors.surfaceHover,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(style.icon, size: 16, color: fg),
+                const SizedBox(width: 6),
+                Text(
+                  widget.category.displayLabel,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AttachmentDropzone extends StatefulWidget {
+  const _AttachmentDropzone({
+    required this.enabled,
+    required this.isFull,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final bool isFull;
+  final VoidCallback onTap;
+
+  @override
+  State<_AttachmentDropzone> createState() => _AttachmentDropzoneState();
+}
+
+class _AttachmentDropzoneState extends State<_AttachmentDropzone> {
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final disabled = !widget.enabled;
+    final fg = disabled ? AppColors.textDisabled : AppColors.textMuted;
+
+    final label = widget.isFull
+        ? 'Maximum 3 files reached'
+        : 'Drop files here or browse';
+    final sub = widget.isFull
+        ? 'Remove a file to add another'
+        : 'PDF, images, video, docs · up to 10 MB each';
+
+    return Semantics(
+      button: true,
+      enabled: !disabled,
+      label: label,
+      hint: sub,
+      child: MouseRegion(
+        cursor: disabled ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+        child: Material(
+          color: AppColors.surfaceMuted,
+          borderRadius: BorderRadius.circular(10),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: disabled ? null : widget.onTap,
+            // Hover/focus colors driven by Material rather than manual MouseRegion
+            // state — avoids stuck-hover when the widget shifts under a static cursor.
+            hoverColor: scheme.primary.withOpacity(0.04),
+            focusColor: scheme.primary.withOpacity(0.06),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.border, width: 1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.isFull ? Icons.block : Icons.cloud_upload_outlined,
+                    size: 32,
+                    color: fg,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: TextStyle(color: fg, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

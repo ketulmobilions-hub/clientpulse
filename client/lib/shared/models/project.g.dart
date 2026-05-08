@@ -20,6 +20,10 @@ _$ProjectImpl _$$ProjectImplFromJson(Map<String, dynamic> json) =>
       expectedEndDate: _localDateFromJson(json['expected_end_date']),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      updateCount: (json['update_count'] as num?)?.toInt(),
+      commentCount: (json['comment_count'] as num?)?.toInt(),
+      latestUpdateTitle: json['latest_update_title'] as String?,
+      progressPct: (json['progress_pct'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$ProjectImplToJson(_$ProjectImpl instance) =>
@@ -36,6 +40,10 @@ Map<String, dynamic> _$$ProjectImplToJson(_$ProjectImpl instance) =>
       'expected_end_date': _localDateToJson(instance.expectedEndDate),
       'created_at': instance.createdAt.toIso8601String(),
       'updated_at': instance.updatedAt.toIso8601String(),
+      'update_count': instance.updateCount,
+      'comment_count': instance.commentCount,
+      'latest_update_title': instance.latestUpdateTitle,
+      'progress_pct': instance.progressPct,
     };
 
 const _$ProjectStatusEnumMap = {

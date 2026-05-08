@@ -62,8 +62,18 @@ class ProjectNotifier extends _$ProjectNotifier {
         clearExpectedEndDate: clearExpectedEndDate,
       );
       // Replace updated project in cached list so dashboard reflects change immediately.
+      // PATCH /projects/:id does NOT return aggregate fields (those come only from the list
+      // RPC), so merge them from the cached row to keep dashboard counts/progress visible.
       final current = state.valueOrNull ?? [];
-      state = AsyncData(current.map((p) => p.id == id ? updated : p).toList());
+      state = AsyncData(current.map((p) {
+        if (p.id != id) return p;
+        return updated.copyWith(
+          updateCount: p.updateCount,
+          commentCount: p.commentCount,
+          latestUpdateTitle: p.latestUpdateTitle,
+          progressPct: p.progressPct,
+        );
+      }).toList());
       return updated;
     } catch (e, st) {
       // Restore previous list state so the dashboard doesn't go blank on failure.
@@ -90,9 +100,18 @@ class ProjectNotifier extends _$ProjectNotifier {
         startDate: startDate,
         expectedEndDate: expectedEndDate,
       );
+      // POST /projects does not return aggregate fields. A brand-new project legitimately has
+      // zero updates / comments / milestones, so seed the aggregates explicitly to avoid showing
+      // a half-rendered card with null counts.
+      final seeded = project.copyWith(
+        updateCount: 0,
+        commentCount: 0,
+        latestUpdateTitle: null,
+        progressPct: null,
+      );
       final current = state.valueOrNull ?? [];
-      state = AsyncData([project, ...current]);
-      return project;
+      state = AsyncData([seeded, ...current]);
+      return seeded;
     } catch (e, st) {
       Error.throwWithStackTrace(e, st);
     }
