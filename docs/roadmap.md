@@ -4,11 +4,11 @@ What's shipped, what's next, and what's on the cutting-room floor.
 
 This file is **public** — referenced from launch FAQ, landing page footer, and every "what's missing in MVP?" customer reply. Update on every Friday during launch quarter, monthly thereafter.
 
-**Last updated:** 2026-05-05.
+**Last updated:** 2026-05-12.
 
 ---
 
-## Shipped (MVP — 2026-05-11)
+## Shipped (MVP — 2026-05-18)
 
 The full sprint scope, live at clientpulse.dev.
 
@@ -156,3 +156,4 @@ This document gets a `Last updated` stamp at the top on every change. Major road
 ### Changelog
 
 - 2026-05-05 — Initial public version, sprint launch prep.
+- 2026-05-12 — Launch dates shifted +7 days (sprint slip). Soft launch 2026-05-18, public launch 2026-06-02.

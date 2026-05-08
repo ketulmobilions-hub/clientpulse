@@ -1,6 +1,6 @@
 # ClientPulse — Launch FAQ
 
-Pre-written replies for the most likely questions on Product Hunt, Hacker News, IndieHackers, LinkedIn, and email during launch week (2026-05-25 → 2026-06-01).
+Pre-written replies for the most likely questions on Product Hunt, Hacker News, IndieHackers, LinkedIn, and email during launch week (2026-06-01 → 2026-06-08).
 
 **Rules:**
 - Reply within 30 minutes during launch day. Slower kills momentum.
