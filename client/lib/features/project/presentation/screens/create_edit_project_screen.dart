@@ -18,17 +18,21 @@ class CreateEditProjectScreen extends ConsumerStatefulWidget {
   const CreateEditProjectScreen({
     super.key,
     this.projectId,
-    this.cameFromDetail = false,
+    this.cameFromInApp = false,
   });
 
   final String? projectId;
 
-  /// True when the user opened this screen by clicking edit on the Project
-  /// Detail page (set by the router when the nav included `extra: true`).
-  /// On save, this signals it's safe to walk the browser cursor back over
-  /// the `/edit-project` entry. Deep links / fresh tabs leave it false so
-  /// the save handler falls back to declarative `goNamed` navigation.
-  final bool cameFromDetail;
+  /// True when this screen was reached via an in-app navigation that pushed
+  /// a single browser history entry we can walk back over (e.g. Dashboard's
+  /// "New Project" button or Project Detail's edit pencil — both pass
+  /// `extra: true` through the router). On submit, this signals it's safe
+  /// to call `history.back()` instead of `goNamed`, so the cursor walks
+  /// over the create/edit entry rather than appending a new one (which
+  /// would let the browser back button re-show this screen). Deep links
+  /// and fresh tabs leave it false so the submit handler falls back to
+  /// declarative `goNamed` navigation.
+  final bool cameFromInApp;
 
   bool get isEdit => projectId != null;
 
@@ -181,7 +185,7 @@ class _CreateEditProjectScreenState
           // Keep _submitting=true through the nav. history.back() dispatches
           // popstate on the next event-loop tick; resetting before that would
           // re-enable the Save button and allow a double-submit.
-          if (!(widget.cameFromDetail && historyBack())) {
+          if (!(widget.cameFromInApp && historyBack())) {
             context.goNamed(
               RouteNames.projectDetail,
               pathParameters: {'id': widget.projectId!},
@@ -239,7 +243,9 @@ class _CreateEditProjectScreenState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.goNamed(RouteNames.dashboard);
+      if (!(widget.cameFromInApp && historyBack())) {
+        context.goNamed(RouteNames.dashboard);
+      }
       return;
     }
 
@@ -300,8 +306,9 @@ class _CreateEditProjectScreenState
           actions: [
             FilledButton(
               onPressed: () {
-                Navigator.of(dialogCtx).pop();
-                context.goNamed(RouteNames.dashboard);
+                if (!(widget.cameFromInApp && historyBack())) {
+                  context.goNamed(RouteNames.dashboard);
+                }
               },
               child: const Text('Done'),
             ),

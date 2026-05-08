@@ -97,6 +97,13 @@ GoRouter router(RouterRef ref) {
           builder: (_, __) => const DashboardScreen(),
           routes: [
             GoRoute(
+              path: RouteNames.createProject,
+              name: RouteNames.createProject,
+              builder: (_, state) => CreateEditProjectScreen(
+                cameFromInApp: state.extra == true,
+              ),
+            ),
+            GoRoute(
               path: RouteNames.projectDetail,
               name: RouteNames.projectDetail,
               builder: (_, state) => ProjectDetailScreen(
@@ -108,7 +115,7 @@ GoRouter router(RouterRef ref) {
                   name: RouteNames.editProject,
                   builder: (_, state) => CreateEditProjectScreen(
                     projectId: state.pathParameters['id'],
-                    cameFromDetail: state.extra == true,
+                    cameFromInApp: state.extra == true,
                   ),
                 ),
                 GoRoute(
@@ -123,11 +130,7 @@ GoRouter router(RouterRef ref) {
           ]),
       // /projects/new must be listed BEFORE /projects/:id to prevent
       // GoRouter from matching "new" as an :id path parameter.
-      GoRoute(
-        path: '/projects/new',
-        name: RouteNames.createProject,
-        builder: (_, __) => const CreateEditProjectScreen(),
-      ),
+
       // GoRoute(
       //   path: '/projects/:id/edit',
       //   name: RouteNames.editProject,

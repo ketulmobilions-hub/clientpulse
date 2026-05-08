@@ -67,7 +67,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         title: const Text('Projects'),
         actions: [
           FilledButton.icon(
-            onPressed: () => context.goNamed(RouteNames.createProject),
+            onPressed: () => context.goNamed(
+              RouteNames.createProject,
+              extra: true,
+            ),
             icon: const Icon(Icons.add, size: 16),
             label: const Text('New Project'),
             style: FilledButton.styleFrom(
@@ -108,7 +111,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 icon: Icons.folder_open_outlined,
                 message: 'No projects yet',
                 actionLabel: 'Create Project',
-                onAction: () => context.goNamed(RouteNames.createProject),
+                onAction: () => context.goNamed(
+                  RouteNames.createProject,
+                  extra: true,
+                ),
               );
             }
 
