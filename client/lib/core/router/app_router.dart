@@ -12,6 +12,7 @@ import 'package:clientpulse/features/project/presentation/screens/create_edit_pr
 import 'package:clientpulse/features/settings/presentation/screens/settings_screen.dart';
 import 'package:clientpulse/features/portal/presentation/screens/portal_screen.dart';
 import 'package:clientpulse/features/updates/presentation/screens/create_update_screen.dart';
+import 'package:clientpulse/features/updates/presentation/screens/update_detail_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -123,6 +124,14 @@ GoRouter router(RouterRef ref) {
                   name: RouteNames.createUpdate,
                   builder: (_, state) => CreateUpdateScreen(
                     projectId: state.pathParameters['id']!,
+                  ),
+                ),
+                GoRoute(
+                  path: RouteNames.updateDetailPath,
+                  name: RouteNames.updateDetailName,
+                  builder: (_, state) => UpdateDetailScreen(
+                    projectId: state.pathParameters['id']!,
+                    updateId: state.pathParameters['updateId']!,
                   ),
                 ),
               ],

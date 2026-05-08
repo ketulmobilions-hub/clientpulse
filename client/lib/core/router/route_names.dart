@@ -10,4 +10,6 @@ final class RouteNames {
   static const settings = 'settings';
   static const portal = 'portal';
   static const createUpdate = 'create-update';
+  static const updateDetailPath = 'updates/:updateId';
+  static const updateDetailName = 'update-detail';
 }
