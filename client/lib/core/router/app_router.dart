@@ -81,21 +81,46 @@ GoRouter router(RouterRef ref) {
         ),
       ),
       GoRoute(
-        path: '/login',
+        path: RouteNames.login,
         name: RouteNames.login,
         builder: (_, state) =>
             LoginScreen(prefillEmail: state.uri.queryParameters['email']),
       ),
       GoRoute(
-        path: '/register',
+        path: RouteNames.register,
         name: RouteNames.register,
         builder: (_, __) => const RegisterScreen(),
       ),
       GoRoute(
-        path: '/dashboard',
-        name: RouteNames.dashboard,
-        builder: (_, __) => const DashboardScreen(),
-      ),
+          path: RouteNames.dashboard,
+          name: RouteNames.dashboard,
+          builder: (_, __) => const DashboardScreen(),
+          routes: [
+            GoRoute(
+              path: RouteNames.projectDetail,
+              name: RouteNames.projectDetail,
+              builder: (_, state) => ProjectDetailScreen(
+                projectId: state.pathParameters['id']!,
+              ),
+              routes: [
+                GoRoute(
+                  path: RouteNames.editProject,
+                  name: RouteNames.editProject,
+                  builder: (_, state) => CreateEditProjectScreen(
+                    projectId: state.pathParameters['id'],
+                    cameFromDetail: state.extra == true,
+                  ),
+                ),
+                GoRoute(
+                  path: 'updates/new',
+                  name: RouteNames.createUpdate,
+                  builder: (_, state) => CreateUpdateScreen(
+                    projectId: state.pathParameters['id']!,
+                  ),
+                ),
+              ],
+            ),
+          ]),
       // /projects/new must be listed BEFORE /projects/:id to prevent
       // GoRouter from matching "new" as an :id path parameter.
       GoRoute(
@@ -103,29 +128,21 @@ GoRouter router(RouterRef ref) {
         name: RouteNames.createProject,
         builder: (_, __) => const CreateEditProjectScreen(),
       ),
-      GoRoute(
-        path: '/projects/:id',
-        name: RouteNames.projectDetail,
-        builder: (_, state) => ProjectDetailScreen(
-          projectId: state.pathParameters['id']!,
-        ),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            name: RouteNames.editProject,
-            builder: (_, state) => CreateEditProjectScreen(
-              projectId: state.pathParameters['id'],
-            ),
-          ),
-          GoRoute(
-            path: 'updates/new',
-            name: RouteNames.createUpdate,
-            builder: (_, state) => CreateUpdateScreen(
-              projectId: state.pathParameters['id']!,
-            ),
-          ),
-        ],
-      ),
+      // GoRoute(
+      //   path: '/projects/:id/edit',
+      //   name: RouteNames.editProject,
+      //   builder: (_, state) => CreateEditProjectScreen(
+      //     projectId: state.pathParameters['id'],
+      //   ),
+      // ),
+      // GoRoute(
+      //   path: '/projects/:id/updates/new',
+      //   name: RouteNames.createUpdate,
+      //   builder: (_, state) => CreateUpdateScreen(
+      //     projectId: state.pathParameters['id']!,
+      //   ),
+      // ),
+
       GoRoute(
         path: '/settings',
         name: RouteNames.settings,

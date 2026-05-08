@@ -39,8 +39,7 @@ class ProjectDetailScreen extends ConsumerWidget {
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
             itemCount: 3,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: AppSpacing.s12),
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
             itemBuilder: (_, __) => const ShimmerCard(height: 120),
           ),
         ),
@@ -279,10 +278,18 @@ class _ProjectPageHeader extends StatelessWidget {
           const SizedBox(width: AppSpacing.s8),
           IconButton(
             tooltip: 'Edit',
-            onPressed: () => context.pushNamed(
-              RouteNames.editProject,
-              pathParameters: {'id': project.id},
-            ),
+            onPressed: () {
+              // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
+              // the edit screen's save handler relies on this call having
+              // pushed a real browser history entry so it can `history.back()`
+              // over it. `extra: true` flags the navigation as in-app so the
+              // edit screen can distinguish it from a deep-link entry.
+              context.goNamed(
+                RouteNames.editProject,
+                pathParameters: {'id': project.id},
+                extra: true,
+              );
+            },
             icon: const Icon(Icons.edit_outlined,
                 size: 18, color: AppColors.textFaint),
           ),
@@ -304,8 +311,8 @@ class _ProjectPageHeader extends StatelessWidget {
                 minimumSize: const Size(0, 36),
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
-                textStyle: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500),
+                textStyle:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               ),
             ),
           ],
