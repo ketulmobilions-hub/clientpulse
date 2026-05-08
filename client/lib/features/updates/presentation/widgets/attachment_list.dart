@@ -166,7 +166,7 @@ class _AttachmentCardState extends State<_AttachmentCard> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.s8),
-                  Icon(Icons.open_in_new,
+                  const Icon(Icons.open_in_new,
                       size: 16, color: AppColors.textFaint),
                 ],
               ),

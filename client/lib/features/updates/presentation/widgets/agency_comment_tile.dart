@@ -27,6 +27,9 @@ class _AgencyCommentTileState extends State<AgencyCommentTile> {
         ? AppColors.categoryEmerald.withOpacity(0.06)
         : AppColors.surfaceMuted;
 
+    final outlineColor =
+        _hovered ? AppColors.borderHover : AppColors.borderSubtle;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -41,71 +44,69 @@ class _AgencyCommentTileState extends State<AgencyCommentTile> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppRadii.md),
-          border: Border(
-            left: BorderSide(color: accent, width: 3),
-            top: BorderSide(
-              color: _hovered
-                  ? AppColors.borderHover
-                  : AppColors.borderSubtle,
-            ),
-            right: BorderSide(
-              color: _hovered
-                  ? AppColors.borderHover
-                  : AppColors.borderSubtle,
-            ),
-            bottom: BorderSide(
-              color: _hovered
-                  ? AppColors.borderHover
-                  : AppColors.borderSubtle,
-            ),
-          ),
+          border: Border.all(color: outlineColor),
         ),
-        padding: const EdgeInsets.all(AppSpacing.s12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _Avatar(name: c.authorName, accent: accent),
-                const SizedBox(width: AppSpacing.s12),
-                Expanded(
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 3, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.s12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Flexible(
-                            child: Text(
-                              c.authorName,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          _Avatar(name: c.authorName, accent: accent),
+                          const SizedBox(width: AppSpacing.s12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        c.authorName,
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.s8),
+                                    _RoleTag(isClient: isClient),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatTimestamp(c.createdAt),
+                                  style: theme.textTheme.bodySmall
+                                      ?.copyWith(color: AppColors.textMuted),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.s8),
-                          _RoleTag(isClient: isClient),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.s12),
                       Text(
-                        _formatTimestamp(c.createdAt),
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.textMuted),
+                        c.body,
+                        style:
+                            theme.textTheme.bodyMedium?.copyWith(height: 1.5),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.s12),
-            Text(
-              c.body,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
