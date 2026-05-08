@@ -11,6 +11,7 @@ import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
 import 'package:clientpulse/features/milestones/presentation/widgets/milestone_list_widget.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
+import 'package:clientpulse/features/updates/presentation/widgets/update_header.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/models/project.dart';
 import 'package:clientpulse/shared/models/update.dart';
@@ -255,7 +256,7 @@ class _ProjectPageHeader extends StatelessWidget {
                     if (lastActivityAt != null)
                       _MetaChip(
                         icon: Icons.bolt_rounded,
-                        label: 'Active ${_relTime(lastActivityAt!)}',
+                        label: 'Active ${formatRelativeTime(lastActivityAt!)}',
                       ),
                     if (pendingApprovals > 0)
                       _MetaChip(
@@ -372,16 +373,6 @@ class _ProjectPageHeader extends StatelessWidget {
     );
   }
 
-  String _relTime(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 30) return '${diff.inDays}d ago';
-    final months = (diff.inDays / 30).floor();
-    if (months < 12) return '${months}mo ago';
-    return '${(months / 12).floor()}y ago';
-  }
 }
 
 class _CtaSpec {
