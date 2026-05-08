@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/router/route_names.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 import 'package:clientpulse/features/auth/presentation/screens/register_screen.dart';
 import 'package:clientpulse/shared/models/auth_user.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
@@ -493,7 +494,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final back = tester.widget<TextButton>(find.byKey(const Key('back_button')));
+      final back = tester.widget<AppButton>(find.byKey(const Key('back_button')));
       expect(back.onPressed, isNull);
 
       notifier.blockOn!.complete();

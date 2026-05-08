@@ -8,6 +8,7 @@ import 'package:clientpulse/shared/models/workspace.dart';
 import 'package:clientpulse/shared/providers/workspace_provider.dart';
 import 'package:clientpulse/shared/services/workspace_service.dart';
 import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 
 const _kMaxLogoBytes = 2 * 1024 * 1024; // 2 MB
 
@@ -155,9 +156,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Text('Failed to load workspace: $e'),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.read(workspaceNotifierProvider.notifier).load(),
-                child: const Text('Retry'),
+              AppButton(
+                label: 'Retry',
+                size: AppButtonSize.lg,
+                onPressed: () =>
+                    ref.read(workspaceNotifierProvider.notifier).load(),
               ),
             ],
           ),
@@ -234,10 +237,12 @@ class _SettingsBody extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           else
-                            OutlinedButton.icon(
+                            AppButton(
+                              label: 'Change Logo',
+                              variant: AppButtonVariant.secondary,
+                              size: AppButtonSize.lg,
+                              icon: Icons.upload_outlined,
                               onPressed: onUploadLogo,
-                              icon: const Icon(Icons.upload_outlined, size: 18),
-                              label: const Text('Change Logo'),
                             ),
                           const SizedBox(height: 6),
                           Text(
@@ -270,16 +275,12 @@ class _SettingsBody extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                FilledButton(
+                AppButton(
                   key: const Key('save_button'),
-                  onPressed: (isSaving || isUploading) ? null : onSave,
-                  child: isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Save Changes'),
+                  label: 'Save Changes',
+                  size: AppButtonSize.lg,
+                  loading: isSaving,
+                  onPressed: isUploading ? null : onSave,
                 ),
               ],
             ),

@@ -10,6 +10,8 @@ import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 import 'category_tag.dart';
 import 'update_header.dart';
 
@@ -95,16 +97,16 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
           content: const Text(
               'This permanently removes the update and its attachments. Cannot be undone.'),
           actions: [
-            TextButton(
+            AppButton(
+              label: 'Cancel',
+              variant: AppButtonVariant.tertiary,
               autofocus: true,
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
             ),
-            FilledButton(
-              style:
-                  FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            AppButton(
+              label: 'Delete',
+              variant: AppButtonVariant.danger,
               onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Delete'),
             ),
           ],
         ),
@@ -242,13 +244,10 @@ class _RowActions extends StatelessWidget {
         opacity: visible ? 1.0 : 0.0,
         child: IgnorePointer(
           ignoring: !visible,
-          child: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 16),
-            color: AppColors.textMuted,
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          child: AppIconButton(
+            icon: Icons.delete_outline,
             tooltip: 'Delete',
+            size: AppIconButtonSize.sm,
             onPressed: visible ? onDelete : null,
           ),
         ),

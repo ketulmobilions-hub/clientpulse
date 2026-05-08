@@ -9,6 +9,7 @@ import 'package:clientpulse/features/auth/presentation/screens/login_screen.dart
 import 'package:clientpulse/shared/models/auth_user.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 
 class _FakeAuthNotifier extends AuthNotifier {
   AuthServiceException? errorToThrow;
@@ -304,10 +305,11 @@ void main() {
       // pump (not settle) so the slow login stays pending and isLoading == true.
       await tester.pump();
 
-      final button = tester.widget<FilledButton>(find.byKey(const Key('login_button')));
-      expect(button.onPressed, isNull, reason: 'login button must be disabled while loading');
+      final button = tester.widget<AppButton>(find.byKey(const Key('login_button')));
+      expect(button.onPressed == null || button.loading, isTrue,
+          reason: 'login button must be disabled while loading');
 
-      final forgot = tester.widget<TextButton>(find.byKey(const Key('forgot_password_link')));
+      final forgot = tester.widget<AppButton>(find.byKey(const Key('forgot_password_link')));
       expect(forgot.onPressed, isNull,
           reason: 'forgot-password link must be disabled while loading');
 

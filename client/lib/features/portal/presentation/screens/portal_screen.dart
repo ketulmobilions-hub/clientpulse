@@ -9,6 +9,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../../shared/providers/portal_provider.dart';
 import '../../../../shared/services/portal_service.dart';
+import '../../../../shared/widgets/buttons/app_button.dart';
 import '../../../../shared/widgets/shimmer_card.dart';
 import '../widgets/portal_branding_header.dart';
 import '../widgets/portal_milestone_section.dart';
@@ -193,7 +194,10 @@ class _PortalContent extends ConsumerWidget {
                             ? const Center(child: CircularProgressIndicator())
                             : updatesState.hasMore
                                 ? Center(
-                                    child: OutlinedButton(
+                                    child: AppButton(
+                                      label: 'Load more',
+                                      variant: AppButtonVariant.secondary,
+                                      size: AppButtonSize.lg,
                                       onPressed: () {
                                         ref
                                             .read(portalUpdatesNotifierProvider(
@@ -202,7 +206,6 @@ class _PortalContent extends ConsumerWidget {
                                             .loadMore()
                                             .ignore();
                                       },
-                                      child: const Text('Load more'),
                                     ),
                                   )
                                 : const SizedBox.shrink(),

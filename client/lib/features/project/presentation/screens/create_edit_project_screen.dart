@@ -12,6 +12,7 @@ import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/services/project_service.dart';
 import '../../../../shared/widgets/app_header.dart';
+import '../../../../shared/widgets/buttons/app_button.dart';
 import '../../../../shared/utils/history_back_stub.dart'
     if (dart.library.html) '../../../../shared/utils/history_back_web.dart';
 
@@ -569,33 +570,15 @@ class _FormCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 28),
-              isEdit
-                  ? FilledButton.tonal(
-                      onPressed: disabled ? null : onSubmit,
-                      child: submitting
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.colorScheme.onSecondaryContainer,
-                              ),
-                            )
-                          : const Text('Save Changes'),
-                    )
-                  : FilledButton(
-                      onPressed: disabled ? null : onSubmit,
-                      child: submitting
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            )
-                          : const Text('Create Project'),
-                    ),
+              AppButton(
+                label: isEdit ? 'Save Changes' : 'Create Project',
+                variant: isEdit
+                    ? AppButtonVariant.secondary
+                    : AppButtonVariant.primary,
+                size: AppButtonSize.lg,
+                loading: submitting,
+                onPressed: disabled ? null : onSubmit,
+              ),
             ],
           ),
         ),
