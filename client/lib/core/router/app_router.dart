@@ -128,24 +128,6 @@ GoRouter router(RouterRef ref) {
               ],
             ),
           ]),
-      // /projects/new must be listed BEFORE /projects/:id to prevent
-      // GoRouter from matching "new" as an :id path parameter.
-
-      // GoRoute(
-      //   path: '/projects/:id/edit',
-      //   name: RouteNames.editProject,
-      //   builder: (_, state) => CreateEditProjectScreen(
-      //     projectId: state.pathParameters['id'],
-      //   ),
-      // ),
-      // GoRoute(
-      //   path: '/projects/:id/updates/new',
-      //   name: RouteNames.createUpdate,
-      //   builder: (_, state) => CreateUpdateScreen(
-      //     projectId: state.pathParameters['id']!,
-      //   ),
-      // ),
-
       GoRoute(
         path: '/settings',
         name: RouteNames.settings,
