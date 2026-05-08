@@ -114,8 +114,7 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
         child: Row(
           children: [
-            Icon(Icons.error_outline,
-                size: 16, color: theme.colorScheme.error),
+            Icon(Icons.error_outline, size: 16, color: theme.colorScheme.error),
             const SizedBox(width: AppSpacing.s8),
             Expanded(
               child: Text(
@@ -136,8 +135,7 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
       final comments = cachedComments ?? const [];
       commentsBody = comments.isEmpty
           ? Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: AppSpacing.s12),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
               child: Text(
                 'No comments yet. Start the discussion below.',
                 style: theme.textTheme.bodySmall
@@ -146,9 +144,8 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: comments
-                  .map((c) => AgencyCommentTile(comment: c))
-                  .toList(),
+              children:
+                  comments.map((c) => AgencyCommentTile(comment: c)).toList(),
             );
     }
 
@@ -202,11 +199,11 @@ class _ReplyComposer extends StatelessWidget {
         focusNode: focusNode,
         decoration: InputDecoration(
           hintText: 'Write a reply…',
-          hintStyle: theme.textTheme.bodyMedium
-              ?.copyWith(color: AppColors.textFaint),
+          hintStyle:
+              theme.textTheme.bodyMedium?.copyWith(color: AppColors.textFaint),
           border: InputBorder.none,
           isDense: true,
-          contentPadding: EdgeInsets.zero,
+          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           counterText: '',
         ),
         style: theme.textTheme.bodyMedium,
@@ -243,17 +240,17 @@ class _ReplyComposer extends StatelessWidget {
               ),
             ),
           const SizedBox(height: AppSpacing.s8),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Markdown supported · ⌘/Ctrl + Enter to post',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: AppColors.textMuted),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              ListenableBuilder(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final narrow = constraints.maxWidth < 420;
+              final hintText = Text(
+                'Markdown supported · ⌘/Ctrl + Enter to post',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textMuted),
+                overflow: TextOverflow.ellipsis,
+                maxLines: narrow ? 2 : 1,
+              );
+              final postButton = ListenableBuilder(
                 listenable: controller,
                 builder: (context, _) {
                   final hasText = controller.text.trim().isNotEmpty;
@@ -265,8 +262,7 @@ class _ReplyComposer extends StatelessWidget {
                           AppColors.primary.withOpacity(0.3),
                       disabledForegroundColor: Colors.white70,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s16,
-                          vertical: AppSpacing.s8),
+                          horizontal: AppSpacing.s16, vertical: AppSpacing.s8),
                     ),
                     onPressed: (isSubmitting || !hasText) ? null : onSubmit,
                     child: isSubmitting
@@ -278,8 +274,29 @@ class _ReplyComposer extends StatelessWidget {
                         : const Text('Post reply'),
                   );
                 },
-              ),
-            ],
+              );
+
+              if (narrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    hintText,
+                    const SizedBox(height: AppSpacing.s8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: postButton,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: hintText),
+                  postButton,
+                ],
+              );
+            },
           ),
         ],
       ),

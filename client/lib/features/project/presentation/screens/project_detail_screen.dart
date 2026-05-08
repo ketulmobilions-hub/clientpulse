@@ -224,106 +224,145 @@ class _ProjectPageHeader extends StatelessWidget {
 
     final cta = _resolveCta(context);
 
+    final editButton = AppIconButton(
+      tooltip: 'Edit',
+      icon: Icons.edit_outlined,
+      tone: AppIconButtonTone.faint,
+      onPressed: () {
+        // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
+        // the receiving screen's submit handler walks the browser
+        // cursor back over this entry via `history.back()`, which
+        // requires a real browser history entry to have been pushed.
+        // `extra: true` flags the navigation as in-app so the screen
+        // can distinguish it from a deep-link entry (where `history.back()`
+        // would leave the app entirely).
+        context.goNamed(
+          RouteNames.editProject,
+          pathParameters: {'id': project.id},
+          extra: true,
+        );
+      },
+    );
+    final shareButton = shareUrl == null
+        ? null
+        : AppButton(
+            label: 'Share',
+            variant: AppButtonVariant.secondary,
+            icon: Icons.link_rounded,
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: shareUrl));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                      const SnackBar(content: Text('Link copied')));
+              }
+            },
+          );
+    final ctaButton = AppButton(
+      label: cta.label,
+      icon: cta.icon,
+      onPressed: cta.onPressed,
+    );
+
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          project.clientName,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: AppColors.textFaint,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s4),
+        Text(
+          project.name,
+          style: theme.textTheme.headlineSmall,
+        ),
+        const SizedBox(height: AppSpacing.s8),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.s8,
+          runSpacing: AppSpacing.s4,
+          children: [
+            StatusBadge(status: project.status),
+            if (lastActivityAt != null)
+              _MetaChip(
+                icon: Icons.bolt_rounded,
+                label: 'Active ${formatRelativeTime(lastActivityAt!)}',
+              ),
+            if (pendingApprovals > 0)
+              _MetaChip(
+                icon: Icons.mark_email_unread_outlined,
+                label:
+                    '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
+                tone: _ChipTone.warning,
+              ),
+            if (updateCount > 0)
+              _MetaChip(
+                icon: Icons.forum_outlined,
+                label:
+                    '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
+              ),
+          ],
+        ),
+      ],
+    );
+
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.s16,
         bottom: AppSpacing.s12,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ClientAvatar(name: project.clientName),
-          const SizedBox(width: AppSpacing.s12),
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 700;
+
+          if (narrow) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  project.clientName,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.textFaint,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s4),
-                Text(
-                  project.name,
-                  style: theme.textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppSpacing.s8),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.s8,
-                  runSpacing: AppSpacing.s4,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StatusBadge(status: project.status),
-                    if (lastActivityAt != null)
-                      _MetaChip(
-                        icon: Icons.bolt_rounded,
-                        label: 'Active ${formatRelativeTime(lastActivityAt!)}',
-                      ),
-                    if (pendingApprovals > 0)
-                      _MetaChip(
-                        icon: Icons.mark_email_unread_outlined,
-                        label:
-                            '$pendingApprovals pending ${pendingApprovals == 1 ? 'approval' : 'approvals'}',
-                        tone: _ChipTone.warning,
-                      ),
-                    if (updateCount > 0)
-                      _MetaChip(
-                        icon: Icons.forum_outlined,
-                        label:
-                            '$updateCount ${updateCount == 1 ? 'update' : 'updates'}',
-                      ),
+                    _ClientAvatar(name: project.clientName),
+                    const SizedBox(width: AppSpacing.s12),
+                    Expanded(child: titleBlock),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s12),
+                Wrap(
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    editButton,
+                    if (shareButton != null) shareButton,
+                    ctaButton,
                   ],
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.s8),
-          AppIconButton(
-            tooltip: 'Edit',
-            icon: Icons.edit_outlined,
-            tone: AppIconButtonTone.faint,
-            onPressed: () {
-              // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
-              // the receiving screen's submit handler walks the browser
-              // cursor back over this entry via `history.back()`, which
-              // requires a real browser history entry to have been pushed.
-              // `extra: true` flags the navigation as in-app so the screen
-              // can distinguish it from a deep-link entry (where `history.back()`
-              // would leave the app entirely).
-              context.goNamed(
-                RouteNames.editProject,
-                pathParameters: {'id': project.id},
-                extra: true,
-              );
-            },
-          ),
-          if (shareUrl != null) ...[
-            const SizedBox(width: AppSpacing.s4),
-            AppButton(
-              label: 'Share',
-              variant: AppButtonVariant.secondary,
-              icon: Icons.link_rounded,
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: shareUrl));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context)
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                        const SnackBar(content: Text('Link copied')));
-                }
-              },
-            ),
-          ],
-          const SizedBox(width: AppSpacing.s8),
-          AppButton(
-            label: cta.label,
-            icon: cta.icon,
-            onPressed: cta.onPressed,
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ClientAvatar(name: project.clientName),
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(child: titleBlock),
+              const SizedBox(width: AppSpacing.s8),
+              editButton,
+              if (shareButton != null) ...[
+                const SizedBox(width: AppSpacing.s4),
+                shareButton,
+              ],
+              const SizedBox(width: AppSpacing.s8),
+              ctaButton,
+            ],
+          );
+        },
       ),
     );
   }
