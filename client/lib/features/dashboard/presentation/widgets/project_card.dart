@@ -42,15 +42,21 @@ class ProjectCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(width: AppSpacing.s12),
                       _MetaRow(project: project),
+                      const SizedBox(width: AppSpacing.s12),
+                      Text(
+                        'Updated ${_formatDate(project.updatedAt)}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.textFaint,
+                        ),
+                      )
                     ],
                   ),
                   Spacer(),
-                  const SizedBox(width: AppSpacing.s12),
                   StatusBadge(status: project.status),
                 ],
               ),
-              const SizedBox(height: AppSpacing.s8),
               if (project.latestUpdateTitle != null) ...[
                 const SizedBox(height: AppSpacing.s8),
                 Text(
@@ -69,12 +75,6 @@ class ProjectCard extends StatelessWidget {
                     percent: project.progressPct!, archived: isArchived),
               ],
               const SizedBox(height: AppSpacing.s8),
-              Text(
-                'Updated ${_formatDate(project.updatedAt)}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppColors.textFaint,
-                ),
-              ),
             ],
           ),
         ),
