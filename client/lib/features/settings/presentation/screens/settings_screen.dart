@@ -7,6 +7,7 @@ import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/workspace.dart';
 import 'package:clientpulse/shared/providers/workspace_provider.dart';
 import 'package:clientpulse/shared/services/workspace_service.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
 
 const _kMaxLogoBytes = 2 * 1024 * 1024; // 2 MB
 
@@ -145,7 +146,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final workspaceAsync = ref.watch(workspaceNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workspace Settings')),
+      appBar: const AppHeader(pageTitle: 'Workspace Settings'),
       body: workspaceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(

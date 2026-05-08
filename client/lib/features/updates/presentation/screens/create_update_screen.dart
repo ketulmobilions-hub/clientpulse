@@ -12,6 +12,7 @@ import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
 import 'package:clientpulse/shared/services/storage_service.dart';
 import 'package:clientpulse/shared/services/update_service.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
 
 // 10 MB — matches the Supabase Storage bucket hard limit so the client-side
 // check catches oversized files before wasting bandwidth on a doomed upload.
@@ -408,9 +409,8 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('New Update'),
+      appBar: AppHeader(
+        pageTitle: 'New Update',
         actions: [
           PopupMenuButton<_UpdateTemplate>(
             tooltip: 'Use template',

@@ -9,6 +9,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/auth_notifier.dart';
 import '../../../../shared/providers/project_provider.dart';
+import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
 import '../../../../shared/widgets/responsive_content.dart';
@@ -63,8 +64,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Projects'),
+      appBar: AppHeader(
+        pageTitle: 'Projects',
         actions: [
           FilledButton.icon(
             onPressed: () => context.goNamed(

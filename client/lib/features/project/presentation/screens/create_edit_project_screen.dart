@@ -11,6 +11,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/services/project_service.dart';
+import '../../../../shared/widgets/app_header.dart';
 import '../../../../shared/utils/history_back_stub.dart'
     if (dart.library.html) '../../../../shared/utils/history_back_web.dart';
 
@@ -352,10 +353,7 @@ class _CreateEditProjectScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(isEdit ? 'Edit Project' : 'New Project'),
-      ),
+      appBar: AppHeader(pageTitle: isEdit ? 'Edit Project' : 'New Project'),
       body: _loadingProject
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

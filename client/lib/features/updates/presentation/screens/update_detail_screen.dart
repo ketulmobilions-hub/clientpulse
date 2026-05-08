@@ -17,6 +17,7 @@ import 'package:clientpulse/shared/providers/attachments_provider.dart';
 import 'package:clientpulse/shared/providers/comment_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/responsive_content.dart';
@@ -137,11 +138,12 @@ class _UpdateDetailScreenState extends ConsumerState<UpdateDetailScreen> {
     }
   }
 
-  PreferredSizeWidget _shellAppBar({bool showActions = false}) {
-    return AppBar(
+  PreferredSizeWidget _shellAppBar({bool showActions = false, String? title}) {
+    return AppHeader(
+      pageTitle: title,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
-        tooltip: 'Back',
+        tooltip: 'Back to project',
         onPressed: _backToProject,
       ),
       actions: [
@@ -242,7 +244,7 @@ class _UpdateDetailScreenState extends ConsumerState<UpdateDetailScreen> {
             commentsAsync.valueOrNull?.length ?? update.commentCount ?? 0;
 
         return Scaffold(
-          appBar: _shellAppBar(showActions: true),
+          appBar: _shellAppBar(showActions: true, title: update.title),
           body: SafeArea(
             child: ResponsiveContent(
               maxWidth: AppContentWidth.standard,
