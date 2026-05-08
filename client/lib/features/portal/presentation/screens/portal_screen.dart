@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/breakpoints.dart';
+import '../../../../core/theme/content_widths.dart';
+import '../../../../core/theme/radii.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/portal_overview.dart';
 import '../../../../shared/providers/portal_provider.dart';
 import '../../../../shared/services/portal_service.dart';
@@ -8,6 +13,15 @@ import '../../../../shared/widgets/shimmer_card.dart';
 import '../widgets/portal_branding_header.dart';
 import '../widgets/portal_milestone_section.dart';
 import '../widgets/portal_update_card.dart';
+
+double _portalSidePadding(double viewportWidth) {
+  final basePad = viewportWidth < AppBreakpoints.mobile
+      ? AppSpacing.s16
+      : AppSpacing.s24;
+  return viewportWidth > AppContentWidth.narrow
+      ? (viewportWidth - AppContentWidth.narrow) / 2
+      : basePad;
+}
 
 class PortalScreen extends ConsumerWidget {
   const PortalScreen({super.key, required this.token});
@@ -19,7 +33,12 @@ class PortalScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(portalOverviewProvider(token));
 
     return overviewAsync.when(
-      loading: () => const Scaffold(body: _PortalLoadingScreen()),
+      loading: () => Scaffold(
+        appBar: const PortalBrandingHeader(
+          workspace: PortalWorkspace(name: 'Portal', slug: ''),
+        ),
+        body: const _PortalLoadingScreen(),
+      ),
       error: (e, _) {
         final isTokenError = e is PortalException && e.isInvalidToken;
         return _PortalErrorScreen(
@@ -52,49 +71,45 @@ class _PortalContent extends ConsumerWidget {
       appBar: PortalBrandingHeader(workspace: overview.workspace),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final hPad = constraints.maxWidth < 600 ? 16.0 : 24.0;
-          final sidePad = constraints.maxWidth > 720
-              ? (constraints.maxWidth - 720) / 2
-              : hPad;
+          final sidePad = _portalSidePadding(constraints.maxWidth);
           final bottomInset = MediaQuery.of(context).padding.bottom;
           return CustomScrollView(
             slivers: [
-              // Project header
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 0),
+                padding: EdgeInsets.fromLTRB(
+                    sidePad, AppSpacing.s24, sidePad, 0),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(overview.project.name,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
+                          style: theme.textTheme.headlineMedium),
+                      const SizedBox(height: AppSpacing.s4),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
+                        spacing: AppSpacing.s8,
+                        runSpacing: AppSpacing.s4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text('For ${overview.project.clientName}',
                               style: theme.textTheme.bodyMedium
-                                  ?.copyWith(color: theme.colorScheme.outline)),
+                                  ?.copyWith(color: AppColors.textMuted)),
                           _StatusBadge(status: overview.project.status),
                         ],
                       ),
                       if (overview.project.description != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.s12),
                         Text(overview.project.description!,
-                            style: theme.textTheme.bodyMedium),
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.textFaint)),
                       ],
                     ],
                   ),
                 ),
               ),
-
-              // Milestone overview
               if (hasMilestones)
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(sidePad, 24, sidePad, 0),
+                  padding: EdgeInsets.fromLTRB(
+                      sidePad, AppSpacing.s24, sidePad, 0),
                   sliver: SliverToBoxAdapter(
                     child: PortalMilestoneSection(
                       milestones: overview.milestones,
@@ -102,25 +117,21 @@ class _PortalContent extends ConsumerWidget {
                     ),
                   ),
                 ),
-
-              // Updates section header
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 8),
+                padding: EdgeInsets.fromLTRB(
+                    sidePad, AppSpacing.s24, sidePad, AppSpacing.s8),
                 sliver: SliverToBoxAdapter(
-                  child: Text('Updates',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  child: Text('Updates', style: theme.textTheme.titleLarge),
                 ),
               ),
-
-              // Updates content — lazy via SliverList
               ...updatesAsync.when(
                 loading: () => [
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(sidePad, 0, sidePad, 0),
+                    padding: EdgeInsets.symmetric(horizontal: sidePad),
                     sliver: SliverList.separated(
                       itemCount: 3,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.s12),
                       itemBuilder: (_, __) => const ShimmerCard(height: 120),
                     ),
                   ),
@@ -128,7 +139,8 @@ class _PortalContent extends ConsumerWidget {
                 error: (_, __) => [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: sidePad, vertical: 16),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: sidePad, vertical: AppSpacing.s16),
                       child: Text('Failed to load updates. Please try again.',
                           style: TextStyle(color: theme.colorScheme.error)),
                     ),
@@ -139,11 +151,12 @@ class _PortalContent extends ConsumerWidget {
                     return [
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: AppSpacing.s32),
                           child: Center(
                             child: Text('No updates yet.',
                                 style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: theme.colorScheme.outline)),
+                                    ?.copyWith(color: AppColors.textMuted)),
                           ),
                         ),
                       ),
@@ -163,7 +176,8 @@ class _PortalContent extends ConsumerWidget {
                     ),
                     if (updatesState.loadMoreError != null)
                       SliverPadding(
-                        padding: EdgeInsets.fromLTRB(sidePad, 8, sidePad, 0),
+                        padding: EdgeInsets.fromLTRB(
+                            sidePad, AppSpacing.s8, sidePad, 0),
                         sliver: SliverToBoxAdapter(
                           child: Text(
                             'Failed to load more updates. Please try again.',
@@ -172,7 +186,8 @@ class _PortalContent extends ConsumerWidget {
                         ),
                       ),
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s16),
                       sliver: SliverToBoxAdapter(
                         child: updatesState.isLoadingMore
                             ? const Center(child: CircularProgressIndicator())
@@ -181,7 +196,9 @@ class _PortalContent extends ConsumerWidget {
                                     child: OutlinedButton(
                                       onPressed: () {
                                         ref
-                                            .read(portalUpdatesNotifierProvider(token).notifier)
+                                            .read(portalUpdatesNotifierProvider(
+                                                    token)
+                                                .notifier)
                                             .loadMore()
                                             .ignore();
                                       },
@@ -194,8 +211,9 @@ class _PortalContent extends ConsumerWidget {
                   ];
                 },
               ),
-
-              SliverPadding(padding: EdgeInsets.only(bottom: 32 + bottomInset)),
+              SliverPadding(
+                  padding:
+                      EdgeInsets.only(bottom: AppSpacing.s32 + bottomInset)),
             ],
           );
         },
@@ -211,27 +229,34 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final (bg, fg) = switch (status) {
-      PortalProjectStatus.active => dark
-          ? (Colors.green.shade900, Colors.green.shade200)
-          : (Colors.green.shade100, Colors.green.shade800),
-      PortalProjectStatus.completed => dark
-          ? (Colors.blue.shade900, Colors.blue.shade200)
-          : (Colors.blue.shade100, Colors.blue.shade800),
-      PortalProjectStatus.archived || PortalProjectStatus.unknown => dark
-          ? (Colors.grey.shade800, Colors.grey.shade300)
-          : (Colors.grey.shade200, Colors.grey.shade700),
+      PortalProjectStatus.active => (
+          AppColors.categoryEmerald.withOpacity(0.18),
+          AppColors.categoryEmeraldFg,
+        ),
+      PortalProjectStatus.completed => (
+          AppColors.categoryBlue.withOpacity(0.18),
+          AppColors.categoryBlueFg,
+        ),
+      PortalProjectStatus.archived ||
+      PortalProjectStatus.unknown =>
+        (AppColors.surfaceRaised, AppColors.textFaint),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s8, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: Text(
         status.displayLabel,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: fg,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }
@@ -244,34 +269,36 @@ class _PortalLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final hPad = constraints.maxWidth < 600 ? 16.0 : 24.0;
-        final sidePad = constraints.maxWidth > 720
-            ? (constraints.maxWidth - 720) / 2
-            : hPad;
+        final sidePad = _portalSidePadding(constraints.maxWidth);
         return CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(sidePad, 20, sidePad, 0),
+              padding:
+                  EdgeInsets.fromLTRB(sidePad, AppSpacing.s24, sidePad, 0),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ShimmerCard(height: 32, width: constraints.maxWidth * 0.4),
-                    const SizedBox(height: 8),
-                    ShimmerCard(height: 18, width: constraints.maxWidth * 0.25),
+                    const SizedBox(height: AppSpacing.s8),
+                    ShimmerCard(
+                        height: 18, width: constraints.maxWidth * 0.25),
                   ],
                 ),
               ),
             ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(sidePad, 24, sidePad, 0),
+              padding:
+                  EdgeInsets.fromLTRB(sidePad, AppSpacing.s24, sidePad, 0),
               sliver: const SliverToBoxAdapter(child: ShimmerCard(height: 80)),
             ),
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(sidePad, 28, sidePad, 0),
+              padding:
+                  EdgeInsets.fromLTRB(sidePad, AppSpacing.s24, sidePad, 0),
               sliver: SliverList.separated(
                 itemCount: 3,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.s12),
                 itemBuilder: (_, __) => const ShimmerCard(height: 120),
               ),
             ),
@@ -294,24 +321,23 @@ class _PortalErrorScreen extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(AppSpacing.s32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.link_off_rounded,
-                  size: 64, color: theme.colorScheme.outline),
-              const SizedBox(height: 16),
-              Text('Link Unavailable',
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              const Icon(Icons.link_off_rounded,
+                  size: 56, color: AppColors.textMuted),
+              const SizedBox(height: AppSpacing.s16),
+              Text('Link Unavailable', style: theme.textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.s8),
               Text(message,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.outline)),
+                      ?.copyWith(color: AppColors.textMuted)),
               if (onRetry != null) ...[
-                const SizedBox(height: 20),
-                FilledButton(onPressed: onRetry, child: const Text('Try again')),
+                const SizedBox(height: AppSpacing.s20),
+                FilledButton(
+                    onPressed: onRetry, child: const Text('Try again')),
               ],
             ],
           ),

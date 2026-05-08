@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/content_widths.dart';
+import '../../../../core/theme/radii.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/auth_notifier.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
+import '../../../../shared/widgets/responsive_content.dart';
 import '../../../../shared/widgets/shimmer_card.dart';
 import '../widgets/project_card.dart';
 
@@ -67,12 +72,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             label: const Text('New Project'),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s12,
+                vertical: AppSpacing.s8,
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.s12),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign out',
@@ -80,93 +86,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               await ref.read(authNotifierProvider.notifier).logout();
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.s4),
         ],
       ),
-      body: projectsAsync.when(
-        loading: () => ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-          itemCount: 4,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, __) => const ShimmerCard(height: 96),
-        ),
-        error: (e, _) => ErrorStateWidget(
-          message: 'Failed to load projects',
-          onRetry: () => ref.read(projectNotifierProvider.notifier).load(),
-        ),
-        data: (projects) {
-          if (projects.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.folder_open_outlined,
-              message: 'No projects yet',
-              actionLabel: 'Create Project',
-              onAction: () => context.goNamed(RouteNames.createProject),
-            );
-          }
+      body: ResponsiveContent(
+        maxWidth: AppContentWidth.standard,
+        child: projectsAsync.when(
+          loading: () => ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s20),
+            itemCount: 4,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s12),
+            itemBuilder: (_, __) => const ShimmerCard(height: 96),
+          ),
+          error: (e, _) => ErrorStateWidget(
+            message: 'Failed to load projects',
+            onRetry: () => ref.read(projectNotifierProvider.notifier).load(),
+          ),
+          data: (projects) {
+            if (projects.isEmpty) {
+              return EmptyStateWidget(
+                icon: Icons.folder_open_outlined,
+                message: 'No projects yet',
+                actionLabel: 'Create Project',
+                onAction: () => context.goNamed(RouteNames.createProject),
+              );
+            }
 
-          final filtered = _applyFilters(projects);
+            final filtered = _applyFilters(projects);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.5,
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (v) => setState(() => _query = v),
-                      decoration: InputDecoration(
-                        hintText: 'Search projects or clients',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        suffixIcon: _query.isEmpty
-                            ? null
-                            : IconButton(
-                                icon: const Icon(Icons.close_rounded, size: 18),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _query = '');
-                                },
-                              ),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSpacing.s16),
+                TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search projects or clients',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
+                    isDense: true,
                   ),
                 ),
-              ),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                const SizedBox(height: AppSpacing.s12),
+                Wrap(
+                  spacing: AppSpacing.s8,
+                  runSpacing: AppSpacing.s8,
                   children: [
                     _FilterChip(
                       label: 'All',
                       selected: _filter == _StatusFilter.all,
                       onTap: () => setState(() => _filter = _StatusFilter.all),
                     ),
-                    const SizedBox(width: 8),
                     _FilterChip(
                       label: 'Active',
                       selected: _filter == _StatusFilter.active,
                       onTap: () =>
                           setState(() => _filter = _StatusFilter.active),
                     ),
-                    const SizedBox(width: 8),
                     _FilterChip(
                       label: 'Completed',
                       selected: _filter == _StatusFilter.completed,
                       onTap: () =>
                           setState(() => _filter = _StatusFilter.completed),
                     ),
-                    const SizedBox(width: 8),
                     _FilterChip(
                       label: 'Archived',
                       selected: _filter == _StatusFilter.archived,
@@ -175,38 +166,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ],
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                child: Text(
-                  '${filtered.length} ${filtered.length == 1 ? 'project' : 'projects'}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    0,
+                    AppSpacing.s16,
+                    0,
+                    AppSpacing.s8,
+                  ),
+                  child: Text(
+                    '${filtered.length} ${filtered.length == 1 ? 'project' : 'projects'}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No projects match',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade500,
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No projects match',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
                           ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: AppSpacing.s12),
+                          itemBuilder: (_, i) =>
+                              ProjectCard(project: filtered[i]),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) =>
-                            ProjectCard(project: filtered[i]),
-                      ),
-              ),
-            ],
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -226,28 +222,29 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ChoiceChip(
-      label: Text(
-        label,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: selected ? theme.colorScheme.onPrimary : Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      labelStyle: TextStyle(
-        color: selected
-            ? theme.colorScheme.onPrimary
-            : theme.colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-      ),
-      selectedColor: theme.colorScheme.primary,
-      backgroundColor: Colors.grey.shade100,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: selected ? theme.colorScheme.primary : Colors.grey.shade300,
+    return Material(
+      color: selected ? theme.colorScheme.primary : AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s8,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            border: Border.all(
+              color: selected ? theme.colorScheme.primary : AppColors.border,
+            ),
+          ),
+          child: Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: selected ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
         ),
       ),
     );

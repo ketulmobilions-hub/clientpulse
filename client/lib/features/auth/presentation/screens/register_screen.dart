@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:clientpulse/core/router/route_names.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
@@ -196,7 +197,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
+                constraints:
+                    const BoxConstraints(maxWidth: AppContentWidth.auth),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: surface,

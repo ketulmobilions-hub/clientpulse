@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/breakpoints.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
@@ -9,16 +13,10 @@ import 'agency_comment_section.dart';
 import 'attachment_list.dart';
 import 'category_tag.dart';
 
-const _kMuted = Color(0xFF71717A);
-const _kBadgeBg = Color(0xFF27272A);
-const _kBadgeBorder = Color(0xFF3F3F46);
-
 const _kMonthAbbrev = [
   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
 ];
-
-const _kTouchWidthBreakpoint = 600.0;
 
 String _formatRelativeTime(DateTime dt) {
   final diff = DateTime.now().difference(dt);
@@ -163,13 +161,14 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
     final isMobileNative = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.android);
-    final alwaysShowActions = isMobileNative || width < _kTouchWidthBreakpoint;
+    final alwaysShowActions =
+        isMobileNative || width < AppBreakpoints.mobile;
 
     return MouseRegion(
       onEnter: (_) => _hovered.value = true,
       onExit: (_) => _hovered.value = false,
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -178,14 +177,15 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                 _isExpanded = !_isExpanded;
                 if (_isExpanded) _hasEverExpanded = true;
               }),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadii.md),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s16, vertical: AppSpacing.s12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _DateBadge(date: _createdAt),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.s12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,31 +196,27 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                               Expanded(
                                 child: Text(
                                   widget.update.title,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: theme.textTheme.titleMedium,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.s8),
                               CategoryTag(category: widget.update.category),
                             ],
                           ),
                           if (_preview.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.s4),
                             Text(
                               _preview,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFFA1A1AA),
-                                height: 1.35,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textFaint,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                          const SizedBox(height: 6),
+                          const SizedBox(height: AppSpacing.s8),
                           _MetaLine(
                             relativeTime: relativeTime,
                             attachCount: attachCount,
@@ -229,7 +225,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.s8),
                     ValueListenableBuilder<bool>(
                       valueListenable: _hovered,
                       builder: (_, hovered, __) => _RowActions(
@@ -241,7 +237,7 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
                       turns: _isExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 200),
                       child: const Icon(Icons.expand_more,
-                          size: 18, color: _kMuted),
+                          size: 18, color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -250,11 +246,12 @@ class _UpdateCardState extends ConsumerState<UpdateCard> {
             if (_isExpanded && widget.update.body.isNotEmpty) ...[
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s16, AppSpacing.s12, AppSpacing.s16, 0),
                 child: MarkdownBody(
                   data: widget.update.body,
                   styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                    p: theme.textTheme.bodySmall,
+                    p: theme.textTheme.bodyMedium,
                   ),
                   shrinkWrap: true,
                 ),
@@ -297,9 +294,9 @@ class _DateBadge extends StatelessWidget {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: _kBadgeBg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _kBadgeBorder),
+        color: AppColors.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -310,7 +307,7 @@ class _DateBadge extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.6,
-              color: _kMuted,
+              color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 1),
@@ -319,7 +316,7 @@ class _DateBadge extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppColors.textPrimary,
               height: 1.0,
             ),
           ),
@@ -352,7 +349,8 @@ class _MetaLine extends StatelessWidget {
     if (parts.isEmpty) return const SizedBox.shrink();
     return Text(
       parts.join(' • '),
-      style: const TextStyle(fontSize: 12, color: _kMuted),
+      style: const TextStyle(
+          fontSize: 12, color: AppColors.textMuted, height: 1.4),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -376,7 +374,7 @@ class _RowActions extends StatelessWidget {
           ignoring: !visible,
           child: IconButton(
             icon: const Icon(Icons.delete_outline, size: 16),
-            color: _kMuted,
+            color: AppColors.textMuted,
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints.tightFor(width: 28, height: 28),

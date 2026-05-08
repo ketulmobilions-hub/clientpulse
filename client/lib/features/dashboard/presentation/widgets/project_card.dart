@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/radii.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import 'status_badge.dart';
 
@@ -21,36 +24,45 @@ class ProjectCard extends StatelessWidget {
           pathParameters: {'id': project.id},
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s16, vertical: AppSpacing.s12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      project.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
+                  Row(
+                    children: [
+                      Text(
+                        project.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          letterSpacing: -0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: AppSpacing.s12),
+                      _MetaRow(project: project),
+                      const SizedBox(width: AppSpacing.s12),
+                      Text(
+                        'Updated ${_formatDate(project.updatedAt)}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppColors.textFaint,
+                        ),
+                      )
+                    ],
                   ),
-                  const SizedBox(width: 12),
+                  Spacer(),
                   StatusBadge(status: project.status),
                 ],
               ),
-              const SizedBox(height: 6),
-              _MetaRow(project: project),
               if (project.latestUpdateTitle != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s8),
                 Text(
                   'Last update: "${project.latestUpdateTitle}"',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: AppColors.textMuted,
                     fontStyle: FontStyle.italic,
                   ),
                   maxLines: 1,
@@ -58,17 +70,11 @@ class ProjectCard extends StatelessWidget {
                 ),
               ],
               if (project.progressPct != null) ...[
-                const SizedBox(height: 10),
-                _ProgressBar(percent: project.progressPct!, archived: isArchived),
+                const SizedBox(height: AppSpacing.s12),
+                _ProgressBar(
+                    percent: project.progressPct!, archived: isArchived),
               ],
-              const SizedBox(height: 6),
-              Text(
-                'Updated ${_formatDate(project.updatedAt)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontSize: 11,
-                ),
-              ),
+              const SizedBox(height: AppSpacing.s8),
             ],
           ),
         ),
@@ -85,10 +91,26 @@ class ProjectCard extends StatelessWidget {
         opacity: 0.65,
         child: ColorFiltered(
           colorFilter: const ColorFilter.matrix(<double>[
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0.2126, 0.7152, 0.0722, 0, 0,
-            0,      0,      0,      1, 0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
           ]),
           child: card,
         ),
@@ -129,10 +151,10 @@ class _MetaRow extends StatelessWidget {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.person_outline_rounded, size: 13, color: theme.colorScheme.outline),
-          const SizedBox(width: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 200),
+          const Icon(Icons.person_outline_rounded,
+              size: 13, color: AppColors.textFaint),
+          const SizedBox(width: AppSpacing.s4),
+          Flexible(
             child: Text(
               project.clientName,
               style: style,
@@ -186,29 +208,28 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fill = archived ? theme.colorScheme.outline : theme.colorScheme.primary;
+    final fill = archived ? AppColors.textMuted : AppColors.success;
     final clamped = percent.clamp(0, 100);
 
     return Row(
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppRadii.xs),
             child: LinearProgressIndicator(
               value: clamped / 100,
               minHeight: 6,
-              backgroundColor: theme.colorScheme.surfaceVariant,
+              backgroundColor: AppColors.surfaceMuted,
               valueColor: AlwaysStoppedAnimation<Color>(fill),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.s8),
         Text(
           '$clamped%',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: AppColors.textMuted,
             fontWeight: FontWeight.w600,
-            fontSize: 11,
           ),
         ),
       ],

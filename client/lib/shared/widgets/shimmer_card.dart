@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/radii.dart';
+
 /// Rectangular shimmer placeholder for loading states.
 ///
 /// [width] defaults to [double.infinity]; the parent must provide bounded
@@ -11,7 +14,7 @@ class ShimmerCard extends StatelessWidget {
     super.key,
     required this.height,
     this.width = double.infinity,
-    this.borderRadius = 12.0,
+    this.borderRadius = AppRadii.lg,
   });
 
   final double height;
@@ -20,20 +23,17 @@ class ShimmerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
       label: 'Loading',
       excludeSemantics: true,
       child: Shimmer.fromColors(
-        // ignore: deprecated_member_use
-        baseColor: colorScheme.surfaceVariant,
-        highlightColor: colorScheme.surface,
+        baseColor: AppColors.surfaceMuted,
+        highlightColor: AppColors.surface,
         child: Container(
           height: height,
           width: width,
           decoration: BoxDecoration(
-            // ignore: deprecated_member_use
-            color: colorScheme.surfaceVariant,
+            color: AppColors.surfaceMuted,
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),

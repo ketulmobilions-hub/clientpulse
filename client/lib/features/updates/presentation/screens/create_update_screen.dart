@@ -2,6 +2,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/models/attachment.dart';
 import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/utils/file_utils.dart';
@@ -451,7 +453,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.narrow),
           child: Form(
             key: _formKey,
             child: ListView(
@@ -521,7 +523,7 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
                     Text(
                       '${_selectedFiles.length}/3',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: AppColors.textMuted,
                           ),
                     ),
                   ],
@@ -602,7 +604,7 @@ class _WritePreviewTabs extends StatelessWidget {
           animation: controller,
           builder: (ctx, _) => Container(
             decoration: BoxDecoration(
-              color: scheme.surfaceVariant.withOpacity(0.4),
+              color: AppColors.surfaceMuted.withOpacity(0.4),
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.all(4),
@@ -679,13 +681,13 @@ class _PreviewPane extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(8),
           ),
           child: empty
-              ? Text(
+              ? const Text(
                   'Nothing to preview',
-                  style: TextStyle(color: Colors.grey.shade500),
+                  style: TextStyle(color: AppColors.textMuted),
                 )
               : MarkdownBody(data: value.text),
         );
@@ -714,7 +716,7 @@ class _CategoryChipState extends State<_CategoryChip> {
   Widget build(BuildContext context) {
     final style = _categoryStyle(widget.category);
     final selected = widget.selected;
-    final borderColor = selected ? style.color : Colors.grey.shade300;
+    final borderColor = selected ? style.color : AppColors.border;
     final fg = selected ? style.color : Theme.of(context).colorScheme.onSurfaceVariant;
     final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(20));
 
@@ -732,7 +734,7 @@ class _CategoryChipState extends State<_CategoryChip> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onTap,
-          hoverColor: selected ? null : Colors.grey.shade100,
+          hoverColor: selected ? null : AppColors.surfaceHover,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -777,7 +779,7 @@ class _AttachmentDropzoneState extends State<_AttachmentDropzone> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final disabled = !widget.enabled;
-    final fg = disabled ? Colors.grey.shade500 : Colors.grey.shade700;
+    final fg = disabled ? AppColors.textDisabled : AppColors.textMuted;
 
     final label = widget.isFull
         ? 'Maximum 3 files reached'
@@ -794,7 +796,7 @@ class _AttachmentDropzoneState extends State<_AttachmentDropzone> {
       child: MouseRegion(
         cursor: disabled ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
         child: Material(
-          color: Colors.grey.shade50,
+          color: AppColors.surfaceMuted,
           borderRadius: BorderRadius.circular(10),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -807,7 +809,7 @@ class _AttachmentDropzoneState extends State<_AttachmentDropzone> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300, width: 1),
+                border: Border.all(color: AppColors.border, width: 1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(

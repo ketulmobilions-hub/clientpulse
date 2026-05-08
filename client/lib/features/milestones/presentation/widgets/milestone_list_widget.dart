@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/shimmer_card.dart';
 import 'milestone_tile.dart';
-
-const _kCardBorder = Color(0xFF3F3F46);
-const _kMuted = Color(0xFF71717A);
 
 class MilestoneListWidget extends ConsumerWidget {
   const MilestoneListWidget({super.key, required this.projectId});
@@ -18,9 +18,9 @@ class MilestoneListWidget extends ConsumerWidget {
     final milestonesAsync = ref.watch(milestoneNotifierProvider(projectId));
     return milestonesAsync.when(
       loading: () => ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
         itemCount: 3,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s8),
         itemBuilder: (_, __) => const ShimmerCard(height: 60),
       ),
       error: (e, _) => ErrorStateWidget(
@@ -117,17 +117,18 @@ class _InlineAddMilestoneRowState
   Widget build(BuildContext context) {
     if (_expanded) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 3, 16, 3),
+        padding: const EdgeInsets.symmetric(vertical: 3),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF262626),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _kCardBorder),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border),
           ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s12, AppSpacing.s8, AppSpacing.s8, AppSpacing.s8),
           child: Row(
             children: [
-              const Icon(Icons.add_rounded, size: 18, color: _kMuted),
+              const Icon(Icons.add_rounded, size: 18, color: AppColors.textMuted),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
@@ -174,7 +175,7 @@ class _InlineAddMilestoneRowState
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 3, 16, 3),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
@@ -182,37 +183,36 @@ class _InlineAddMilestoneRowState
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             onTap: () => setState(() => _expanded = true),
             child: Container(
               decoration: BoxDecoration(
-                color: _hovered
-                    ? const Color(0xFF222226)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
+                color: _hovered ? AppColors.surfaceMuted : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadii.md),
                 border: Border.all(
-                  color: _hovered ? _kCardBorder : const Color(0xFF2A2A2E),
+                  color:
+                      _hovered ? AppColors.border : AppColors.borderSubtle,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s12, vertical: AppSpacing.s12),
               child: Row(
                 children: [
                   Icon(
                     Icons.add_rounded,
                     size: 18,
-                    color: _hovered
-                        ? const Color(0xFFA1A1AA)
-                        : _kMuted,
+                    color:
+                        _hovered ? AppColors.textFaint : AppColors.textMuted,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.s12),
                   Text(
                     'Add milestone',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: _hovered
-                          ? const Color(0xFFA1A1AA)
-                          : _kMuted,
+                          ? AppColors.textFaint
+                          : AppColors.textMuted,
                     ),
                   ),
                 ],

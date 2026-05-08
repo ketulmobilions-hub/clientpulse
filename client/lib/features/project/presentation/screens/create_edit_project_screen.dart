@@ -5,22 +5,40 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/breakpoints.dart';
+import '../../../../core/theme/content_widths.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/services/project_service.dart';
+import '../../../../shared/utils/history_back_stub.dart'
+    if (dart.library.html) '../../../../shared/utils/history_back_web.dart';
 
 class CreateEditProjectScreen extends ConsumerStatefulWidget {
-  const CreateEditProjectScreen({super.key, this.projectId});
+  const CreateEditProjectScreen({
+    super.key,
+    this.projectId,
+    this.cameFromDetail = false,
+  });
 
   final String? projectId;
+
+  /// True when the user opened this screen by clicking edit on the Project
+  /// Detail page (set by the router when the nav included `extra: true`).
+  /// On save, this signals it's safe to walk the browser cursor back over
+  /// the `/edit-project` entry. Deep links / fresh tabs leave it false so
+  /// the save handler falls back to declarative `goNamed` navigation.
+  final bool cameFromDetail;
 
   bool get isEdit => projectId != null;
 
   @override
-  ConsumerState<CreateEditProjectScreen> createState() => _CreateEditProjectScreenState();
+  ConsumerState<CreateEditProjectScreen> createState() =>
+      _CreateEditProjectScreenState();
 }
 
-class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScreen> {
+class _CreateEditProjectScreenState
+    extends ConsumerState<CreateEditProjectScreen> {
   static final _emailRegExp = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
 
   final _formKey = GlobalKey<FormState>();
@@ -61,8 +79,9 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
   Future<void> _loadProject() async {
     setState(() => _loadingProject = true);
     try {
-      final project =
-          await ref.read(projectNotifierProvider.notifier).getProject(widget.projectId!);
+      final project = await ref
+          .read(projectNotifierProvider.notifier)
+          .getProject(widget.projectId!);
       if (!mounted) return;
       _nameCtrl.text = project.name;
       _clientNameCtrl.text = project.clientName;
@@ -149,7 +168,8 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               name: _nameCtrl.text.trim(),
               clientName: _clientNameCtrl.text.trim(),
               clientEmail: _clientEmailCtrl.text.trim(),
-              description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
               clearDescription: _descCtrl.text.trim().isEmpty,
               status: _status,
               startDate: _startDate,
@@ -158,22 +178,36 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               clearExpectedEndDate: _expectedEndDateCleared,
             );
         if (mounted) {
-          setState(() => _submitting = false);
-          context.pop();
+          // Keep _submitting=true through the nav. history.back() dispatches
+          // popstate on the next event-loop tick; resetting before that would
+          // re-enable the Save button and allow a double-submit.
+          if (!(widget.cameFromDetail && historyBack())) {
+            context.goNamed(
+              RouteNames.projectDetail,
+              pathParameters: {'id': widget.projectId!},
+            );
+          }
         }
       } else {
         final project = await ref.read(projectNotifierProvider.notifier).create(
               name: _nameCtrl.text.trim(),
               clientName: _clientNameCtrl.text.trim(),
               clientEmail: _clientEmailCtrl.text.trim(),
-              description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+              description:
+                  _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
               startDate: _startDate,
               expectedEndDate: _expectedEndDate,
             );
-        if (mounted) _showShareDialog(project);
+        if (mounted) {
+          // Reset before the share dialog opens so a dialog dismiss (e.g. ESC)
+          // leaves the form interactive instead of stuck with Save disabled.
+          setState(() => _submitting = false);
+          _showShareDialog(project);
+        }
       }
     } on ProjectServiceException catch (e) {
       if (mounted) {
+        setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.message),
@@ -183,6 +217,7 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$e'),
@@ -190,8 +225,6 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -229,11 +262,13 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
               const Text('Share this link with your client:'),
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: dialogTheme.colorScheme.surfaceVariant,
+                  color: dialogTheme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: dialogTheme.colorScheme.outlineVariant),
+                  border:
+                      Border.all(color: dialogTheme.colorScheme.outlineVariant),
                 ),
                 child: Row(
                   children: [
@@ -317,26 +352,29 @@ class _CreateEditProjectScreenState extends ConsumerState<CreateEditProjectScree
       body: _loadingProject
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s24, vertical: AppSpacing.s32),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1080),
+                  constraints:
+                      const BoxConstraints(maxWidth: AppContentWidth.standard),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final isWide = constraints.maxWidth >= 900;
+                      final isWide =
+                          constraints.maxWidth >= AppBreakpoints.tablet;
                       return isWide
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(flex: 4, child: contextPanel),
-                                const SizedBox(width: 32),
+                                const SizedBox(width: AppSpacing.s32),
                                 Expanded(flex: 6, child: formCard),
                               ],
                             )
                           : Column(
                               children: [
                                 contextPanel,
-                                const SizedBox(height: 24),
+                                const SizedBox(height: AppSpacing.s24),
                                 formCard,
                               ],
                             );
@@ -402,9 +440,7 @@ class _FormCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceVariant
-            : theme.colorScheme.surface,
+        color: isDark ? theme.colorScheme.surface : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark
@@ -572,7 +608,9 @@ class _ContextPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
-    final title = isEdit ? 'Update this client workspace' : 'Create a new client workspace';
+    final title = isEdit
+        ? 'Update this client workspace'
+        : 'Create a new client workspace';
     final subtitle = isEdit
         ? 'Adjust details, dates, and status. Changes are visible to the client.'
         : 'Spin up a dedicated space for your client and start collaborating today.';
@@ -580,8 +618,10 @@ class _ContextPanel extends StatelessWidget {
     const bullets = <_ContextBullet>[
       _ContextBullet(icon: Icons.bolt_outlined, text: 'Share progress updates'),
       _ContextBullet(icon: Icons.flag_outlined, text: 'Track milestones'),
-      _ContextBullet(icon: Icons.check_circle_outline, text: 'Collect approvals'),
-      _ContextBullet(icon: Icons.lock_outline, text: 'Private link, no client login'),
+      _ContextBullet(
+          icon: Icons.check_circle_outline, text: 'Collect approvals'),
+      _ContextBullet(
+          icon: Icons.lock_outline, text: 'Private link, no client login'),
     ];
 
     return Padding(

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/update.dart';
 
 class CategoryTag extends StatelessWidget {
@@ -8,22 +12,44 @@ class CategoryTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = switch (category) {
-      UpdateCategory.progress => (Colors.green.shade100, Colors.green.shade800),
-      UpdateCategory.milestone => (Colors.blue.shade100, Colors.blue.shade800),
-      UpdateCategory.deliverable => (Colors.purple.shade100, Colors.purple.shade800),
-      UpdateCategory.blocker => (Colors.red.shade100, Colors.red.shade900),
-      UpdateCategory.inputNeeded => (Colors.amber.shade100, Colors.orange.shade900),
+    final (base, fg) = switch (category) {
+      UpdateCategory.progress => (
+          AppColors.categoryEmerald,
+          AppColors.categoryEmeraldFg,
+        ),
+      UpdateCategory.milestone => (
+          AppColors.categoryBlue,
+          AppColors.categoryBlueFg,
+        ),
+      UpdateCategory.deliverable => (
+          AppColors.categoryViolet,
+          AppColors.categoryVioletFg,
+        ),
+      UpdateCategory.blocker => (
+          AppColors.categoryRed,
+          AppColors.categoryRedFg,
+        ),
+      UpdateCategory.inputNeeded => (
+          AppColors.categoryAmber,
+          AppColors.categoryAmberFg,
+        ),
     };
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s8, vertical: 3),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
+        color: base.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
       child: Text(
         category.displayLabel,
-        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

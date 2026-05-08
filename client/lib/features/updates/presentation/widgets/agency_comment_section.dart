@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/providers/comment_provider.dart';
 import 'agency_comment_tile.dart';
 
@@ -30,7 +32,13 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
   }
 
   void _clearSubmitError() {
-    if (_submitError != null) setState(() => _submitError = null);
+    if (_submitError == null) return;
+    // Defer setState to next frame: controller listeners can fire during
+    // build (autofill, programmatic text set) which would assert otherwise.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_submitError != null) setState(() => _submitError = null);
+    });
   }
 
   @override
@@ -82,11 +90,12 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
         const Divider(height: 1),
         commentsAsync.when(
           loading: () => const Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(AppSpacing.s16),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           ),
           error: (e, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s16, vertical: AppSpacing.s12),
             child: Text(
               'Failed to load comments. Tap to retry.',
               style: TextStyle(color: theme.colorScheme.error, fontSize: 13),
@@ -96,17 +105,20 @@ class _AgencyCommentSectionState extends ConsumerState<AgencyCommentSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s16, AppSpacing.s12, AppSpacing.s16, AppSpacing.s4),
                 child: Text(
-                  comments.isEmpty ? 'Comments' : 'Comments (${comments.length})',
+                  comments.isEmpty
+                      ? 'Comments'
+                      : 'Comments (${comments.length})',
                   style: theme.textTheme.labelMedium
-                      ?.copyWith(color: theme.colorScheme.outline),
+                      ?.copyWith(color: AppColors.textMuted),
                 ),
               ),
               ...comments.map((c) => AgencyCommentTile(comment: c)),
-              // Reply input only when comments loaded successfully (#8).
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s16, vertical: AppSpacing.s8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

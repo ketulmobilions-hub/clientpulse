@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:clientpulse/core/theme/app_colors.dart';
+import 'package:clientpulse/core/theme/radii.dart';
+import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
-
-const _kCardBg = Color(0xFF262626);
-const _kCardBorder = Color(0xFF3F3F46);
-const _kMuted = Color(0xFF71717A);
-const _kGreen = Color(0xFF22C55E);
-const _kAmber = Color(0xFFF59E0B);
 
 class MilestoneTile extends ConsumerStatefulWidget {
   const MilestoneTile({
@@ -148,14 +145,14 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
         platform == TargetPlatform.android;
     final showActions = isTouchPlatform || _hovered || _editing;
     final borderColor = _hovered
-        ? const Color(0xFF52525B)
+        ? AppColors.borderHover
         : (widget.isCurrentMilestone
-            ? _kAmber.withOpacity(0.4)
-            : _kCardBorder);
-    final bgColor = _hovered ? const Color(0xFF2A2A2E) : _kCardBg;
+            ? AppColors.categoryAmber.withOpacity(0.4)
+            : AppColors.border);
+    final bgColor = _hovered ? AppColors.surfaceHover : AppColors.surface;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
@@ -164,7 +161,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadii.md),
             border: Border.all(color: borderColor),
             boxShadow: _hovered
                 ? const [
@@ -179,10 +176,15 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadii.md),
               onTap: _editing ? null : _startEditing,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s12,
+                  AppSpacing.s8,
+                  AppSpacing.s8,
+                  AppSpacing.s8,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -211,7 +213,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                               style: m.completed
                                   ? const TextStyle(
                                       decoration: TextDecoration.lineThrough,
-                                      color: _kMuted,
+                                      color: AppColors.textMuted,
                                     )
                                   : const TextStyle(
                                       fontSize: 14,
@@ -227,7 +229,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                         child: Text(
                           _formatDate(m.dueDate!),
                           style:
-                              const TextStyle(fontSize: 12, color: _kMuted),
+                              const TextStyle(fontSize: 12, color: AppColors.textMuted),
                         ),
                       )
                     else if (showActions)
@@ -236,7 +238,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                         behavior: HitTestBehavior.opaque,
                         child: const Text(
                           'Add date',
-                          style: TextStyle(fontSize: 12, color: _kMuted),
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                         ),
                       ),
                     Semantics(
@@ -248,7 +250,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                           ignoring: !showActions,
                           child: IconButton(
                             icon: const Icon(Icons.delete_outline, size: 16),
-                            color: _kMuted,
+                            color: AppColors.textMuted,
                             visualDensity: VisualDensity.compact,
                             tooltip: 'Delete',
                             onPressed: _delete,
@@ -266,7 +268,7 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                             padding: EdgeInsets.symmetric(
                                 horizontal: 4, vertical: 8),
                             child: Icon(Icons.drag_indicator,
-                                size: 18, color: _kMuted),
+                                size: 18, color: AppColors.textMuted),
                           ),
                         ),
                       ),
@@ -311,16 +313,16 @@ class _MilestoneCheckboxState extends State<_MilestoneCheckbox> {
   @override
   Widget build(BuildContext context) {
     final completed = widget.completed;
-    final accent = widget.isCurrent ? _kAmber : _kMuted;
+    final accent = widget.isCurrent ? AppColors.categoryAmber : AppColors.textMuted;
 
     final Color fill;
     final Color borderColor;
     if (completed) {
-      fill = _hovered ? const Color(0xFF16A34A) : _kGreen;
+      fill = _hovered ? AppColors.successHover : AppColors.success;
       borderColor = fill;
     } else {
-      fill = _hovered ? const Color(0xFF2F2F33) : Colors.transparent;
-      borderColor = _hovered ? accent : _kCardBorder;
+      fill = _hovered ? AppColors.surfaceHover : Colors.transparent;
+      borderColor = _hovered ? accent : AppColors.border;
     }
 
     return MouseRegion(
@@ -338,7 +340,7 @@ class _MilestoneCheckboxState extends State<_MilestoneCheckbox> {
             height: 24,
             decoration: BoxDecoration(
               color: fill,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppRadii.xs),
               border: Border.all(
                 color: borderColor,
                 width: _hovered || completed ? 2.0 : 1.8,
