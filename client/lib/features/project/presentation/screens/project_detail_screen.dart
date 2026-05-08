@@ -18,6 +18,7 @@ import 'package:clientpulse/shared/models/update.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
+import 'package:clientpulse/shared/widgets/app_header.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/responsive_content.dart';
@@ -34,7 +35,7 @@ class ProjectDetailScreen extends ConsumerWidget {
 
     return projectListAsync.when(
       loading: () => Scaffold(
-        appBar: AppBar(),
+        appBar: const AppHeader(),
         body: ResponsiveContent(
           maxWidth: AppContentWidth.standard,
           child: ListView.separated(
@@ -46,7 +47,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         ),
       ),
       error: (_, __) => Scaffold(
-        appBar: AppBar(),
+        appBar: const AppHeader(),
         body: ErrorStateWidget(
           message: 'Failed to load project',
           onRetry: () => ref.read(projectNotifierProvider.notifier).load(),
@@ -56,7 +57,7 @@ class ProjectDetailScreen extends ConsumerWidget {
         final project = list.where((p) => p.id == projectId).firstOrNull;
         if (project == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Project not found')),
+            appBar: const AppHeader(pageTitle: 'Project not found'),
             body: EmptyStateWidget(
               icon: Icons.search_off_rounded,
               message: 'Project not found',
@@ -116,6 +117,7 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
     final lastActivityAt = _latestActivity(updates, project.updatedAt);
 
     return Scaffold(
+      appBar: const AppHeader(),
       body: SafeArea(
         child: ResponsiveContent(
           maxWidth: AppContentWidth.standard,
