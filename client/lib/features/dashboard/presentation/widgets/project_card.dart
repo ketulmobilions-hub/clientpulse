@@ -29,33 +29,62 @@ class ProjectCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final nameText = Text(
+                    project.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      letterSpacing: -0.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                  final updatedText = Text(
+                    'Updated ${_formatDate(project.updatedAt)}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppColors.textFaint,
+                    ),
+                  );
+
+                  if (constraints.maxWidth < 700) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              nameText,
+                              const SizedBox(height: AppSpacing.s4),
+                              _MetaRow(project: project),
+                              const SizedBox(height: AppSpacing.s4),
+                              updatedText,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.s8),
+                        StatusBadge(status: project.status),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        project.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          letterSpacing: -0.1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          nameText,
+                          const SizedBox(width: AppSpacing.s12),
+                          _MetaRow(project: project),
+                          const SizedBox(width: AppSpacing.s12),
+                          updatedText,
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.s12),
-                      _MetaRow(project: project),
-                      const SizedBox(width: AppSpacing.s12),
-                      Text(
-                        'Updated ${_formatDate(project.updatedAt)}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.textFaint,
-                        ),
-                      )
+                      Spacer(),
+                      StatusBadge(status: project.status),
                     ],
-                  ),
-                  Spacer(),
-                  StatusBadge(status: project.status),
-                ],
+                  );
+                },
               ),
               if (project.latestUpdateTitle != null) ...[
                 const SizedBox(height: AppSpacing.s8),
