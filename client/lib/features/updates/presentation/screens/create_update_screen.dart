@@ -13,6 +13,8 @@ import 'package:clientpulse/shared/providers/update_service_provider.dart';
 import 'package:clientpulse/shared/services/storage_service.dart';
 import 'package:clientpulse/shared/services/update_service.dart';
 import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 // 10 MB — matches the Supabase Storage bucket hard limit so the client-side
 // check catches oversized files before wasting bandwidth on a doomed upload.
@@ -205,16 +207,17 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
         title: const Text('Replace current draft?'),
         content: const Text('Applying a template will overwrite your current title and body.'),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.tertiary,
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'Replace',
             onPressed: () {
               Navigator.pop(ctx);
               apply();
             },
-            child: const Text('Replace'),
           ),
         ],
       ),
@@ -267,13 +270,14 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
         title: const Text('Post update?'),
         content: const Text('Your client will receive an email notification.'),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.tertiary,
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'Post',
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Post'),
           ),
         ],
       ),
@@ -432,20 +436,10 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
           ),
           Padding(
             padding: const EdgeInsets.only(right: 12, left: 4),
-            child: FilledButton(
-              onPressed: _submitting ? null : _confirmAndSubmit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(72, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              child: _submitting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Post'),
+            child: AppButton(
+              label: 'Post',
+              loading: _submitting,
+              onPressed: _confirmAndSubmit,
             ),
           ),
         ],
@@ -552,11 +546,15 @@ class _CreateUpdateScreenState extends ConsumerState<CreateUpdateScreen>
                           subtitle: Text(formatFileSize(file.size)),
                           trailing: _submitting
                               ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.close, size: 18),
+                              : AppIconButton(
+                                  icon: Icons.close,
+                                  tooltip: 'Remove attachment',
+                                  size: AppIconButtonSize.sm,
                                   onPressed: () => setState(() {
-                                    _selectedFiles = List.from(_selectedFiles)..removeAt(i);
-                                    _fileProgress = List.filled(_selectedFiles.length, 0.0);
+                                    _selectedFiles = List.from(_selectedFiles)
+                                      ..removeAt(i);
+                                    _fileProgress =
+                                        List.filled(_selectedFiles.length, 0.0);
                                   }),
                                 ),
                         ),

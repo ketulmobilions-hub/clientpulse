@@ -19,6 +19,8 @@ import 'package:clientpulse/shared/providers/milestone_provider.dart';
 import 'package:clientpulse/shared/providers/project_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/responsive_content.dart';
@@ -279,8 +281,10 @@ class _ProjectPageHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.s8),
-          IconButton(
+          AppIconButton(
             tooltip: 'Edit',
+            icon: Icons.edit_outlined,
+            tone: AppIconButtonTone.faint,
             onPressed: () {
               // `goNamed` (not `pushNamed`/`replaceNamed`) is load-bearing:
               // the receiving screen's submit handler walks the browser
@@ -295,12 +299,13 @@ class _ProjectPageHeader extends StatelessWidget {
                 extra: true,
               );
             },
-            icon: const Icon(Icons.edit_outlined,
-                size: 18, color: AppColors.textFaint),
           ),
           if (shareUrl != null) ...[
             const SizedBox(width: AppSpacing.s4),
-            OutlinedButton.icon(
+            AppButton(
+              label: 'Share',
+              variant: AppButtonVariant.secondary,
+              icon: Icons.link_rounded,
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: shareUrl));
                 if (context.mounted) {
@@ -310,29 +315,13 @@ class _ProjectPageHeader extends StatelessWidget {
                         const SnackBar(content: Text('Link copied')));
                 }
               },
-              icon: const Icon(Icons.link_rounded, size: 15),
-              label: const Text('Share'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 36),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
-                textStyle:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
             ),
           ],
           const SizedBox(width: AppSpacing.s8),
-          FilledButton.icon(
+          AppButton(
+            label: cta.label,
+            icon: cta.icon,
             onPressed: cta.onPressed,
-            icon: Icon(cta.icon, size: 16),
-            label: Text(cta.label),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s12, vertical: AppSpacing.s8),
-              textStyle:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
           ),
         ],
       ),

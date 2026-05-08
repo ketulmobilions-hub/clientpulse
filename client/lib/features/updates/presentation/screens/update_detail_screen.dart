@@ -18,6 +18,7 @@ import 'package:clientpulse/shared/providers/comment_provider.dart';
 import 'package:clientpulse/shared/providers/update_provider.dart';
 import 'package:clientpulse/shared/providers/update_service_provider.dart';
 import 'package:clientpulse/shared/widgets/app_header.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 import 'package:clientpulse/shared/widgets/empty_state_widget.dart';
 import 'package:clientpulse/shared/widgets/error_state_widget.dart';
 import 'package:clientpulse/shared/widgets/responsive_content.dart';
@@ -98,15 +99,16 @@ class _UpdateDetailScreenState extends ConsumerState<UpdateDetailScreen> {
         content: const Text(
             'This permanently removes the update and its attachments. Cannot be undone.'),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.tertiary,
             autofocus: true,
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+          AppButton(
+            label: 'Delete',
+            variant: AppButtonVariant.danger,
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
           ),
         ],
       ),
@@ -141,11 +143,6 @@ class _UpdateDetailScreenState extends ConsumerState<UpdateDetailScreen> {
   PreferredSizeWidget _shellAppBar({bool showActions = false, String? title}) {
     return AppHeader(
       pageTitle: title,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        tooltip: 'Back to project',
-        onPressed: _backToProject,
-      ),
       actions: [
         if (showActions)
           Semantics(

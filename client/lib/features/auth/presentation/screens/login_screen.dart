@@ -6,6 +6,8 @@ import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key, this.prefillEmail});
@@ -232,15 +234,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             onFieldSubmitted: (_) => _submit(),
                             decoration: InputDecoration(
                               labelText: 'Password',
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _obscurePassword = !_obscurePassword),
-                                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                              suffixIcon: AppIconButton(
+                                icon: _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                                tooltip: _obscurePassword
+                                    ? 'Show password'
+                                    : 'Hide password',
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
                               ),
                             ),
                             validator: (v) =>
@@ -249,31 +251,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: 8),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: TextButton(
+                            child: AppButton(
                               key: const Key('forgot_password_link'),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
+                              label: 'Forgot password?',
+                              variant: AppButtonVariant.tertiary,
+                              size: AppButtonSize.sm,
                               onPressed: isLoading ? null : _handleForgotPassword,
-                              child: const Text('Forgot password?'),
                             ),
                           ),
                           const SizedBox(height: 16),
-                          FilledButton(
+                          AppButton(
                             key: const Key('login_button'),
-                            onPressed: isLoading ? null : _submit,
-                            child: isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text('Sign in to workspace'),
+                            label: 'Sign in to workspace',
+                            size: AppButtonSize.lg,
+                            fullWidth: true,
+                            loading: isLoading,
+                            onPressed: _submit,
                           ),
                           const SizedBox(height: 12),
                           // Trust signal — placed under CTA so it reinforces the action.
@@ -302,10 +295,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          TextButton(
+                          AppButton(
                             key: const Key('register_link'),
-                            onPressed: () => context.goNamed(RouteNames.register),
-                            child: const Text("Don't have an account? Register"),
+                            label: "Don't have an account? Register",
+                            variant: AppButtonVariant.tertiary,
+                            onPressed: () =>
+                                context.goNamed(RouteNames.register),
                           ),
                         ],
                       ),

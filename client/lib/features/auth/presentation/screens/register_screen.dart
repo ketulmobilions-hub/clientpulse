@@ -7,6 +7,8 @@ import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/shared/providers/auth_notifier.dart';
 import 'package:clientpulse/shared/services/auth_service.dart';
 import 'package:clientpulse/shared/utils/validators.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -303,27 +305,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         Padding(
                                           padding: const EdgeInsets.only(
                                               left: 28, top: 4),
-                                          child: TextButton(
+                                          child: AppButton(
                                             key: const Key(
                                                 'sign_in_instead_button'),
-                                            style: TextButton.styleFrom(
-                                              padding: EdgeInsets.zero,
-                                              minimumSize: const Size(0, 32),
-                                              tapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                            ),
+                                            label: 'Sign in instead',
+                                            variant: AppButtonVariant.tertiary,
+                                            size: AppButtonSize.sm,
                                             onPressed: isLoading
                                                 ? null
                                                 : () => context.goNamed(
-                                                    RouteNames.login,
-                                                    queryParameters: {
-                                                      'email': _emailCtrl.text
-                                                          .trim(),
-                                                    },
-                                                  ),
-                                            child: const Text(
-                                                'Sign in instead'),
+                                                      RouteNames.login,
+                                                      queryParameters: {
+                                                        'email': _emailCtrl
+                                                            .text
+                                                            .trim(),
+                                                      },
+                                                    ),
                                           ),
                                         ),
                                     ],
@@ -348,11 +345,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          TextButton(
+                          AppButton(
                             key: const Key('login_link'),
+                            label: 'Already have an account? Sign in',
+                            variant: AppButtonVariant.tertiary,
                             onPressed: isLoading ? null : _goToLogin,
-                            child: const Text(
-                                'Already have an account? Sign in'),
                           ),
                         ],
                       ),
@@ -393,16 +390,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 FocusScope.of(context).requestFocus(_confirmFocusNode),
             decoration: InputDecoration(
               labelText: 'Password',
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                ),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
+              suffixIcon: AppIconButton(
+                icon: _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
                 tooltip:
                     _obscurePassword ? 'Show password' : 'Hide password',
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
             validator: (v) {
@@ -428,16 +423,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             onFieldSubmitted: (_) => _continue(),
             decoration: InputDecoration(
               labelText: 'Confirm Password',
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirm
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                ),
-                onPressed: () =>
-                    setState(() => _obscureConfirm = !_obscureConfirm),
+              suffixIcon: AppIconButton(
+                icon: _obscureConfirm
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
                 tooltip:
                     _obscureConfirm ? 'Show password' : 'Hide password',
+                onPressed: () =>
+                    setState(() => _obscureConfirm = !_obscureConfirm),
               ),
             ),
             validator: (v) {
@@ -447,10 +440,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             },
           ),
           const SizedBox(height: 24),
-          FilledButton(
+          AppButton(
             key: const Key('continue_button'),
+            label: 'Continue',
+            size: AppButtonSize.lg,
+            fullWidth: true,
             onPressed: isLoading ? null : _continue,
-            child: const Text('Continue'),
           ),
         ],
       ),
@@ -495,25 +490,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             },
           ),
           const SizedBox(height: 24),
-          FilledButton(
+          AppButton(
             key: const Key('register_button'),
-            onPressed: isLoading ? null : _submit,
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Create Account'),
+            label: 'Create Account',
+            size: AppButtonSize.lg,
+            fullWidth: true,
+            loading: isLoading,
+            onPressed: _submit,
           ),
           const SizedBox(height: 8),
-          TextButton(
+          AppButton(
             key: const Key('back_button'),
+            label: 'Back',
+            variant: AppButtonVariant.tertiary,
             onPressed: isLoading ? null : _back,
-            child: const Text('Back'),
           ),
         ],
       ),

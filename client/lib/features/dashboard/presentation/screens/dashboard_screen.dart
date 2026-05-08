@@ -10,6 +10,8 @@ import '../../../../shared/models/project.dart';
 import '../../../../shared/providers/auth_notifier.dart';
 import '../../../../shared/providers/project_provider.dart';
 import '../../../../shared/widgets/app_header.dart';
+import '../../../../shared/widgets/buttons/app_button.dart';
+import '../../../../shared/widgets/buttons/app_icon_button.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
 import '../../../../shared/widgets/responsive_content.dart';
@@ -67,24 +69,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppHeader(
         pageTitle: 'Projects',
         actions: [
-          FilledButton.icon(
+          AppButton(
+            label: 'New Project',
+            icon: Icons.add,
             onPressed: () => context.goNamed(
               RouteNames.createProject,
               extra: true,
             ),
-            icon: const Icon(Icons.add, size: 16),
-            label: const Text('New Project'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.s12,
-                vertical: AppSpacing.s8,
-              ),
-            ),
           ),
-          const SizedBox(width: AppSpacing.s12),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
+          const SizedBox(width: AppSpacing.s8),
+          AppIconButton(
+            icon: Icons.logout_rounded,
             tooltip: 'Sign out',
             onPressed: () async {
               await ref.read(authNotifierProvider.notifier).logout();
@@ -133,8 +128,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     prefixIcon: const Icon(Icons.search_rounded, size: 18),
                     suffixIcon: _query.isEmpty
                         ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 18),
+                        : AppIconButton(
+                            icon: Icons.close_rounded,
+                            tooltip: 'Clear search',
+                            size: AppIconButtonSize.sm,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _query = '');

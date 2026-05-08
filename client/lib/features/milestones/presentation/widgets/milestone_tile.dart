@@ -5,6 +5,7 @@ import 'package:clientpulse/core/theme/radii.dart';
 import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/shared/models/milestone.dart';
 import 'package:clientpulse/shared/providers/milestone_provider.dart';
+import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 class MilestoneTile extends ConsumerStatefulWidget {
   const MilestoneTile({
@@ -248,11 +249,10 @@ class _MilestoneTileState extends ConsumerState<MilestoneTile> {
                         opacity: showActions ? 1.0 : 0.0,
                         child: IgnorePointer(
                           ignoring: !showActions,
-                          child: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 16),
-                            color: AppColors.textMuted,
-                            visualDensity: VisualDensity.compact,
+                          child: AppIconButton(
+                            icon: Icons.delete_outline,
                             tooltip: 'Delete',
+                            size: AppIconButtonSize.sm,
                             onPressed: _delete,
                           ),
                         ),
