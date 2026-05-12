@@ -33,9 +33,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   _StatusFilter _filter = _StatusFilter.all;
 
   @override
+  void initState() {
+    super.initState();
+    // Default filter is "All" which must include archived; nudge the provider
+    // after first frame so the initial fetch matches the chip selection.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(projectNotifierProvider.notifier).setIncludeArchived(true);
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onFilterChanged(_StatusFilter next) {
+    if (_filter == next) return;
+    setState(() => _filter = next);
+    // "All" must include archived so the count is honest. Only "Active" and
+    // "Completed" hide them. The local _applyFilters layer narrows further.
+    final wantArchived =
+        next == _StatusFilter.archived || next == _StatusFilter.all;
+    ref
+        .read(projectNotifierProvider.notifier)
+        .setIncludeArchived(wantArchived);
   }
 
   List<Project> _applyFilters(List<Project> projects) {
@@ -148,25 +171,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     _FilterChip(
                       label: 'All',
                       selected: _filter == _StatusFilter.all,
-                      onTap: () => setState(() => _filter = _StatusFilter.all),
+                      onTap: () => _onFilterChanged(_StatusFilter.all),
                     ),
                     _FilterChip(
                       label: 'Active',
                       selected: _filter == _StatusFilter.active,
-                      onTap: () =>
-                          setState(() => _filter = _StatusFilter.active),
+                      onTap: () => _onFilterChanged(_StatusFilter.active),
                     ),
                     _FilterChip(
                       label: 'Completed',
                       selected: _filter == _StatusFilter.completed,
-                      onTap: () =>
-                          setState(() => _filter = _StatusFilter.completed),
+                      onTap: () => _onFilterChanged(_StatusFilter.completed),
                     ),
                     _FilterChip(
                       label: 'Archived',
                       selected: _filter == _StatusFilter.archived,
-                      onTap: () =>
-                          setState(() => _filter = _StatusFilter.archived),
+                      onTap: () => _onFilterChanged(_StatusFilter.archived),
                     ),
                   ],
                 ),

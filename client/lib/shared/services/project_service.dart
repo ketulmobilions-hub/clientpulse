@@ -14,9 +14,12 @@ class ProjectService {
   const ProjectService(this._api);
   final ApiService _api;
 
-  Future<List<Project>> listProjects() async {
+  Future<List<Project>> listProjects({bool includeArchived = false}) async {
     try {
-      final res = await _api.get<Map<String, dynamic>>('/projects');
+      final res = await _api.get<Map<String, dynamic>>(
+        '/projects',
+        params: includeArchived ? {'include_archived': 'true'} : null,
+      );
       final data = _unwrapData(res.data);
       final list = data['projects'];
       if (list is! List) throw const ProjectServiceException('Unexpected response format');
@@ -140,6 +143,52 @@ class ProjectService {
       throw ProjectServiceException(_extractMessage(e));
     } on ProjectServiceException {
       rethrow;
+    } catch (e) {
+      throw ProjectServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<Project> archiveProject(String id) async {
+    try {
+      final res = await _api.post<Map<String, dynamic>>('/projects/$id/archive');
+      final data = _unwrapData(res.data);
+      final project = data['project'];
+      if (project is! Map<String, dynamic>) {
+        throw const ProjectServiceException('Unexpected response format');
+      }
+      return Project.fromJson(project);
+    } on DioException catch (e) {
+      throw ProjectServiceException(_extractMessage(e));
+    } on ProjectServiceException {
+      rethrow;
+    } catch (e) {
+      throw ProjectServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<Project> unarchiveProject(String id) async {
+    try {
+      final res = await _api.post<Map<String, dynamic>>('/projects/$id/unarchive');
+      final data = _unwrapData(res.data);
+      final project = data['project'];
+      if (project is! Map<String, dynamic>) {
+        throw const ProjectServiceException('Unexpected response format');
+      }
+      return Project.fromJson(project);
+    } on DioException catch (e) {
+      throw ProjectServiceException(_extractMessage(e));
+    } on ProjectServiceException {
+      rethrow;
+    } catch (e) {
+      throw ProjectServiceException('Unexpected error: $e');
+    }
+  }
+
+  Future<void> deleteProject(String id) async {
+    try {
+      await _api.delete<Map<String, dynamic>>('/projects/$id');
+    } on DioException catch (e) {
+      throw ProjectServiceException(_extractMessage(e));
     } catch (e) {
       throw ProjectServiceException('Unexpected error: $e');
     }
