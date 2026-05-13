@@ -5,6 +5,10 @@ import { ErrorCodes } from '../errors/codes';
 const router = Router();
 
 router.get('/', async (_req: Request, res: Response) => {
+  // No-store guards against intermediate caches; ETag is disabled app-wide
+  // in app.ts so res.json() won't trigger conditional 304s on this endpoint.
+  res.set('Cache-Control', 'no-store, max-age=0');
+
   const { error } = await supabaseAdmin
     .from('workspaces')
     .select('count', { count: 'exact', head: true });

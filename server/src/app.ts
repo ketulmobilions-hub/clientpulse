@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import router from './routes';
@@ -14,6 +14,12 @@ const app = express();
 // Trust exactly one proxy hop (Render's load balancer) so req.ip is the real client IP,
 // not the proxy's internal address. Without this, all users share a single rate-limit bucket.
 app.set('trust proxy', 1);
+
+// Disable Express auto-ETag globally. JSON API responses don't benefit from
+// conditional GETs (no large payload reuse), and the auto-ETag turns the
+// /health endpoint into a 304-cache target for browser-issued conditional
+// requests, which breaks warm-ping crons and status-page polling.
+app.set('etag', false);
 
 app.use(helmet());
 
@@ -63,7 +69,10 @@ app.use('/api/v1/auth/login', express.json(), rateLimit({
     const email = typeof raw === 'string' ? raw.toLowerCase().trim() : '';
     // Fall back to IP if no email — never use empty key (would lump all
     // missing-email requests together and 429 every legitimate caller).
-    return email || `ip:${req.ip ?? 'unknown'}`;
+    // ipKeyGenerator normalizes IPv6 to its /56 prefix so users on the same
+    // subnet share a bucket (raw req.ip per-address would let IPv6 users
+    // bypass the limit by rotating addresses within their /64).
+    return email || `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
   },
   message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many login attempts for this account, please try again later.' } },
 }));
