@@ -9,6 +9,8 @@ import {
   createProject,
   updateProject,
   archiveProject,
+  unarchiveProject,
+  deleteProject,
   VALID_STATUSES,
 } from '../services/project.service';
 
@@ -53,7 +55,21 @@ router.use(requireAuth);
 
 router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const projects = await listProjects(req.user!.id);
+    const raw = req.query['include_archived'];
+    // Accept only the strings 'true' / 'false' / undefined. Anything else is a client bug.
+    let includeArchived = false;
+    if (raw !== undefined) {
+      if (raw === 'true') includeArchived = true;
+      else if (raw === 'false') includeArchived = false;
+      else {
+        throw new AppError(
+          'include_archived must be "true" or "false"',
+          400,
+          ErrorCodes.VALIDATION_ERROR,
+        );
+      }
+    }
+    const projects = await listProjects(req.user!.id, { includeArchived });
     res.json({ success: true, data: { projects } });
   } catch (err) {
     next(err);
@@ -162,12 +178,43 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction): Pr
   }
 });
 
-// Returns 200 with the archived project. Soft-archive (status change), not hard delete —
-// returning the updated resource is more informative than 204 with no body.
+// Soft-delete via deleted_at. Hides project from every read path (list/detail/portal).
+// Recoverable from DB only — UI offers no restore. Returns 200 with the deleted project
+// so the client can confirm what was removed.
+//
+// API SEMANTIC CHANGE (2026-05-12): this verb previously soft-archived
+// (status='archived'). Archive now lives at POST /:id/archive. Pinned client
+// builds that called DELETE expecting archive will SOFT-DELETE instead. The
+// User-Agent header is logged so QA can spot a stale client during launch
+// week. Remove the warning once analytics confirm no legacy traffic.
 router.delete('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     validateUuid(req.params['id'] as string, 'id');
+    const ua = req.get('user-agent') ?? 'unknown';
+    console.warn('[project.routes] DELETE /:id soft-deletes (was archive) ua=%s id=%s', ua, req.params['id']);
+    const project = await deleteProject(req.params['id'] as string, req.user!.id);
+    res.json({ success: true, data: { project } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Soft-archive (status='archived'). Hidden from default list, portal still accessible,
+// reversible via /unarchive.
+router.post('/:id/archive', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    validateUuid(req.params['id'] as string, 'id');
     const project = await archiveProject(req.params['id'] as string, req.user!.id);
+    res.json({ success: true, data: { project } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/unarchive', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    validateUuid(req.params['id'] as string, 'id');
+    const project = await unarchiveProject(req.params['id'] as string, req.user!.id);
     res.json({ success: true, data: { project } });
   } catch (err) {
     next(err);

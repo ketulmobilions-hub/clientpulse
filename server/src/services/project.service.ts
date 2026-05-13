@@ -52,14 +52,18 @@ async function getWorkspaceIdForUser(userId: string): Promise<string> {
   return (data[0] as { id: string }).id;
 }
 
-export async function listProjects(userId: string): Promise<ProjectListItem[]> {
+export async function listProjects(
+  userId: string,
+  opts: { includeArchived?: boolean } = {},
+): Promise<ProjectListItem[]> {
   const workspaceId = await getWorkspaceIdForUser(userId);
 
-  // Single round-trip via Postgres RPC. Aggregation pushed to DB so we don't transfer
-  // every update + comment row to compute counts. Tie-break for latest update is deterministic
-  // (created_at DESC, id DESC) inside the RPC.
+  // Single round-trip via Postgres RPC. Aggregation + archive filter pushed to DB so we
+  // don't transfer archived rows over the wire on every dashboard fetch. Tie-break for
+  // latest update is deterministic (created_at DESC, id DESC) inside the RPC.
   const { data, error } = await supabaseAdmin.rpc('list_projects_with_aggregates', {
     p_workspace_id: workspaceId,
+    p_include_archived: opts.includeArchived ?? false,
   });
 
   if (error) {
@@ -209,6 +213,58 @@ export async function archiveProject(projectId: string, userId: string): Promise
     }
     console.error('[project.service] archiveProject DB error:', error);
     throw new AppError('Failed to archive project', 500, ErrorCodes.DB_ERROR);
+  }
+
+  return data as Project;
+}
+
+export async function unarchiveProject(projectId: string, userId: string): Promise<Project> {
+  const workspaceId = await getWorkspaceIdForUser(userId);
+
+  // Idempotent on status: unarchiving an already-active project is a no-op.
+  // NOT idempotent on existence: a soft-deleted project (deleted_at set) is
+  // excluded by the .is('deleted_at', null) guard below and returns NOT_FOUND.
+  const { data, error } = await supabaseAdmin
+    .from('projects')
+    .update({ status: 'active' })
+    .eq('id', projectId)
+    .eq('workspace_id', workspaceId)
+    .is('deleted_at', null)
+    .select(PROJECT_COLUMNS)
+    .single();
+
+  if (error || !data) {
+    if (error?.code === 'PGRST116' || !data) {
+      throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
+    }
+    console.error('[project.service] unarchiveProject DB error:', error);
+    throw new AppError('Failed to unarchive project', 500, ErrorCodes.DB_ERROR);
+  }
+
+  return data as Project;
+}
+
+// Soft-delete via deleted_at. NOT idempotent: re-deleting a soft-deleted project
+// returns NOT_FOUND because the .is('deleted_at', null) guard excludes it. Cleaner
+// semantic — the caller's view is stale and should refresh.
+export async function deleteProject(projectId: string, userId: string): Promise<Project> {
+  const workspaceId = await getWorkspaceIdForUser(userId);
+
+  const { data, error } = await supabaseAdmin
+    .from('projects')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', projectId)
+    .eq('workspace_id', workspaceId)
+    .is('deleted_at', null)
+    .select(PROJECT_COLUMNS)
+    .single();
+
+  if (error || !data) {
+    if (error?.code === 'PGRST116' || !data) {
+      throw new AppError('Project not found', 404, ErrorCodes.NOT_FOUND);
+    }
+    console.error('[project.service] deleteProject DB error:', error);
+    throw new AppError('Failed to delete project', 500, ErrorCodes.DB_ERROR);
   }
 
   return data as Project;
