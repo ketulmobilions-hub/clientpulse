@@ -89,18 +89,36 @@ async function sendPublishNotification(
 
   if (!claimed) return null; // another request already sent the notification
 
+  // Filter soft-deleted projects so clients are not emailed about updates
+  // belonging to a project the agency has deleted.
   const { data: project, error: projectError } = await supabaseAdmin
     .from('projects')
     .select('name, client_name, client_email, share_token')
     .eq('id', projectId)
-    .single<{ name: string; client_name: string; client_email: string | null; share_token: string }>();
+    .is('deleted_at', null)
+    .maybeSingle<{ name: string; client_name: string; client_email: string | null; share_token: string }>();
 
   if (projectError) {
     console.error(`[update.service] ${context} project fetch error:`, projectError);
     return stamp;
   }
 
-  if (!project?.client_email) {
+  // Project soft-deleted (or hard-missing). Revert the notification claim so
+  // a future send attempt — after restore from the dashboard or a manual DB
+  // un-delete — can re-claim and email the client. Without the revert, the
+  // notification_sent_at stamp would stick and the update would never go out
+  // even after the project is restored.
+  if (!project) {
+    await supabaseAdmin
+      .from('updates')
+      .update({ notification_sent_at: null })
+      .eq('id', updateId)
+      .eq('notification_sent_at', stamp);
+    console.info(`[update.service] ${context} project missing or soft-deleted — reverted notification claim, no email sent.`);
+    return null;
+  }
+
+  if (!project.client_email) {
     console.info(`[update.service] ${context} no client_email — notification_sent_at stamped, no email sent.`);
     return stamp;
   }

@@ -11,6 +11,8 @@ import {
   createProject,
   updateProject,
   archiveProject,
+  unarchiveProject,
+  deleteProject,
   ProjectListItem,
 } from '../services/project.service';
 
@@ -97,6 +99,7 @@ describe('listProjects', () => {
     const result = await listProjects(USER_ID);
     expect(mockRpc).toHaveBeenCalledWith('list_projects_with_aggregates', {
       p_workspace_id: WORKSPACE_ID,
+      p_include_archived: false,
     });
     expect(result).toEqual([ROW]);
   });
@@ -173,6 +176,28 @@ describe('listProjects', () => {
 
     const result = await listProjects(USER_ID);
     expect(result[0]?.progress_pct).toBe(0);
+  });
+
+  it('forwards p_include_archived=false by default', async () => {
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
+
+    await listProjects(USER_ID);
+    expect(mockRpc).toHaveBeenCalledWith('list_projects_with_aggregates', {
+      p_workspace_id: WORKSPACE_ID,
+      p_include_archived: false,
+    });
+  });
+
+  it('forwards p_include_archived=true when option is set', async () => {
+    mockFrom.mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }));
+    mockRpc.mockResolvedValueOnce({ data: [], error: null });
+
+    await listProjects(USER_ID, { includeArchived: true });
+    expect(mockRpc).toHaveBeenCalledWith('list_projects_with_aggregates', {
+      p_workspace_id: WORKSPACE_ID,
+      p_include_archived: true,
+    });
   });
 });
 
@@ -313,5 +338,52 @@ describe('archiveProject', () => {
 
     await archiveProject(PROJECT_ID, USER_ID);
     expect(mockFrom).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('unarchiveProject', () => {
+  it('sets status to active', async () => {
+    const restored = { ...PROJECT_ROW, status: 'active' };
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeUpdateChain({ data: restored, error: null }));
+
+    const result = await unarchiveProject(PROJECT_ID, USER_ID);
+    expect(result.status).toBe('active');
+  });
+
+  it('throws NOT_FOUND when project does not exist (PGRST116)', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeUpdateChain({ data: null, error: { code: 'PGRST116' } }));
+
+    await expect(unarchiveProject(PROJECT_ID, USER_ID)).rejects.toMatchObject({
+      code: ErrorCodes.NOT_FOUND,
+    });
+  });
+});
+
+describe('deleteProject', () => {
+  it('soft-deletes via deleted_at and returns row', async () => {
+    const updateChain = makeUpdateChain({ data: PROJECT_ROW, error: null });
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(updateChain);
+
+    const result = await deleteProject(PROJECT_ID, USER_ID);
+    expect(result).toEqual(PROJECT_ROW);
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ deleted_at: expect.any(String) }),
+    );
+  });
+
+  it('throws NOT_FOUND when project missing or already deleted (PGRST116)', async () => {
+    mockFrom
+      .mockReturnValueOnce(makeWsLimitChain({ data: [WORKSPACE_ROW], error: null }))
+      .mockReturnValueOnce(makeUpdateChain({ data: null, error: { code: 'PGRST116' } }));
+
+    await expect(deleteProject(PROJECT_ID, USER_ID)).rejects.toMatchObject({
+      code: ErrorCodes.NOT_FOUND,
+    });
   });
 });

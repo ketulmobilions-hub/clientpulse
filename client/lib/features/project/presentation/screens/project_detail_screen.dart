@@ -9,6 +9,7 @@ import 'package:clientpulse/core/theme/content_widths.dart';
 import 'package:clientpulse/core/theme/radii.dart';
 import 'package:clientpulse/core/theme/spacing.dart';
 import 'package:clientpulse/features/dashboard/presentation/widgets/status_badge.dart';
+import 'package:clientpulse/features/project/presentation/widgets/project_actions.dart';
 import 'package:clientpulse/features/milestones/presentation/widgets/milestone_list_widget.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_card.dart';
 import 'package:clientpulse/features/updates/presentation/widgets/update_header.dart';
@@ -145,7 +146,7 @@ class _ProjectDetailContentState extends ConsumerState<_ProjectDetailContent>
                   children: [
                     _UpdatesTab(projectId: widget.projectId),
                     _MilestonesTab(projectId: widget.projectId),
-                    const _SettingsTab(),
+                    _SettingsTab(project: project),
                   ],
                 ),
               ),
@@ -264,6 +265,7 @@ class _ProjectPageHeader extends StatelessWidget {
       icon: cta.icon,
       onPressed: cta.onPressed,
     );
+    final moreButton = ProjectActionsMenu(project: project);
 
     final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,6 +342,7 @@ class _ProjectPageHeader extends StatelessWidget {
                     editButton,
                     if (shareButton != null) shareButton,
                     ctaButton,
+                    moreButton,
                   ],
                 ),
               ],
@@ -360,6 +363,8 @@ class _ProjectPageHeader extends StatelessWidget {
               ],
               const SizedBox(width: AppSpacing.s8),
               ctaButton,
+              const SizedBox(width: AppSpacing.s4),
+              moreButton,
             ],
           );
         },
@@ -683,31 +688,53 @@ class _MilestonesTab extends StatelessWidget {
 }
 
 class _SettingsTab extends StatelessWidget {
-  const _SettingsTab();
+  const _SettingsTab({required this.project});
+
+  final Project project;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.s32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.settings_outlined,
-                size: 48, color: AppColors.textMuted),
-            const SizedBox(height: AppSpacing.s12),
-            Text('Project settings', style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.s4),
-            Text(
-              'Manage team, permissions, and notifications',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.s24, horizontal: AppSpacing.s4),
+      children: [
+        // Forward-looking placeholder — team / permissions / notifications
+        // surface lives here once the relevant features ship. Kept visible so
+        // returning users still see "Settings" instead of just a danger zone.
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          padding: const EdgeInsets.all(AppSpacing.s16),
+          child: Row(
+            children: [
+              const Icon(Icons.settings_outlined,
+                  size: 20, color: AppColors.textMuted),
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Project settings',
+                        style: theme.textTheme.titleMedium),
+                    const SizedBox(height: AppSpacing.s4),
+                    Text(
+                      'Team, permissions, and notifications coming soon.',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.s24),
+        ProjectDangerZone(project: project),
+      ],
     );
   }
 }

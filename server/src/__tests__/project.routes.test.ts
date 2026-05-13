@@ -18,6 +18,8 @@ const mockGet = projectService.getProject as jest.Mock;
 const mockCreate = projectService.createProject as jest.Mock;
 const mockUpdate = projectService.updateProject as jest.Mock;
 const mockArchive = projectService.archiveProject as jest.Mock;
+const mockUnarchive = projectService.unarchiveProject as jest.Mock;
+const mockDelete = projectService.deleteProject as jest.Mock;
 
 // Restore the const export that jest.mock wipes out
 (projectService as unknown as Record<string, unknown>)['VALID_STATUSES'] = [
@@ -49,8 +51,41 @@ describe('GET /api/v1/projects', () => {
     const res = await request(app).get('/api/v1/projects');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ success: true, data: { projects: [PROJECT] } });
-    expect(mockList).toHaveBeenCalledWith('user-1');
+    expect(mockList).toHaveBeenCalledWith('user-1', { includeArchived: false });
   });
+
+  it('passes includeArchived=true when ?include_archived=true', async () => {
+    mockList.mockResolvedValue([PROJECT]);
+    const res = await request(app).get('/api/v1/projects?include_archived=true');
+    expect(res.status).toBe(200);
+    expect(mockList).toHaveBeenCalledWith('user-1', { includeArchived: true });
+  });
+
+  it('passes includeArchived=false when ?include_archived=false', async () => {
+    mockList.mockResolvedValue([PROJECT]);
+    const res = await request(app).get('/api/v1/projects?include_archived=false');
+    expect(res.status).toBe(200);
+    expect(mockList).toHaveBeenCalledWith('user-1', { includeArchived: false });
+  });
+
+  it('returns 400 VALIDATION_ERROR for invalid include_archived value', async () => {
+    const res = await request(app).get('/api/v1/projects?include_archived=yes');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+    expect(mockList).not.toHaveBeenCalled();
+  });
+
+  it.each(['', '1', '0', 'TRUE', 'False'])(
+    'rejects include_archived=%s as 400 (only literal "true"/"false" pass)',
+    async (value) => {
+      const res = await request(app).get(
+        `/api/v1/projects?include_archived=${value}`,
+      );
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+      expect(mockList).not.toHaveBeenCalled();
+    },
+  );
 
   it('propagates service errors', async () => {
     mockList.mockRejectedValue(new AppError('Workspace not found', 404, ErrorCodes.NOT_FOUND));
@@ -215,16 +250,40 @@ describe('PATCH /api/v1/projects/:id', () => {
 });
 
 describe('DELETE /api/v1/projects/:id', () => {
+  it('returns 200 with soft-deleted project', async () => {
+    mockDelete.mockResolvedValue(PROJECT);
+    const res = await request(app).delete(`/api/v1/projects/${VALID_UUID}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.project).toEqual(PROJECT);
+    expect(mockDelete).toHaveBeenCalledWith(VALID_UUID, 'user-1');
+  });
+
+  it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
+    const res = await request(app).delete('/api/v1/projects/not-a-uuid');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 NOT_FOUND when project missing or already deleted', async () => {
+    mockDelete.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
+    const res = await request(app).delete(`/api/v1/projects/${VALID_UUID}`);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
+  });
+});
+
+describe('POST /api/v1/projects/:id/archive', () => {
   it('returns 200 with archived project', async () => {
     mockArchive.mockResolvedValue({ ...PROJECT, status: 'archived' });
-    const res = await request(app).delete(`/api/v1/projects/${VALID_UUID}`);
+    const res = await request(app).post(`/api/v1/projects/${VALID_UUID}/archive`);
     expect(res.status).toBe(200);
     expect(res.body.data.project.status).toBe('archived');
     expect(mockArchive).toHaveBeenCalledWith(VALID_UUID, 'user-1');
   });
 
   it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
-    const res = await request(app).delete('/api/v1/projects/not-a-uuid');
+    const res = await request(app).post('/api/v1/projects/not-a-uuid/archive');
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
     expect(mockArchive).not.toHaveBeenCalled();
@@ -232,7 +291,31 @@ describe('DELETE /api/v1/projects/:id', () => {
 
   it('returns 404 NOT_FOUND when project missing', async () => {
     mockArchive.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
-    const res = await request(app).delete(`/api/v1/projects/${VALID_UUID}`);
+    const res = await request(app).post(`/api/v1/projects/${VALID_UUID}/archive`);
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
+  });
+});
+
+describe('POST /api/v1/projects/:id/unarchive', () => {
+  it('returns 200 with active project', async () => {
+    mockUnarchive.mockResolvedValue({ ...PROJECT, status: 'active' });
+    const res = await request(app).post(`/api/v1/projects/${VALID_UUID}/unarchive`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.project.status).toBe('active');
+    expect(mockUnarchive).toHaveBeenCalledWith(VALID_UUID, 'user-1');
+  });
+
+  it('returns 400 VALIDATION_ERROR for non-UUID id', async () => {
+    const res = await request(app).post('/api/v1/projects/not-a-uuid/unarchive');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+    expect(mockUnarchive).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 NOT_FOUND when project missing', async () => {
+    mockUnarchive.mockRejectedValue(new AppError('Project not found', 404, ErrorCodes.NOT_FOUND));
+    const res = await request(app).post(`/api/v1/projects/${VALID_UUID}/unarchive`);
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe(ErrorCodes.NOT_FOUND);
   });
