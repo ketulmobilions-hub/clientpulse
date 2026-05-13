@@ -3,6 +3,8 @@ final class RouteNames {
 
   static const login = '/login';
   static const register = '/register';
+  static const verifyEmailPending = '/verify-email-pending';
+  static const verifyEmail = '/verify-email';
   static const dashboard = '/dashboard';
   static const projectDetail = 'project-detail/:id';
   static const createProject = 'create-project';

@@ -48,6 +48,26 @@ app.use('/api/v1/auth', rateLimit({
   message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many attempts, please try again later.' } },
 }));
 
+// Per-email throttle on /auth/login. The IP-level limiter above caps probes
+// from a single source, but credential-stuffing attacks distribute across IPs.
+// The requires_verification response shape is also a positive existence oracle
+// for (email + correct-password) pairs — capping retries per email blunts that.
+// Body must be parsed BEFORE this fires to extract the email.
+app.use('/api/v1/auth/login', express.json(), rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const raw = (req.body as { email?: unknown } | undefined)?.email;
+    const email = typeof raw === 'string' ? raw.toLowerCase().trim() : '';
+    // Fall back to IP if no email — never use empty key (would lump all
+    // missing-email requests together and 429 every legitimate caller).
+    return email || `ip:${req.ip ?? 'unknown'}`;
+  },
+  message: { success: false, error: { code: ErrorCodes.RATE_LIMITED, message: 'Too many login attempts for this account, please try again later.' } },
+}));
+
 // Tighter portal limiter to reduce share_token brute-force window
 app.use('/api/v1/portal', rateLimit({
   windowMs: 15 * 60 * 1000,

@@ -11,9 +11,54 @@ class AuthServiceException implements Exception {
   const AuthServiceException(this.message, {this.statusCode, this.errorCode});
 
   bool get isEmailAlreadyExists => errorCode == 'EMAIL_EXISTS';
+  bool get isEmailNotVerified => errorCode == 'EMAIL_NOT_VERIFIED';
+  bool get isRateLimited => errorCode == 'RATE_LIMITED';
+  bool get isInvalidToken => errorCode == 'INVALID_TOKEN';
 
   @override
   String toString() => 'AuthServiceException($statusCode/$errorCode): $message';
+}
+
+/// Outcome of a login attempt. Either a fully-authenticated user or a
+/// requires-verification signal (no JWT issued).
+sealed class LoginOutcome {
+  const LoginOutcome();
+}
+
+class LoginSuccess extends LoginOutcome {
+  final AuthUser user;
+  const LoginSuccess(this.user);
+}
+
+class LoginRequiresVerification extends LoginOutcome {
+  final String email;
+  const LoginRequiresVerification(this.email);
+}
+
+/// Outcome of a registration attempt. Backend always returns
+/// requires_verification:true now; the success path no longer auto-logs in.
+sealed class RegisterOutcome {
+  const RegisterOutcome();
+}
+
+class RegisterRequiresVerification extends RegisterOutcome {
+  final String email;
+  const RegisterRequiresVerification(this.email);
+}
+
+/// Outcome of consuming a verification token.
+sealed class VerifyEmailOutcome {
+  const VerifyEmailOutcome();
+}
+
+class VerifyEmailSuccess extends VerifyEmailOutcome {
+  final String email;
+  const VerifyEmailSuccess(this.email);
+}
+
+class VerifyEmailFailure extends VerifyEmailOutcome {
+  final String message;
+  const VerifyEmailFailure(this.message);
 }
 
 class AuthService {
@@ -34,7 +79,7 @@ class AuthService {
   })  : _prefs = prefs,
         _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl));
 
-  Future<AuthUser> login(String email, String password) async {
+  Future<LoginOutcome> login(String email, String password) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/login',
@@ -42,13 +87,21 @@ class AuthService {
       );
       final body = response.data;
       if (body == null) throw const AuthServiceException('Empty response from server');
-      return await _handleAuthResponse(body);
+      final data = body['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw const AuthServiceException('Unexpected response format');
+      }
+      if (data['requires_verification'] == true) {
+        return LoginRequiresVerification((data['email'] as String?) ?? email);
+      }
+      final user = await _handleAuthResponse(body);
+      return LoginSuccess(user);
     } on DioException catch (e) {
       throw _toAuthException(e);
     }
   }
 
-  Future<void> register(
+  Future<RegisterOutcome> register(
     String email,
     String password,
     String name,
@@ -63,6 +116,38 @@ class AuthService {
           'name': name,
           'workspaceName': workspaceName,
         },
+      );
+      // Backend now always issues a verification token. Surface the email so
+      // the caller can route to the verify-pending screen.
+      return RegisterRequiresVerification(email);
+    } on DioException catch (e) {
+      throw _toAuthException(e);
+    }
+  }
+
+  Future<VerifyEmailOutcome> verifyEmail(String token) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/auth/verify-email',
+        queryParameters: {'token': token},
+      );
+      final data = response.data?['data'] as Map<String, dynamic>?;
+      final email = data?['email'] as String?;
+      if (data?['verified'] == true && email != null) {
+        return VerifyEmailSuccess(email);
+      }
+      return const VerifyEmailFailure('Verification failed. Please request a new link.');
+    } on DioException catch (e) {
+      final ex = _toAuthException(e);
+      return VerifyEmailFailure(ex.message);
+    }
+  }
+
+  Future<void> resendVerification(String email) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/auth/resend-verification',
+        data: {'email': email},
       );
     } on DioException catch (e) {
       throw _toAuthException(e);
