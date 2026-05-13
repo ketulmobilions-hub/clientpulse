@@ -108,12 +108,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!(_step2Key.currentState?.validate() ?? false)) return;
     if (ref.read(authNotifierProvider).isLoading) return;
     try {
-      await ref.read(authNotifierProvider.notifier).register(
+      final outcome = await ref.read(authNotifierProvider.notifier).register(
             _emailCtrl.text.trim(),
             _passwordCtrl.text,
             _nameCtrl.text.trim(),
             _workspaceCtrl.text.trim(),
           );
+      if (!mounted) return;
+      // Register always requires verification now. Sealed switch over the
+      // outcome ensures any future variant (e.g. RegisterRateLimited) is a
+      // compile-time error here, not a silently-do-nothing else branch.
+      switch (outcome) {
+        case RegisterRequiresVerification(:final email):
+          context.go(
+              '${RouteNames.verifyEmailPending}?email=${Uri.encodeQueryComponent(email)}');
+      }
     } on AuthServiceException catch (e) {
       if (mounted) {
         setState(() {

@@ -3,7 +3,14 @@ import { requireAuth } from '../middleware/auth.middleware';
 import { AppError } from '../middleware/errorHandler';
 import { ErrorCodes } from '../errors/codes';
 import { validateString } from '../utils/validation';
-import { registerUser, loginUser, generateMagicLink, verifyMagicLink } from '../services/auth.service';
+import {
+  registerUser,
+  loginUser,
+  generateMagicLink,
+  verifyMagicLink,
+  verifyEmailToken,
+  resendVerification,
+} from '../services/auth.service';
 
 const router = Router();
 
@@ -73,6 +80,32 @@ router.get('/magic-link/verify', async (req: Request, res: Response, next: NextF
     }
 
     const result = await verifyMagicLink(token.trim());
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/verify-email', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const token = req.query['token'];
+    if (typeof token !== 'string' || token.trim().length === 0) {
+      throw new AppError('token query param is required', 400, ErrorCodes.VALIDATION_ERROR);
+    }
+    const result = await verifyEmailToken(token.trim());
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/resend-verification', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const email = validateString(req.body?.email, 'email');
+    if (!EMAIL_RE.test(email)) {
+      throw new AppError('Invalid email address', 400, ErrorCodes.VALIDATION_ERROR);
+    }
+    const result = await resendVerification(email);
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);

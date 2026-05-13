@@ -10,6 +10,10 @@ export const ErrorCodes = {
   UNAUTHORIZED: 'UNAUTHORIZED',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   INVALID_TOKEN: 'INVALID_TOKEN',
+  // EMAIL_NOT_VERIFIED is a soft-block: the credentials are valid but the account
+  // hasn't confirmed its email. Login returns this without issuing a JWT; auth
+  // middleware also returns it as defense-in-depth on any pre-issued token.
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
 
   // Access
   FORBIDDEN: 'FORBIDDEN',

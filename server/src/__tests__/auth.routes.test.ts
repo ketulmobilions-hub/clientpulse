@@ -9,10 +9,13 @@ import { ErrorCodes } from '../errors/codes';
 
 const mockRegister = authService.registerUser as jest.Mock;
 const mockLogin = authService.loginUser as jest.Mock;
+const mockVerify = authService.verifyEmailToken as jest.Mock;
+const mockResend = authService.resendVerification as jest.Mock;
 
 const REGISTER_RESULT = {
   user: { id: 'uid-123', email: 'pm@agency.com', name: 'Pat', role: 'admin' },
   workspaceId: 'ws-456',
+  requires_verification: true,
 };
 
 const LOGIN_RESULT = {
@@ -112,5 +115,87 @@ describe('POST /api/v1/auth/login', () => {
     const res = await request(app).post('/api/v1/auth/login').send(validBody);
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe(ErrorCodes.INVALID_CREDENTIALS);
+  });
+
+  it('returns 200 with requires_verification shape (no token) for unverified user', async () => {
+    mockLogin.mockResolvedValue({ requires_verification: true, email: 'unverified@agency.com' });
+    const res = await request(app).post('/api/v1/auth/login').send({
+      email: 'unverified@agency.com',
+      password: 'secret123',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.data.requires_verification).toBe(true);
+    expect(res.body.data.email).toBe('unverified@agency.com');
+    expect(res.body.data.token).toBeUndefined();
+  });
+});
+
+describe('GET /api/v1/auth/verify-email', () => {
+  it('returns 200 with verified shape on valid token', async () => {
+    mockVerify.mockResolvedValue({ verified: true, email: 'pm@agency.com' });
+    const res = await request(app).get('/api/v1/auth/verify-email?token=abc123');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, data: { verified: true, email: 'pm@agency.com' } });
+    expect(mockVerify).toHaveBeenCalledWith('abc123');
+  });
+
+  it('returns 400 VALIDATION_ERROR when token query missing', async () => {
+    const res = await request(app).get('/api/v1/auth/verify-email');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 VALIDATION_ERROR when token query is whitespace only', async () => {
+    const res = await request(app).get('/api/v1/auth/verify-email?token=%20%20');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+  });
+
+  it('returns 400 INVALID_TOKEN when service rejects token', async () => {
+    mockVerify.mockRejectedValue(
+      new AppError('Verification link is invalid or expired', 400, ErrorCodes.INVALID_TOKEN),
+    );
+    const res = await request(app).get('/api/v1/auth/verify-email?token=bogus');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.INVALID_TOKEN);
+  });
+});
+
+describe('POST /api/v1/auth/resend-verification', () => {
+  it('returns 200 with sent on success', async () => {
+    mockResend.mockResolvedValue({ sent: true });
+    const res = await request(app)
+      .post('/api/v1/auth/resend-verification')
+      .send({ email: 'pm@agency.com' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, data: { sent: true } });
+  });
+
+  it('returns 400 VALIDATION_ERROR when email missing', async () => {
+    const res = await request(app).post('/api/v1/auth/resend-verification').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+    expect(mockResend).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 VALIDATION_ERROR for invalid email format', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/resend-verification')
+      .send({ email: 'notanemail' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+  });
+
+  it('always returns 200 sent:true regardless of cooldown (no enumeration oracle)', async () => {
+    // Service enforces cooldown silently and never throws RATE_LIMITED.
+    // Route should reflect that — same response shape whether the email
+    // exists, is verified, missing, or hit cooldown.
+    mockResend.mockResolvedValue({ sent: true });
+    const res = await request(app)
+      .post('/api/v1/auth/resend-verification')
+      .send({ email: 'pm@agency.com' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, data: { sent: true } });
   });
 });
