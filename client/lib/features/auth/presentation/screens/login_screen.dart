@@ -10,9 +10,10 @@ import 'package:clientpulse/shared/widgets/buttons/app_button.dart';
 import 'package:clientpulse/shared/widgets/buttons/app_icon_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key, this.prefillEmail});
+  const LoginScreen({super.key, this.prefillEmail, this.justVerified = false});
 
   final String? prefillEmail;
+  final bool justVerified;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -24,6 +25,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
   String? _errorMessage;
+  String? _successMessage;
 
   // Mirrors the server-side / form-validator cap; guards against crafted
   // /login?email=<huge> links pasting megabytes into the TextField.
@@ -37,6 +39,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         prefill.isNotEmpty &&
         prefill.length <= _maxPrefillEmailLength) {
       _emailCtrl.text = prefill;
+    }
+    if (widget.justVerified) {
+      _successMessage = 'Email verified — sign in to continue.';
     }
     // Clear inline error once the user starts editing — keeps error banner aligned with intent.
     _emailCtrl.addListener(_clearError);
@@ -69,12 +74,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // previous login is still awaiting. AuthNotifier.login throws StateError on overlap;
     // bail early here so the user-facing banner reflects real auth errors, not the overlap.
     if (ref.read(authNotifierProvider).isLoading) return;
-    // Do NOT pre-clear _errorMessage — that flashes the banner off then back on for slow
-    // logins. Input listener clears on edit; success path replaces UI entirely.
     try {
-      await ref
+      final outcome = await ref
           .read(authNotifierProvider.notifier)
           .login(_emailCtrl.text.trim(), _passwordCtrl.text);
+      if (!mounted) return;
+      // Sealed switch — compile-time exhaustiveness on future variants.
+      switch (outcome) {
+        case LoginRequiresVerification(:final email):
+          context.go(
+              '${RouteNames.verifyEmailPending}?email=${Uri.encodeQueryComponent(email)}');
+        case LoginSuccess():
+          // Router redirect handles navigation to /dashboard via auth state.
+          break;
+      }
     } on AuthServiceException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
     } on StateError catch (e) {
@@ -174,6 +187,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 28),
+                          if (_successMessage != null) ...[
+                            Semantics(
+                              container: true,
+                              liveRegion: true,
+                              label: _successMessage,
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      size: 18,
+                                      color: theme
+                                          .colorScheme.onPrimaryContainer,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _successMessage!,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                          color: theme.colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           if (_errorMessage != null) ...[
                             // liveRegion + container: screen readers announce the new error
                             // when it appears (sighted users see the red banner; SR users

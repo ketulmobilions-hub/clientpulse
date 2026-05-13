@@ -6,6 +6,8 @@ import 'package:clientpulse/core/router/router_notifier.dart';
 import 'package:clientpulse/shared/providers/auth_state_provider.dart';
 import 'package:clientpulse/features/auth/presentation/screens/login_screen.dart';
 import 'package:clientpulse/features/auth/presentation/screens/register_screen.dart';
+import 'package:clientpulse/features/auth/presentation/screens/verify_email_pending_screen.dart';
+import 'package:clientpulse/features/auth/presentation/screens/verify_email_callback_screen.dart';
 import 'package:clientpulse/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:clientpulse/features/project/presentation/screens/project_detail_screen.dart';
 import 'package:clientpulse/features/project/presentation/screens/create_edit_project_screen.dart';
@@ -16,8 +18,13 @@ import 'package:clientpulse/features/updates/presentation/screens/update_detail_
 
 part 'app_router.g.dart';
 
-// KEEP IN SYNC with GoRoute path definitions below.
-const _publicPaths = ['/login', '/register'];
+// Sourced from RouteNames so renames don't desync the auth-guard whitelist.
+const _publicPaths = [
+  RouteNames.login,
+  RouteNames.register,
+  RouteNames.verifyEmailPending,
+  RouteNames.verifyEmail,
+];
 
 // Paths under this prefix bypass the top-level auth guard entirely.
 // Token validation is handled at the route level via GoRoute.redirect.
@@ -84,13 +91,29 @@ GoRouter router(RouterRef ref) {
       GoRoute(
         path: RouteNames.login,
         name: RouteNames.login,
-        builder: (_, state) =>
-            LoginScreen(prefillEmail: state.uri.queryParameters['email']),
+        builder: (_, state) => LoginScreen(
+          prefillEmail: state.uri.queryParameters['email'],
+          justVerified: state.uri.queryParameters['verified'] == '1',
+        ),
       ),
       GoRoute(
         path: RouteNames.register,
         name: RouteNames.register,
         builder: (_, __) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.verifyEmailPending,
+        name: RouteNames.verifyEmailPending,
+        builder: (_, state) => VerifyEmailPendingScreen(
+          email: state.uri.queryParameters['email'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.verifyEmail,
+        name: RouteNames.verifyEmail,
+        builder: (_, state) => VerifyEmailCallbackScreen(
+          token: state.uri.queryParameters['token'] ?? '',
+        ),
       ),
       GoRoute(
           path: RouteNames.dashboard,

@@ -65,8 +65,24 @@ function parseNodeEnv(): NodeEnv {
   return raw as NodeEnv;
 }
 
+const _nodeEnv = parseNodeEnv();
+const _frontendBaseUrl = requireUrl('FRONTEND_BASE_URL');
+const _appBaseUrl = requireUrl('APP_BASE_URL');
+
+// Prod must use HTTPS for all user-facing URLs. A misconfigured FRONTEND_BASE_URL
+// of http://attacker.com would otherwise ship attacker-controlled verification
+// links in production emails. Fail fast at boot.
+if (_nodeEnv === 'production') {
+  if (!_frontendBaseUrl.startsWith('https://')) {
+    throw new Error(`FRONTEND_BASE_URL must use https:// in production (got "${_frontendBaseUrl}")`);
+  }
+  if (!_appBaseUrl.startsWith('https://')) {
+    throw new Error(`APP_BASE_URL must use https:// in production (got "${_appBaseUrl}")`);
+  }
+}
+
 export const env = {
-  nodeEnv: parseNodeEnv(),
+  nodeEnv: _nodeEnv,
   port: parsePort(),
   allowedOrigins: parseAllowedOrigins(),
   supabaseUrl: required('SUPABASE_URL'),
@@ -76,6 +92,6 @@ export const env = {
   resendFromEmail: requireFromEmail('RESEND_FROM_EMAIL'),
   jwtSecret: requireMinLength('JWT_SECRET', 32),
   cookieSecret: requireMinLength('COOKIE_SECRET', 32),
-  appBaseUrl: requireUrl('APP_BASE_URL'),
-  frontendBaseUrl: requireUrl('FRONTEND_BASE_URL'),
+  appBaseUrl: _appBaseUrl,
+  frontendBaseUrl: _frontendBaseUrl,
 };

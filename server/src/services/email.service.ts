@@ -93,6 +93,46 @@ export async function sendUpdateNotificationEmail(
   }
 }
 
+export async function sendVerificationEmail(
+  to: string,
+  name: string,
+  verificationUrl: string,
+): Promise<void> {
+  const allowLocalhost = env.nodeEnv !== 'production';
+  const validUrl =
+    /^https:\/\//.test(verificationUrl) ||
+    (allowLocalhost && /^http:\/\/localhost/.test(verificationUrl));
+  if (!validUrl) {
+    throw new AppError('Invalid verification URL', 500, ErrorCodes.INTERNAL_ERROR);
+  }
+
+  try {
+    const { error } = await resend.emails.send({
+      from: env.resendFromEmail,
+      to,
+      subject: 'Verify your ClientPulse email',
+      html: [
+        `<p>Hi ${escapeHtml(name)},</p>`,
+        `<p>Confirm your email to finish setting up your ClientPulse account:</p>`,
+        // Token is a sha256-source hex string (see auth.service issueVerificationToken).
+        // Safe to drop into href + visible text without escaping; URL contains no `<` or `&`
+        // that could re-enter HTML context. Display text intentionally NOT escaped so users
+        // see the real URL, not `&amp;`-encoded variants that some clients render literally.
+        `<p style="margin:24px 0;"><a href="${escapeHtml(verificationUrl)}" style="background:#0ea5e9;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Verify email</a></p>`,
+        `<p style="color:#6b7280;font-size:13px;">This link expires in 24 hours. If you didn't sign up for ClientPulse, ignore this email.</p>`,
+        `<p style="color:#9ca3af;font-size:12px;">If the button doesn't work, paste this link into your browser:<br>${verificationUrl}</p>`,
+      ].join(''),
+    });
+
+    if (error) {
+      throw new AppError(`Email delivery failed: ${error.message}`, 502, ErrorCodes.EMAIL_ERROR);
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError('Email delivery failed', 502, ErrorCodes.EMAIL_ERROR);
+  }
+}
+
 export async function sendMagicLinkEmail(
   to: string,
   clientName: string,
